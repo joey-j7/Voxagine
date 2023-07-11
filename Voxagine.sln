@@ -1,0 +1,132 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.271
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Game", "Game\Game.vcxproj", "{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{728B4790-9FC2-461B-A72A-C2162C4D3648} = {728B4790-9FC2-461B-A72A-C2162C4D3648}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Voxagine", "Voxagine\Voxagine.vcxproj", "{728B4790-9FC2-461B-A72A-C2162C4D3648}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2F4CCF89-7649-4C7F-8CBF-F976B4FBC2B6} = {2F4CCF89-7649-4C7F-8CBF-F976B4FBC2B6}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_toolkit", "PS4\toolkit\toolkit.vcxproj", "{2F4CCF89-7649-4C7F-8CBF-F976B4FBC2B6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PS4", "PS4", "{AF4D852B-FF27-4F09-8CCA-13CFCD4372EB}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "basic_quad", "PS4\basic_quad\basic_quad.vcxproj", "{C1F182EE-C781-4BC4-9C98-76E67D3D8068}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTests", "UnitTesting\UnitTests\UnitTests.vcxproj", "{4FC5CE3E-5754-4583-9381-0A0F2C7ED1B4}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SplodyMcSplodeFace", "SplodyMcSplodeFace\SplodyMcSplodeFace.vcxproj", "{F6712BCC-8939-49A7-8CF0-BCE5053D95DC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{728B4790-9FC2-461B-A72A-C2162C4D3648} = {728B4790-9FC2-461B-A72A-C2162C4D3648}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		DebugEditor|ORBIS = DebugEditor|ORBIS
+		DebugEditor|x64 = DebugEditor|x64
+		DebugGame|ORBIS = DebugGame|ORBIS
+		DebugGame|x64 = DebugGame|x64
+		ReleaseEditor|ORBIS = ReleaseEditor|ORBIS
+		ReleaseEditor|x64 = ReleaseEditor|x64
+		ReleaseGame|ORBIS = ReleaseGame|ORBIS
+		ReleaseGame|x64 = ReleaseGame|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}.DebugEditor|ORBIS.ActiveCfg = DebugEditor|x64
+		{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}.DebugEditor|ORBIS.Build.0 = DebugEditor|x64
+		{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}.DebugEditor|x64.ActiveCfg = DebugEditor|x64
+		{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}.DebugEditor|x64.Build.0 = DebugEditor|x64
+		{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}.DebugGame|ORBIS.ActiveCfg = DebugGame|ORBIS
+		{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}.DebugGame|ORBIS.Build.0 = DebugGame|ORBIS
+		{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}.DebugGame|x64.ActiveCfg = DebugGame|x64
+		{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}.DebugGame|x64.Build.0 = DebugGame|x64
+		{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}.ReleaseEditor|ORBIS.ActiveCfg = ReleaseEditor|x64
+		{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}.ReleaseEditor|ORBIS.Build.0 = ReleaseEditor|x64
+		{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}.ReleaseEditor|x64.ActiveCfg = ReleaseEditor|x64
+		{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}.ReleaseEditor|x64.Build.0 = ReleaseEditor|x64
+		{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}.ReleaseGame|ORBIS.ActiveCfg = ReleaseGame|ORBIS
+		{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}.ReleaseGame|ORBIS.Build.0 = ReleaseGame|ORBIS
+		{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}.ReleaseGame|x64.ActiveCfg = ReleaseGame|x64
+		{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}.ReleaseGame|x64.Build.0 = ReleaseGame|x64
+		{728B4790-9FC2-461B-A72A-C2162C4D3648}.DebugEditor|ORBIS.ActiveCfg = DebugEditor|x64
+		{728B4790-9FC2-461B-A72A-C2162C4D3648}.DebugEditor|ORBIS.Build.0 = DebugEditor|x64
+		{728B4790-9FC2-461B-A72A-C2162C4D3648}.DebugEditor|x64.ActiveCfg = DebugEditor|x64
+		{728B4790-9FC2-461B-A72A-C2162C4D3648}.DebugEditor|x64.Build.0 = DebugEditor|x64
+		{728B4790-9FC2-461B-A72A-C2162C4D3648}.DebugGame|ORBIS.ActiveCfg = DebugGame|ORBIS
+		{728B4790-9FC2-461B-A72A-C2162C4D3648}.DebugGame|ORBIS.Build.0 = DebugGame|ORBIS
+		{728B4790-9FC2-461B-A72A-C2162C4D3648}.DebugGame|x64.ActiveCfg = DebugGame|x64
+		{728B4790-9FC2-461B-A72A-C2162C4D3648}.DebugGame|x64.Build.0 = DebugGame|x64
+		{728B4790-9FC2-461B-A72A-C2162C4D3648}.ReleaseEditor|ORBIS.ActiveCfg = ReleaseEditor|x64
+		{728B4790-9FC2-461B-A72A-C2162C4D3648}.ReleaseEditor|ORBIS.Build.0 = ReleaseEditor|x64
+		{728B4790-9FC2-461B-A72A-C2162C4D3648}.ReleaseEditor|x64.ActiveCfg = ReleaseEditor|x64
+		{728B4790-9FC2-461B-A72A-C2162C4D3648}.ReleaseEditor|x64.Build.0 = ReleaseEditor|x64
+		{728B4790-9FC2-461B-A72A-C2162C4D3648}.ReleaseGame|ORBIS.ActiveCfg = ReleaseGame|ORBIS
+		{728B4790-9FC2-461B-A72A-C2162C4D3648}.ReleaseGame|ORBIS.Build.0 = ReleaseGame|ORBIS
+		{728B4790-9FC2-461B-A72A-C2162C4D3648}.ReleaseGame|x64.ActiveCfg = ReleaseGame|x64
+		{728B4790-9FC2-461B-A72A-C2162C4D3648}.ReleaseGame|x64.Build.0 = ReleaseGame|x64
+		{2F4CCF89-7649-4C7F-8CBF-F976B4FBC2B6}.DebugEditor|ORBIS.ActiveCfg = DebugGame|ORBIS
+		{2F4CCF89-7649-4C7F-8CBF-F976B4FBC2B6}.DebugEditor|x64.ActiveCfg = DebugGame|ORBIS
+		{2F4CCF89-7649-4C7F-8CBF-F976B4FBC2B6}.DebugGame|ORBIS.ActiveCfg = DebugGame|ORBIS
+		{2F4CCF89-7649-4C7F-8CBF-F976B4FBC2B6}.DebugGame|ORBIS.Build.0 = DebugGame|ORBIS
+		{2F4CCF89-7649-4C7F-8CBF-F976B4FBC2B6}.DebugGame|x64.ActiveCfg = DebugGame|ORBIS
+		{2F4CCF89-7649-4C7F-8CBF-F976B4FBC2B6}.ReleaseEditor|ORBIS.ActiveCfg = ReleaseGame|ORBIS
+		{2F4CCF89-7649-4C7F-8CBF-F976B4FBC2B6}.ReleaseEditor|x64.ActiveCfg = DebugGame|ORBIS
+		{2F4CCF89-7649-4C7F-8CBF-F976B4FBC2B6}.ReleaseGame|ORBIS.ActiveCfg = ReleaseGame|ORBIS
+		{2F4CCF89-7649-4C7F-8CBF-F976B4FBC2B6}.ReleaseGame|ORBIS.Build.0 = ReleaseGame|ORBIS
+		{2F4CCF89-7649-4C7F-8CBF-F976B4FBC2B6}.ReleaseGame|x64.ActiveCfg = ReleaseGame|ORBIS
+		{C1F182EE-C781-4BC4-9C98-76E67D3D8068}.DebugEditor|ORBIS.ActiveCfg = Debug|ORBIS
+		{C1F182EE-C781-4BC4-9C98-76E67D3D8068}.DebugEditor|x64.ActiveCfg = Release|ORBIS
+		{C1F182EE-C781-4BC4-9C98-76E67D3D8068}.DebugGame|ORBIS.ActiveCfg = Debug|ORBIS
+		{C1F182EE-C781-4BC4-9C98-76E67D3D8068}.DebugGame|ORBIS.Build.0 = Debug|ORBIS
+		{C1F182EE-C781-4BC4-9C98-76E67D3D8068}.DebugGame|x64.ActiveCfg = Release|ORBIS
+		{C1F182EE-C781-4BC4-9C98-76E67D3D8068}.ReleaseEditor|ORBIS.ActiveCfg = Release|ORBIS
+		{C1F182EE-C781-4BC4-9C98-76E67D3D8068}.ReleaseEditor|x64.ActiveCfg = Release|ORBIS
+		{C1F182EE-C781-4BC4-9C98-76E67D3D8068}.ReleaseGame|ORBIS.ActiveCfg = Release|ORBIS
+		{C1F182EE-C781-4BC4-9C98-76E67D3D8068}.ReleaseGame|ORBIS.Build.0 = Release|ORBIS
+		{C1F182EE-C781-4BC4-9C98-76E67D3D8068}.ReleaseGame|x64.ActiveCfg = Release|ORBIS
+		{4FC5CE3E-5754-4583-9381-0A0F2C7ED1B4}.DebugEditor|ORBIS.ActiveCfg = Release|x64
+		{4FC5CE3E-5754-4583-9381-0A0F2C7ED1B4}.DebugEditor|ORBIS.Build.0 = Release|x64
+		{4FC5CE3E-5754-4583-9381-0A0F2C7ED1B4}.DebugEditor|x64.ActiveCfg = DebugEditor|x64
+		{4FC5CE3E-5754-4583-9381-0A0F2C7ED1B4}.DebugEditor|x64.Build.0 = DebugEditor|x64
+		{4FC5CE3E-5754-4583-9381-0A0F2C7ED1B4}.DebugGame|ORBIS.ActiveCfg = Release|x64
+		{4FC5CE3E-5754-4583-9381-0A0F2C7ED1B4}.DebugGame|x64.ActiveCfg = DebugGame|x64
+		{4FC5CE3E-5754-4583-9381-0A0F2C7ED1B4}.DebugGame|x64.Build.0 = DebugGame|x64
+		{4FC5CE3E-5754-4583-9381-0A0F2C7ED1B4}.ReleaseEditor|ORBIS.ActiveCfg = Release|x64
+		{4FC5CE3E-5754-4583-9381-0A0F2C7ED1B4}.ReleaseEditor|ORBIS.Build.0 = Release|x64
+		{4FC5CE3E-5754-4583-9381-0A0F2C7ED1B4}.ReleaseEditor|x64.ActiveCfg = ReleaseEditor|x64
+		{4FC5CE3E-5754-4583-9381-0A0F2C7ED1B4}.ReleaseEditor|x64.Build.0 = ReleaseEditor|x64
+		{4FC5CE3E-5754-4583-9381-0A0F2C7ED1B4}.ReleaseGame|ORBIS.ActiveCfg = Release|x64
+		{4FC5CE3E-5754-4583-9381-0A0F2C7ED1B4}.ReleaseGame|x64.ActiveCfg = ReleaseGame|x64
+		{4FC5CE3E-5754-4583-9381-0A0F2C7ED1B4}.ReleaseGame|x64.Build.0 = ReleaseGame|x64
+		{F6712BCC-8939-49A7-8CF0-BCE5053D95DC}.DebugEditor|ORBIS.ActiveCfg = DebugEditor|x64
+		{F6712BCC-8939-49A7-8CF0-BCE5053D95DC}.DebugEditor|x64.ActiveCfg = DebugEditor|x64
+		{F6712BCC-8939-49A7-8CF0-BCE5053D95DC}.DebugEditor|x64.Build.0 = DebugEditor|x64
+		{F6712BCC-8939-49A7-8CF0-BCE5053D95DC}.DebugGame|ORBIS.ActiveCfg = DebugEditor|x64
+		{F6712BCC-8939-49A7-8CF0-BCE5053D95DC}.DebugGame|ORBIS.Build.0 = DebugEditor|x64
+		{F6712BCC-8939-49A7-8CF0-BCE5053D95DC}.DebugGame|x64.ActiveCfg = DebugGame|x64
+		{F6712BCC-8939-49A7-8CF0-BCE5053D95DC}.DebugGame|x64.Build.0 = DebugGame|x64
+		{F6712BCC-8939-49A7-8CF0-BCE5053D95DC}.ReleaseEditor|ORBIS.ActiveCfg = ReleaseEditor|x64
+		{F6712BCC-8939-49A7-8CF0-BCE5053D95DC}.ReleaseEditor|x64.ActiveCfg = ReleaseEditor|x64
+		{F6712BCC-8939-49A7-8CF0-BCE5053D95DC}.ReleaseEditor|x64.Build.0 = ReleaseEditor|x64
+		{F6712BCC-8939-49A7-8CF0-BCE5053D95DC}.ReleaseGame|ORBIS.ActiveCfg = DebugEditor|x64
+		{F6712BCC-8939-49A7-8CF0-BCE5053D95DC}.ReleaseGame|ORBIS.Build.0 = DebugEditor|x64
+		{F6712BCC-8939-49A7-8CF0-BCE5053D95DC}.ReleaseGame|x64.ActiveCfg = ReleaseGame|x64
+		{F6712BCC-8939-49A7-8CF0-BCE5053D95DC}.ReleaseGame|x64.Build.0 = ReleaseGame|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2F4CCF89-7649-4C7F-8CBF-F976B4FBC2B6} = {AF4D852B-FF27-4F09-8CCA-13CFCD4372EB}
+		{C1F182EE-C781-4BC4-9C98-76E67D3D8068} = {AF4D852B-FF27-4F09-8CCA-13CFCD4372EB}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {97FCFD82-081A-4945-A5C0-E610ACF4F576}
+	EndGlobalSection
+EndGlobal

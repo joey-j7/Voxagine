@@ -1,0 +1,50 @@
+/* Global */
+#define AMBIENT_VALUE 0.5
+#define DIRECT_VALUE 1.0
+#define OPTIMIZED 1
+// #define DIRECT_LIGHTING 2
+
+/* Platform specific */
+#ifdef __PSSL__
+
+#define STRUCTURED_BUFFER(x) RegularBuffer<x>
+#define BUFFER(x) RegularBuffer<x>
+#define CONSTANT_BUFFER ConstantBuffer
+
+#define VERT_ID S_VERTEX_ID
+#define INST_ID S_INSTANCE_ID
+#define POS_OUT S_POSITION
+
+#define TAR_OUT S_TARGET_OUTPUT
+#define TAR_OUT0 S_TARGET_OUTPUT0
+#define TAR_OUT1 S_TARGET_OUTPUT1
+#define TAR_OUT2 S_TARGET_OUTPUT2
+#define TAR_OUT3 S_TARGET_OUTPUT3
+#define TAR_OUT4 S_TARGET_OUTPUT4
+#define TAR_OUT5 S_TARGET_OUTPUT5
+#define TAR_OUT6 S_TARGET_OUTPUT6
+#define TAR_OUT7 S_TARGET_OUTPUT7
+#define TAR_OUT8 S_TARGET_OUTPUT8
+
+#else
+
+#define STRUCTURED_BUFFER(x) StructuredBuffer<x>
+#define BUFFER(x) Buffer<x>
+#define CONSTANT_BUFFER cbuffer
+
+#define VERT_ID SV_VERTEXID
+#define INST_ID SV_INSTANCEID
+#define POS_OUT SV_POSITION
+
+#define TAR_OUT SV_TARGET
+#define TAR_OUT0 SV_TARGET0
+#define TAR_OUT1 SV_TARGET1
+#define TAR_OUT2 SV_TARGET2
+#define TAR_OUT3 SV_TARGET3
+#define TAR_OUT4 SV_TARGET4
+#define TAR_OUT5 SV_TARGET5
+#define TAR_OUT6 SV_TARGET6
+#define TAR_OUT7 SV_TARGET7
+#define TAR_OUT8 SV_TARGET8
+
+#endif

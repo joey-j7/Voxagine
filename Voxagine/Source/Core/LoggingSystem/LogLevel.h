@@ -1,0 +1,9 @@
+#pragma once
+
+enum LogLevel
+{
+	LOGLEVEL_MESSAGE = 0,
+	LOGLEVEL_WARNING,
+	LOGLEVEL_ERROR,
+	LOGLEVEL_CRITICAL_ERROR,
+};

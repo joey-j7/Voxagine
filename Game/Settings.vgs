@@ -1,0 +1,23 @@
+{
+    "Type": "Settings",
+    "Data": {
+        "Title": "Bit Buster",
+        "WorldFileExtension": "wld",
+        "EngineAssetsPath": "Engine/Assets",
+        "FontPath": "Engine/Assets/Fonts/PressStart.spritefont",
+        "PlatformType": "PT_WINDOWS",
+        "RenderApiType": "RA_DIRECTX12",
+        "AudioApiType": "AA_FMOD",
+        "FixedTimeStep": 0.016666666666666668,
+        "FrameLimit": 0.005,
+        "EnableVSync": true,
+        "FXAAEnabled": true,
+        "ShadowsEnabled": true,
+        "ResolutionScale": 1.0,
+        "Fullscreen": true,
+        "InitialWindowSize": [
+            1280,
+            720
+        ]
+    }
+}
