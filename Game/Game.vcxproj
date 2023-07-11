@@ -1,0 +1,610 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="DebugEditor|ORBIS">
+      <Configuration>DebugEditor</Configuration>
+      <Platform>ORBIS</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="DebugEditor|x64">
+      <Configuration>DebugEditor</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="DebugGame|ORBIS">
+      <Configuration>DebugGame</Configuration>
+      <Platform>ORBIS</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseEditor|ORBIS">
+      <Configuration>ReleaseEditor</Configuration>
+      <Platform>ORBIS</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseEditor|x64">
+      <Configuration>ReleaseEditor</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="DebugGame|x64">
+      <Configuration>DebugGame</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseGame|ORBIS">
+      <Configuration>ReleaseGame</Configuration>
+      <Platform>ORBIS</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseGame|x64">
+      <Configuration>ReleaseGame</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{3989FE8B-DB24-40B9-BB2B-A66233E64EE2}</ProjectGuid>
+    <RootNamespace>Game</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugGame|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugGame|ORBIS'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>Clang</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|ORBIS'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>Clang</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseGame|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseGame|ORBIS'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>Clang</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|ORBIS'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>Clang</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Platform)'=='ORBIS'" Label="PropertySheets">
+    <Import Project="$(SolutionDir)\SceGnm.props" Condition="Exists('$(SolutionDir)\SceGnm.props')" />
+    <Import Project="$(SCE_ORBIS_SDK_DIR)\host_tools\msbuild\SceGnm.props" Condition="!Exists('$(SolutionDir)\SceGnm.props')" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='DebugGame|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugGame|ORBIS'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|ORBIS'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseGame|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseGame|ORBIS'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|ORBIS'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugGame|x64'">
+    <OutDir>$(SolutionDir)Builds\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)Builds\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</IntDir>
+    <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugGame|ORBIS'">
+    <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <IntDir>$(SolutionDir)Builds\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)Builds\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</OutDir>
+    <GnmProjectType>Project</GnmProjectType>
+    <GnmUseGnm>true</GnmUseGnm>
+    <GnmUseGnmx>true</GnmUseGnmx>
+    <GnmUseAddressLibrary>true</GnmUseAddressLibrary>
+    <GnmUseLibShaderBinary>true</GnmUseLibShaderBinary>
+    <GnmUseGNF>true</GnmUseGNF>
+    <GnmUseTextureTool>true</GnmUseTextureTool>
+    <GnmUsePM4Dump>true</GnmUsePM4Dump>
+    <GnmUseSampleCommon>true</GnmUseSampleCommon>
+    <LibraryPath>$(SCE_ORBIS_SDK_DIR)\host_tools\lib\clang\include;$(SCE_ORBIS_SDK_DIR)\target\include;$(SCE_ORBIS_SDK_DIR)\target\include_common;$(SCE_ORBIS_SDK_DIR)\target\lib;$(SolutionDir)Libs\$(PlatformShortName)\$(ConfigurationName);%(AdditionalLibraryDirectories)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">
+    <OutDir>$(SolutionDir)Builds\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)Builds\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</IntDir>
+    <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|ORBIS'">
+    <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <OutDir>$(SolutionDir)Builds\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)Builds\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</IntDir>
+    <GnmProjectType>Project</GnmProjectType>
+    <GnmUseGnm>true</GnmUseGnm>
+    <GnmUseGnmx>true</GnmUseGnmx>
+    <GnmUseAddressLibrary>true</GnmUseAddressLibrary>
+    <GnmUseLibShaderBinary>true</GnmUseLibShaderBinary>
+    <GnmUseGNF>true</GnmUseGNF>
+    <GnmUseTextureTool>true</GnmUseTextureTool>
+    <GnmUsePM4Dump>true</GnmUsePM4Dump>
+    <GnmUseSampleCommon>true</GnmUseSampleCommon>
+    <LibraryPath>$(SCE_ORBIS_SDK_DIR)\host_tools\lib\clang\include;$(SCE_ORBIS_SDK_DIR)\target\include;$(SCE_ORBIS_SDK_DIR)\target\include_common;$(SCE_ORBIS_SDK_DIR)\target\lib;$(SolutionDir)Libs\$(PlatformShortName)\$(ConfigurationName);%(AdditionalLibraryDirectories)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseGame|x64'">
+    <OutDir>$(SolutionDir)Builds\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)Builds\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</IntDir>
+    <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseGame|ORBIS'">
+    <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <OutDir>$(SolutionDir)Builds\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)Builds\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</IntDir>
+    <GnmProjectType>Project</GnmProjectType>
+    <GnmUseGnm>true</GnmUseGnm>
+    <GnmUseGnmx>true</GnmUseGnmx>
+    <GnmUseAddressLibrary>true</GnmUseAddressLibrary>
+    <GnmUseLibShaderBinary>true</GnmUseLibShaderBinary>
+    <GnmUseGNF>true</GnmUseGNF>
+    <GnmUseTextureTool>true</GnmUseTextureTool>
+    <GnmUsePM4Dump>true</GnmUsePM4Dump>
+    <GnmUseSampleCommon>true</GnmUseSampleCommon>
+    <LibraryPath>$(SCE_ORBIS_SDK_DIR)\host_tools\lib\clang\include;$(SCE_ORBIS_SDK_DIR)\target\include;$(SCE_ORBIS_SDK_DIR)\target\include_common;$(SCE_ORBIS_SDK_DIR)\target\lib;$(SolutionDir)Libs\$(PlatformShortName)\$(ConfigurationName);%(AdditionalLibraryDirectories)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'">
+    <OutDir>$(SolutionDir)Builds\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)Builds\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</IntDir>
+    <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|ORBIS'">
+    <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <OutDir>$(SolutionDir)Builds\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)Builds\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</IntDir>
+    <GnmProjectType>Project</GnmProjectType>
+    <GnmUseGnm>true</GnmUseGnm>
+    <GnmUseGnmx>true</GnmUseGnmx>
+    <GnmUseAddressLibrary>true</GnmUseAddressLibrary>
+    <GnmUseLibShaderBinary>true</GnmUseLibShaderBinary>
+    <GnmUseGNF>true</GnmUseGNF>
+    <GnmUseTextureTool>true</GnmUseTextureTool>
+    <GnmUsePM4Dump>true</GnmUsePM4Dump>
+    <GnmUseSampleCommon>true</GnmUseSampleCommon>
+    <LibraryPath>$(SCE_ORBIS_SDK_DIR)\host_tools\lib\clang\include;$(SCE_ORBIS_SDK_DIR)\target\include;$(SCE_ORBIS_SDK_DIR)\target\include_common;$(SCE_ORBIS_SDK_DIR)\target\lib;$(SolutionDir)Libs\$(PlatformShortName)\$(ConfigurationName);%(AdditionalLibraryDirectories)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugGame|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(SolutionDir)Voxagine\Source;$(SolutionDir)Game\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PreprocessorDefinitions>_WINDOWS;NOMINMAX;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnablePREfast>false</EnablePREfast>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(OutDir)..\Voxagine;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Voxagine.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugGame|ORBIS'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)\PS4\toolkit;$(SolutionDir)Voxagine\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PreprocessorDefinitions>__GEOMMATH_H__;_ORBIS;NOMINMAX;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnablePREfast>false</EnablePREfast>
+      <AdditionalOptions>-frtti %(OrbisPreprocessorDefinitions) %(AdditionalOptions)</AdditionalOptions>
+      <CppExceptions>true</CppExceptions>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(SolutionDir)\Voxagine;$(GnmAdditionalLibraryDirectories);$(SolutionDir)Builds\$(PlatformShortName)\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>-lSceGnmDriver_stub_weak;-lScePm4Dump;-lSceGnf;-lSceShaderBinary;-lSceGpuAddress;-lSceGnmx_debug;-lSceGnm_debug;-lScePosix_stub_weak;-lScePad_stub_weak;-lSceVideoOut_stub_weak;-lfmodL_stub_weak;rttr_core.a;-lSceMat_stub_weak;-lSceFios2_stub_weak;$(GnmAdditionalDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(SolutionDir)Voxagine\Source;$(SolutionDir)Game\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PreprocessorDefinitions>_WINDOWS;NOMINMAX;EDITOR; _MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnablePREfast>false</EnablePREfast>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(OutDir)..\Voxagine;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Voxagine.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditor|ORBIS'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)\PS4\toolkit;$(SolutionDir)Voxagine\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PreprocessorDefinitions>__GEOMMATH_H__;_ORBIS;NOMINMAX;EDITOR; _MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnablePREfast>false</EnablePREfast>
+      <AdditionalOptions>-frtti %(OrbisPreprocessorDefinitions) %(AdditionalOptions)</AdditionalOptions>
+      <CppExceptions>true</CppExceptions>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(SolutionDir)\Voxagine;$(GnmAdditionalLibraryDirectories);$(SolutionDir)Builds\$(PlatformShortName)\Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>-lSceGnmDriver_stub_weak;-lScePm4Dump;-lSceGnf;-lSceShaderBinary;-lSceGpuAddress;-lSceGnmx_debug;-lSceGnm_debug;-lScePosix_stub_weak;-lScePad_stub_weak;-lSceVideoOut_stub_weak;libfmod_stub_weak.a;rttr_core.a;-lSceMat_stub_weak;-lSceFios2_stub_weak;$(GnmAdditionalDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseGame|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(SolutionDir)Voxagine\Source;$(SolutionDir)Game\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PreprocessorDefinitions>_WINDOWS;NOMINMAX;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnablePREfast>false</EnablePREfast>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(OutDir)..\Voxagine;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Voxagine.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseGame|ORBIS'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)\PS4\toolkit;$(SolutionDir)Voxagine\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PreprocessorDefinitions>__GEOMMATH_H__;_ORBIS;NOMINMAX;_MBCS;FMOD_LIB_PATH="/app0/libfmod.prx";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnablePREfast>false</EnablePREfast>
+      <AdditionalOptions>-frtti %(OrbisPreprocessorDefinitions) %(AdditionalOptions)</AdditionalOptions>
+      <CppExceptions>true</CppExceptions>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(SolutionDir)\Voxagine;$(GnmAdditionalLibraryDirectories);$(SolutionDir)Voxagine;$(SolutionDir)Builds\$(PlatformShortName)\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>-lSceGnmDriver_stub_weak;-lScePm4Dump;-lSceGnf;-lSceShaderBinary;-lSceGpuAddress;-lSceGnmx_debug;-lSceGnm_debug;-lScePosix_stub_weak;-lSceVideoOut_stub_weak;-lfmod_stub_weak;rttr_core.a;-lSceMat_stub_weak;-lSceUserService_stub_weak;-lScePad_stub_weak;-lSceFios2_stub_weak;$(GnmAdditionalDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(SolutionDir)Voxagine\Source;$(SolutionDir)Game\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PreprocessorDefinitions>_WINDOWS;NOMINMAX;EDITOR;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnablePREfast>false</EnablePREfast>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(OutDir)..\Voxagine;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Voxagine.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Command>call "$(SolutionDir)Step1_CopyFiles.bat" "$(outDir)Game.exe"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|ORBIS'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)\PS4\toolkit;$(SolutionDir)Voxagine\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PreprocessorDefinitions>__GEOMMATH_H__;_ORBIS;NOMINMAX;EDITOR;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnablePREfast>false</EnablePREfast>
+      <AdditionalOptions>-frtti %(OrbisPreprocessorDefinitions) %(AdditionalOptions)</AdditionalOptions>
+      <CppExceptions>true</CppExceptions>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(SolutionDir)\Voxagine;$(GnmAdditionalLibraryDirectories);$(SolutionDir)Builds\$(PlatformShortName)\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>-lSceGnmDriver_stub_weak;-lScePm4Dump;-lSceGnf;-lSceShaderBinary;-lSceGpuAddress;-lSceGnmx_debug;-lSceGnm_debug;-lScePosix_stub_weak;-lScePad_stub_weak;-lSceVideoOut_stub_weak;libfmod_stub_weak.a;rttr_core.a;-lSceMat_stub_weak;-lSceFios2_stub_weak;$(GnmAdditionalDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="Source\AI\Spawner\Spawner.cpp" />
+    <ClCompile Include="Source\AI\Spawner\SpawnerManager.cpp" />
+    <ClCompile Include="Source\General\ExplosionTrigger.cpp" />
+    <ClCompile Include="Source\General\KillTrigger.cpp" />
+    <ClCompile Include="Source\Humanoids\Enemies\RandomMonster.cpp" />
+    <ClCompile Include="Source\Humanoids\States\Hum_ThrowState.cpp" />
+    <ClCompile Include="Source\Gameplay\Wall\BoundingWall.cpp" />
+    <ClCompile Include="Source\General\BGMTrigger.cpp" />
+    <ClCompile Include="Source\Humanoids\Enemies\SpiderMonster.cpp" />
+    <ClCompile Include="Source\Humanoids\ParticleCorpse.cpp" />
+    <ClCompile Include="Source\Humanoids\States\Mon_RangeAttackState.cpp" />
+    <ClCompile Include="Source\Prefabs\PortalPrefab.cpp" />
+    <ClCompile Include="Source\Prefabs\RecallPrefab.cpp" />
+    <ClCompile Include="Source\UI\CanvasSwitch.cpp" />
+    <ClCompile Include="Source\UI\ComboIcon.cpp" />
+    <ClCompile Include="Source\UI\ComboSliderUI.cpp" />
+    <ClCompile Include="Source\UI\ComboUI.cpp" />
+    <ClCompile Include="Source\UI\DashCooldownComponent.cpp" />
+    <ClCompile Include="Source\AI\FiniteStateMachine.cpp" />
+    <ClCompile Include="Source\Gameplay\Custimization\Base\BaseLoadoutBehavior.cpp" />
+    <ClCompile Include="Source\Gameplay\States\GM_PlayingState.cpp" />
+    <ClCompile Include="Source\Gameplay\States\GM_LoadoutState.cpp" />
+    <ClCompile Include="Source\General\GameplayTimer.cpp" />
+    <ClCompile Include="Source\General\OpenLevelTrigger.cpp" />
+    <ClCompile Include="Source\Humanoids\Enemies\AutoMoveMonster.cpp" />
+    <ClCompile Include="Source\General\Managers\WeaponManager.cpp" />
+    <ClCompile Include="Source\Humanoids\Enemies\LongNeckMonster.cpp" />
+    <ClCompile Include="Source\Humanoids\Enemies\OgreMonster.cpp" />
+    <ClCompile Include="Source\Humanoids\Enemies\UmbrellaMonster.cpp" />
+    <ClCompile Include="Source\Humanoids\Players\Player.cpp" />
+    <ClCompile Include="Source\Humanoids\States\Hum_DashState.cpp" />
+    <ClCompile Include="Source\Humanoids\States\Hum_IdleState.cpp" />
+    <ClCompile Include="Source\Humanoids\States\Mon_MeleeAttackState.cpp" />
+    <ClCompile Include="Source\Humanoids\States\Hum_MoveState.cpp" />
+    <ClCompile Include="Source\Humanoids\States\Mon_IdleState.cpp" />
+    <ClCompile Include="Source\Humanoids\States\Mon_MoveState.cpp" />
+    <ClCompile Include="Source\Pickups\WeaponPickup.cpp" />
+    <ClCompile Include="Source\Prefabs\AimPrefab.cpp" />
+    <ClCompile Include="Source\Prefabs\BoxPrefab.cpp" />
+    <ClCompile Include="Source\Prefabs\DoorPrefab.cpp" />
+    <ClCompile Include="Source\General\FlashBehavior.cpp" />
+    <ClCompile Include="Source\General\Managers\GameManager.cpp" />
+    <ClCompile Include="Source\Prefabs\KeyPrefab.cpp" />
+    <ClCompile Include="Source\General\Managers\GameStateManager.cpp" />
+    <ClCompile Include="Source\Prefabs\StaticRendererPrefab.cpp" />
+    <ClCompile Include="Source\Prefabs\TestDummy.cpp" />
+    <ClCompile Include="Source\UI\HealthComponent.cpp" />
+    <ClCompile Include="Source\UI\HealthUI.cpp" />
+    <ClCompile Include="Source\UI\HighScoreShowUI.cpp" />
+    <ClCompile Include="Source\UI\HighScoreUI.cpp" />
+    <ClCompile Include="Source\UI\LevelSelect\LevelSelectCanvas.cpp" />
+    <ClCompile Include="Source\UI\Loadout.cpp" />
+    <ClCompile Include="Source\UI\MainMenu\MainMenuManagerComponent.cpp" />
+    <ClCompile Include="Source\UI\MainMenu\StartToJoinPlayerComponent.cpp" />
+    <ClCompile Include="Source\UI\OnBoarderUI.cpp" />
+    <ClCompile Include="Source\UI\PausedScreen\PauseScreenHandler.cpp" />
+    <ClCompile Include="Source\UI\Spinner.cpp" />
+    <ClCompile Include="Source\UI\SplashScreen\SplashScreenHandler.cpp" />
+    <ClCompile Include="Source\UI\States\MenuState.cpp" />
+    <ClCompile Include="Source\Humanoids\Enemies\HordeMonster.cpp" />
+    <ClCompile Include="Source\Humanoids\Humanoid.cpp" />
+    <ClCompile Include="Source\Humanoids\Enemies\Monster.cpp" />
+    <ClCompile Include="Source\Humanoids\Enemies\RangeMonster.cpp" />
+    <ClCompile Include="Source\main.cpp" />
+    <ClCompile Include="Source\Pickups\GenericPickup.cpp" />
+    <ClCompile Include="Source\Pickups\Ammo.cpp" />
+    <ClCompile Include="Source\General\CameraMultiplayer.cpp" />
+    <ClCompile Include="Source\UI\WorldSwitch.cpp" />
+    <ClCompile Include="Source\Weapons\EnemyBullet.cpp" />
+    <ClCompile Include="Source\Weapons\Projectile.cpp" />
+    <ClCompile Include="Source\Weapons\Bullet.cpp" />
+    <ClCompile Include="Source\Pickups\Bomb.cpp" />
+    <ClCompile Include="Source\Pickups\BombPickup.cpp" />
+    <ClCompile Include="Source\Pickups\BuildBlock.cpp" />
+    <ClCompile Include="Source\Pickups\BuildPickup.cpp" />
+    <ClCompile Include="Source\Pickups\Duplicator.cpp" />
+    <ClCompile Include="Source\Pickups\FreezePickup.cpp" />
+    <ClCompile Include="Source\Pickups\HealthPack.cpp" />
+    <ClCompile Include="Source\Pickups\TriWeaponPickup.cpp" />
+    <ClCompile Include="Source\Weapons\Weapon.cpp" />
+    <ClCompile Include="Source\TestWorld.cpp" />
+    <ClCompile Include="Source\user_malloc.cpp" />
+    <ClCompile Include="Source\user_new.cpp" />
+    <ClCompile Include="Source\VoxApp.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="Source\AI\Spawner\Spawner.h" />
+    <ClInclude Include="Source\AI\Spawner\SpawnerManager.h" />
+    <ClInclude Include="Source\General\ExplosionTrigger.h" />
+    <ClInclude Include="Source\General\KillTrigger.h" />
+    <ClInclude Include="Source\Humanoids\Enemies\RandomMonster.h" />
+    <ClInclude Include="Source\Humanoids\States\Hum_ThrowState.h" />
+    <ClInclude Include="Source\Gameplay\Wall\BoundingWall.h" />
+    <ClInclude Include="Source\General\BGMTrigger.h" />
+    <ClInclude Include="Source\Humanoids\Enemies\SpiderMonster.h" />
+    <ClInclude Include="Source\Humanoids\ParticleCorpse.h" />
+    <ClInclude Include="Source\Humanoids\States\Mon_RangeAttackState.h" />
+    <ClInclude Include="Source\Prefabs\PortalPrefab.h" />
+    <ClInclude Include="Source\Prefabs\RecallPrefab.h" />
+    <ClInclude Include="Source\UI\CanvasSwitch.h" />
+    <ClInclude Include="Source\UI\ComboIcon.h" />
+    <ClInclude Include="Source\UI\ComboSliderUI.h" />
+    <ClInclude Include="Source\UI\ComboUI.h" />
+    <ClInclude Include="Source\UI\DashCooldownComponent.h" />
+    <ClInclude Include="Source\AI\IFiniteManager.h" />
+    <ClInclude Include="Source\AI\States\FSMState.h" />
+    <ClInclude Include="Source\AI\FiniteStateMachine.h" />
+    <ClInclude Include="Source\Gameplay\BaseLoadoutBehavior.h" />
+    <ClInclude Include="Source\Gameplay\Custimization\BaseActived.h" />
+    <ClInclude Include="Source\Gameplay\Custimization\Base\BaseActived.h" />
+    <ClInclude Include="Source\Gameplay\Custimization\Base\BaseLoadoutBehavior.h" />
+    <ClInclude Include="Source\Gameplay\Custimization\Base\BaseMovement.h" />
+    <ClInclude Include="Source\Gameplay\Custimization\Base\BasePassive.h" />
+    <ClInclude Include="Source\Gameplay\States\GM_PlayingState.h" />
+    <ClInclude Include="Source\Gameplay\States\GM_LoadoutState.h" />
+    <ClInclude Include="Source\General\GameplayTimer.h" />
+    <ClInclude Include="Source\General\OpenLevelTrigger.h" />
+    <ClInclude Include="Source\Humanoids\Enemies\AutoMoveMonster.h" />
+    <ClInclude Include="Source\General\Managers\WeaponManager.h" />
+    <ClInclude Include="Source\Humanoids\Enemies\OgreMonster.h" />
+    <ClInclude Include="Source\Humanoids\Enemies\UmbrellaMonster.h" />
+    <ClInclude Include="Source\Humanoids\Enemies\LongNeckMonster.h" />
+    <ClInclude Include="Source\Humanoids\Players\Player.h" />
+    <ClInclude Include="Source\Humanoids\States\Hum_DashState.h" />
+    <ClInclude Include="Source\Humanoids\States\Hum_IdleState.h" />
+    <ClInclude Include="Source\Humanoids\States\Mon_MeleeAttackState.h" />
+    <ClInclude Include="Source\Humanoids\States\Hum_MoveState.h" />
+    <ClInclude Include="Source\Humanoids\States\Mon_IdleState.h" />
+    <ClInclude Include="Source\Humanoids\States\Mon_MoveState.h" />
+    <ClInclude Include="Source\Pickups\WeaponPickup.h" />
+    <ClInclude Include="Source\Prefabs\AimPrefab.h" />
+    <ClInclude Include="Source\Prefabs\BoxPrefab.h" />
+    <ClInclude Include="Source\Prefabs\DoorPrefab.h" />
+    <ClInclude Include="Source\General\FlashBehavior.h" />
+    <ClInclude Include="Source\General\Managers\GameManager.h" />
+    <ClInclude Include="Source\Prefabs\KeyPrefab.h" />
+    <ClInclude Include="Source\General\Managers\GameStateManager.h" />
+    <ClInclude Include="Source\Prefabs\StaticRendererPrefab.h" />
+    <ClInclude Include="Source\Prefabs\TestDummy.h" />
+    <ClInclude Include="Source\UI\HealthComponent.h" />
+    <ClInclude Include="Source\UI\HealthUI.h" />
+    <ClInclude Include="Source\UI\HighScoreShowUI.h" />
+    <ClInclude Include="Source\UI\HighScoreUI.h" />
+    <ClInclude Include="Source\UI\LevelSelect\LevelSelectCanvas.h" />
+    <ClInclude Include="Source\UI\Loadout.h" />
+    <ClInclude Include="Source\UI\MainMenu\MainMenuManagerComponent.h" />
+    <ClInclude Include="Source\UI\MainMenu\StartToJoinPlayerComponent.h" />
+    <ClInclude Include="Source\UI\OnBoarderUI.h" />
+    <ClInclude Include="Source\UI\PausedScreen\PauseScreenHandler.h" />
+    <ClInclude Include="Source\UI\Spinner.h" />
+    <ClInclude Include="Source\UI\SplashScreen\SplashScreenHandler.h" />
+    <ClInclude Include="Source\UI\States\MenuState.h" />
+    <ClInclude Include="Source\Humanoids\Enemies\HordeMonster.h" />
+    <ClInclude Include="Source\Humanoids\Humanoid.h" />
+    <ClInclude Include="Source\Humanoids\Enemies\Monster.h" />
+    <ClInclude Include="Source\Humanoids\Enemies\RangeMonster.h" />
+    <ClInclude Include="Source\General\CameraMultiplayer.h" />
+    <ClInclude Include="Source\General\Managers\PoolManager.h" />
+    <ClInclude Include="Source\Pickups\Ammo.h" />
+    <ClInclude Include="Source\UI\WorldSwitch.h" />
+    <ClInclude Include="Source\Weapons\EnemyBullet.h" />
+    <ClInclude Include="Source\Weapons\Projectile.h" />
+    <ClInclude Include="Source\Weapons\Bullet.h" />
+    <ClInclude Include="Source\Pickups\Bomb.h" />
+    <ClInclude Include="Source\Pickups\BombPickup.h" />
+    <ClInclude Include="Source\Pickups\BuildBlock.h" />
+    <ClInclude Include="Source\Pickups\BuildPickup.h" />
+    <ClInclude Include="Source\Pickups\Duplicator.h" />
+    <ClInclude Include="Source\Pickups\FreezePickup.h" />
+    <ClInclude Include="Source\Pickups\GenericPickup.h" />
+    <ClInclude Include="Source\Pickups\HealthPack.h" />
+    <ClInclude Include="Source\Pickups\TriWeaponPickup.h" />
+    <ClInclude Include="Source\Weapons\Weapon.h" />
+    <ClInclude Include="Source\PowerUps\SimpleWeapon.h" />
+    <ClInclude Include="Source\PowerUps\TriShot.h" />
+    <ClInclude Include="Source\TestWorld.h" />
+    <ClInclude Include="Source\VoxApp.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Voxagine\Voxagine.vcxproj">
+      <Project>{728b4790-9fc2-461b-a72a-c2162c4d3648}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="..\Voxagine\fmod64.dll">
+      <DeploymentContent>true</DeploymentContent>
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\Voxagine\fmodL64.dll">
+      <DeploymentContent>true</DeploymentContent>
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\Voxagine\libEGL.dll">
+      <DeploymentContent>true</DeploymentContent>
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\Voxagine\libGLESv2.dll">
+      <DeploymentContent>true</DeploymentContent>
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\Voxagine\rttr_core.dll">
+      <DeploymentContent>true</DeploymentContent>
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\Voxagine\rttr_core_d.dll">
+      <DeploymentContent>true</DeploymentContent>
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Engine\Assets\Shaders\SDFDepth.ps.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='DebugEditor|x64'">5.1</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='ReleaseGame|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='ReleaseGame|x64'">5.1</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='DebugGame|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='DebugGame|x64'">5.1</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='ReleaseEditor|x64'">5.1</ShaderModel>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Game.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Content\UI_Art\GameIcon.ico" />
+  </ItemGroup>
+  <ImportGroup Condition="'$(Platform)'=='ORBIS'" Label="PropertySheets">
+    <Import Project="$(SCE_ORBIS_SDK_DIR)\host_tools\msbuild\SceGnm.targets" Condition="Exists('$(SCE_ORBIS_SDK_DIR)\host_tools\msbuild\SceGnm.targets')" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Platform)'=='ORBIS'" Label="ExtensionProperties">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\OrbisWavePsslc.props" Condition="Exists('$(VCTargetsPath)\BuildCustomizations\OrbisWavePsslc.props')" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Platform)'=='ORBIS'" Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\OrbisWavePsslc.targets" Condition="Exists('$(VCTargetsPath)\BuildCustomizations\OrbisWavePsslc.targets')" />
+  </ImportGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

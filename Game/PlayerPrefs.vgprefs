@@ -1,0 +1,10 @@
+{
+    "Type": "PlayerPrefs",
+    "Data": {
+        "PlayerPreferences": {
+            "NewUnlocked": 1,
+            "UnlockedContent/Worlds/Battle_Arena/Training_Ground.wld": 1,
+            "UnlockedContent/Worlds/Castle/Valley_Path_To_Castle_Beat1.wld": 1
+        }
+    }
+}

@@ -1,0 +1,74 @@
+/* Global */
+#define AMBIENT_VALUE 0.7
+#define OPTIMIZED 1
+// #define DIRECT_LIGHTING 2
+
+#define DEG2RAD 0.0174532925
+#define RAD2DEG 57.2957795
+
+/* Platform specific */
+#ifdef __PSSL__
+
+#define FORCE_DEPTH_TEST [FORCE_EARLY_DEPTH_STENCIL]
+
+#define STRUCTURED_BUFFER(x) RegularBuffer<x>
+#define BUFFER(x) RegularBuffer<x>
+#define RW_BUFFER(x) RW_RegularBuffer<x>
+
+#define VOXEL_FORMAT uint
+
+#define VOXEL_BUFFER BUFFER(VOXEL_FORMAT)
+#define VOXEL_RW_BUFFER RW_BUFFER(VOXEL_FORMAT)
+
+#define EMPTY_VOXEL 0
+
+#define CONSTANT_BUFFER ConstantBuffer
+
+#define VERT_ID S_VERTEX_ID
+#define INST_ID S_INSTANCE_ID
+#define POS_OUT S_POSITION
+
+#define TAR_OUT S_TARGET_OUTPUT
+#define TAR_OUT0 S_TARGET_OUTPUT0
+#define TAR_OUT1 S_TARGET_OUTPUT1
+#define TAR_OUT2 S_TARGET_OUTPUT2
+#define TAR_OUT3 S_TARGET_OUTPUT3
+#define TAR_OUT4 S_TARGET_OUTPUT4
+#define TAR_OUT5 S_TARGET_OUTPUT5
+#define TAR_OUT6 S_TARGET_OUTPUT6
+#define TAR_OUT7 S_TARGET_OUTPUT7
+#define TAR_OUT8 S_TARGET_OUTPUT8
+
+#else
+
+#define FORCE_DEPTH_TEST [earlydepthstencil]
+
+#define STRUCTURED_BUFFER(x) StructuredBuffer<x>
+#define BUFFER(x) Buffer<x>
+#define RW_BUFFER(x) RWBuffer<x>
+
+#define VOXEL_FORMAT float4
+
+#define VOXEL_BUFFER BUFFER(VOXEL_FORMAT)
+#define VOXEL_RW_BUFFER RW_BUFFER(VOXEL_FORMAT)
+
+#define EMPTY_VOXEL float4(0.0, 0.0, 0.0, 0.0)
+
+#define CONSTANT_BUFFER cbuffer
+
+#define VERT_ID SV_VERTEXID
+#define INST_ID SV_INSTANCEID
+#define POS_OUT SV_POSITION
+
+#define TAR_OUT SV_TARGET
+#define TAR_OUT0 SV_TARGET0
+#define TAR_OUT1 SV_TARGET1
+#define TAR_OUT2 SV_TARGET2
+#define TAR_OUT3 SV_TARGET3
+#define TAR_OUT4 SV_TARGET4
+#define TAR_OUT5 SV_TARGET5
+#define TAR_OUT6 SV_TARGET6
+#define TAR_OUT7 SV_TARGET7
+#define TAR_OUT8 SV_TARGET8
+
+#endif
