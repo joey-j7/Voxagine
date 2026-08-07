@@ -20,8 +20,10 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
-      # Builds Game.vcxproj directly (pulls in Voxagine.vcxproj via project
-      # reference). UnitTesting is excluded: its gtest usage requires C++17
-      # but the project doesn't set a language standard.
+      # Target only the Game project (pulls in Voxagine via project
+      # reference, skips UnitTesting/SplodyMcSplodeFace). Must go through the
+      # .sln, not the .vcxproj directly - $(SolutionDir), which every lib
+      # path in Voxagine.vcxproj depends on, is only set when MSBuild is
+      # invoked via the solution.
       - name: Build ${{ matrix.configuration }}|x64
-        run: msbuild Game\Game.vcxproj /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /m
+        run: msbuild Voxagine.sln /t:Game /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /m
