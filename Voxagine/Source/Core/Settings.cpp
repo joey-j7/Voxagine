@@ -8,9 +8,9 @@ RTTR_REGISTRATION
 {
 	rttr::registration::enumeration<PlatformType>("E_PlatformType")
 	(
+		rttr::value("PT_LINUX", PlatformType::PT_LINUX),
 		rttr::value("PT_WINDOWS", PlatformType::PT_WINDOWS),
 		rttr::value("PT_SWITCH", PlatformType::PT_SWITCH),
-		rttr::value("PT_ORBIS", PlatformType::PT_ORBIS),
 		rttr::value("PT_ANDROID", PlatformType::PT_ANDROID)
 	);
 
@@ -22,11 +22,7 @@ RTTR_REGISTRATION
 
 	rttr::registration::enumeration<RenderingAPI>("E_RenderingAPI")
 	(
-		rttr::value("RA_DIRECTX12", RenderingAPI::RA_DIRECTX12),
-		rttr::value("RA_OPENGL", RenderingAPI::RA_OPENGL),
-		rttr::value("RA_OPENGLES", RenderingAPI::RA_OPENGLES),
-		rttr::value("RA_VULKAN", RenderingAPI::RA_VULKAN),
-		rttr::value("RA_ORBIS", RenderingAPI::RA_ORBIS)
+		rttr::value("RA_VULKAN", RenderingAPI::RA_VULKAN)
 	);
 
 	rttr::registration::class_<Settings>("Settings")

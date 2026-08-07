@@ -10,11 +10,7 @@
 
 enum RenderingAPI
 {
-	RA_DIRECTX12,
-	RA_OPENGL,
-	RA_OPENGLES,
-	RA_VULKAN,
-	RA_ORBIS
+	RA_VULKAN
 };
 
 enum AudioAPI
@@ -25,9 +21,9 @@ enum AudioAPI
 
 enum PlatformType
 {
+	PT_LINUX,
 	PT_WINDOWS,
 	PT_SWITCH,
-	PT_ORBIS,
 	PT_ANDROID
 };
 
@@ -91,13 +87,12 @@ private:
 	std::string m_EngineAssetsPath = "Engine/Assets";
 	std::string m_FontPath = "Engine/Assets/Fonts/PressStart.spritefont";
 
-#ifdef _ORBIS
-	PlatformType m_PlatformType = PT_ORBIS;
-	RenderingAPI m_RenderApiType = RA_ORBIS;
-#else
+#ifdef _WINDOWS
 	PlatformType m_PlatformType = PT_WINDOWS;
-	RenderingAPI m_RenderApiType = RA_DIRECTX12;
+#else
+	PlatformType m_PlatformType = PT_LINUX;
 #endif
+	RenderingAPI m_RenderApiType = RA_VULKAN;
 
 	AudioAPI m_AudioApiType = AA_FMOD;
 

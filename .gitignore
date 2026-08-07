@@ -1,4 +1,9 @@
-# Visual Studio / MSVC build output
+# CMake build output
+build/
+compile_commands.json
+CMakeUserPresets.json
+
+# Legacy Visual Studio / MSVC build output
 [Dd]ebug/
 [Dd]ebugEditor/
 [Dd]ebugGame/

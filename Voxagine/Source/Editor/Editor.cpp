@@ -1447,15 +1447,6 @@ void Editor::RenderWindowRenderInfo()
 
 			switch (GetApplication()->GetSettings().GetRenderAPIType())
 			{
-			case RA_DIRECTX12:
-				renderingType = "DirectX 12";
-				break;
-			case RA_OPENGL:
-				renderingType = "OpenGL";
-				break;
-			case RA_OPENGLES:
-				renderingType = "OpenGLES";
-				break;
 			case RA_VULKAN:
 				renderingType = "Vulkan";
 				break;

@@ -1,4 +1,4 @@
-name: Build & Test
+name: Build
 
 on:
   push:
@@ -8,22 +8,37 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        configuration: [DebugEditor, DebugGame, ReleaseEditor, ReleaseGame]
+        build_type: [Debug, Release]
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Add MSBuild to PATH
-        uses: microsoft/setup-msbuild@v2
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libvulkan-dev vulkan-validationlayers \
+                                  libwayland-dev libxkbcommon-dev libx11-dev \
+                                  libxrandr-dev libxi-dev libxcursor-dev
 
-      # Target only the Game project (pulls in Voxagine via project
-      # reference, skips UnitTesting/SplodyMcSplodeFace). Must go through the
-      # .sln, not the .vcxproj directly - $(SolutionDir), which every lib
-      # path in Voxagine.vcxproj depends on, is only set when MSBuild is
-      # invoked via the solution.
-      - name: Build ${{ matrix.configuration }}|x64
-        run: msbuild Voxagine.sln /t:Game /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /m
+      # Ubuntu does not package SDL3 yet, so build the release tag we target.
+      - name: Build SDL3
+        run: |
+          git clone --depth 1 --branch release-3.2.0 https://github.com/libsdl-org/SDL.git sdl3
+          cmake -S sdl3 -B sdl3/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release -DSDL_SHARED=ON -DSDL_STATIC=OFF
+          cmake --build sdl3/build
+          sudo cmake --install sdl3/build
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+      # Compile and link only. The runner has no GPU and no display, so the
+      # clear-screen loop is not exercised here; run voxagine_bringup locally
+      # to verify presentation. Adding a lavapipe + SDL_VIDEODRIVER=offscreen
+      # job would make that testable in CI.
+      - name: Build
+        run: cmake --build build
