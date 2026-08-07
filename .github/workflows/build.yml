@@ -1,0 +1,29 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [DebugEditor, DebugGame, ReleaseEditor, ReleaseGame]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      # Target only the Game project (pulls in Voxagine via project
+      # reference, skips UnitTesting/SplodyMcSplodeFace). Must go through the
+      # .sln, not the .vcxproj directly - $(SolutionDir), which every lib
+      # path in Voxagine.vcxproj depends on, is only set when MSBuild is
+      # invoked via the solution.
+      - name: Build ${{ matrix.configuration }}|x64
+        run: msbuild Voxagine.sln /t:Game /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /m
