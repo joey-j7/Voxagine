@@ -1,5 +1,7 @@
 # Voxagine + Bit Buster
 
+[![Build & Test](https://github.com/joey-j7/Voxagine/actions/workflows/build.yml/badge.svg)](https://github.com/joey-j7/Voxagine/actions/workflows/build.yml)
+
 Voxagine is a custom C++ game engine built as a second-year project at
 [IGAD](https://www.igad.nl/) (Breda University of Applied Sciences). It ships
 with an ImGui-based level/entity editor and a couch co-op game, **Bit

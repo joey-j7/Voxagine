@@ -1,0 +1,41 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [DebugEditor, DebugGame, ReleaseEditor, ReleaseGame]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # UnitTesting/Libs/GoogleTest and GoogleMock are not checked in (stripped
+      # for size), but UnitTests.vcxproj still links gtest/gmock by name.
+      # vcpkg integrate install injects matching include/lib paths globally.
+      - name: Install GoogleTest/GoogleMock via vcpkg
+        run: |
+          vcpkg install gtest:x64-windows
+          vcpkg integrate install
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build ${{ matrix.configuration }}|x64
+        run: msbuild Voxagine.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /m
+
+      - name: Run unit tests
+        if: contains(matrix.configuration, 'Debug')
+        shell: pwsh
+        run: |
+          $dir = "Builds\x64\${{ matrix.configuration }}\UnitTests"
+          Copy-Item "UnitTesting\UnitTests\fmod64.dll" $dir
+          Copy-Item "UnitTesting\UnitTests\fmodL64.dll" $dir
+          & "$dir\UnitTests.exe"
