@@ -3,8 +3,8 @@
 
 #include "Core/Math.h"
 
-#include <External/rttr/registration>
-#include <External/rttr/policy.h>
+#include <rttr/registration>
+#include <rttr/policy.h>
 #include "Editor/PropertyRenderer/TransformMetaData.h"
 #include "Core/MetaData/PropertyTypeMetaData.h"
 

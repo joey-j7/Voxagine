@@ -5,7 +5,7 @@
 
 #include "Core/Application.h"
 
-#include <External/rttr/registration>
+#include <rttr/registration>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 #include "Core/ECS/Systems/Rendering/RenderSystem.h"
 #include "Core/Platform/Platform.h"

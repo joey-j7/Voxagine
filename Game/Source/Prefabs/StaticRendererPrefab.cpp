@@ -1,6 +1,6 @@
 #include "StaticRendererPrefab.h"
 
-#include "External/rttr/registration.h"
+#include "rttr/registration.h"
 
 #include "Core/ECS/World.h"
 

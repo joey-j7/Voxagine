@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "PathfinderGroup.h"
 
-#include <External/rttr/registration>
+#include <rttr/registration>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 #include "Core/ECS/Systems/Pathfinding/Navigation/Pathfinder.h"
 #include "Core/ECS/Systems/Pathfinding/Grid/PathfindingChunkGrid.h"

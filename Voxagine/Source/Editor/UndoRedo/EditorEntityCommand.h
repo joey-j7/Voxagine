@@ -3,7 +3,7 @@
 #include "Editor/UndoRedo/EditorStateCommand.h"
 #include "Core/JsonSerializer.h"
 #include <External/rapidjson/document.h>
-#include <External/rttr/type.h>
+#include <rttr/type.h>
 
 class JsonSerializer;
 class Entity;

@@ -5,11 +5,11 @@
 #include "Bullet.h"
 #include "Humanoids/Players/Player.h"
 
-#include <External/rttr/registration>
-#include <External/rttr/policy.h>
+#include <rttr/registration>
+#include <rttr/policy.h>
 
-// #include <External/rttr/registration>
-// #include <External/rttr/policy.h>
+// #include <rttr/registration>
+// #include <rttr/policy.h>
 #include "General/Managers/WeaponManager.h"
 #include "Core/MetaData/PropertyTypeMetaData.h"
 

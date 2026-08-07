@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "RandomMonster.h"
 
-#include <External/rttr/registration.h>
+#include <rttr/registration.h>
 
 RTTR_REGISTRATION
 {

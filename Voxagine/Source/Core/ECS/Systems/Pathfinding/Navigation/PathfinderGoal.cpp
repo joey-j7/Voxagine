@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Core/ECS/Systems/Pathfinding/Navigation/PathfinderGoal.h"
 
-#include <External/rttr/registration>
+#include <rttr/registration>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
 RTTR_REGISTRATION

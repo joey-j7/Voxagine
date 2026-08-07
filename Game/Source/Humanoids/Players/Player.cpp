@@ -14,8 +14,8 @@
 #include "Prefabs/RecallPrefab.h"
 #include "Weapons/Bullet.h"
 
-#include <External/rttr/registration.h>
-#include <External/rttr/policy.h>
+#include <rttr/registration.h>
+#include <rttr/policy.h>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
 #include <Core/GameTimer.h>

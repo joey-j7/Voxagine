@@ -2,7 +2,7 @@
 
 #include "Canvas.h"
 
-#include <External/rttr/registration>
+#include <rttr/registration>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
 #include "Core/ECS/Components/UI/UIButton.h"

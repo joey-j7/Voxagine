@@ -2,7 +2,7 @@
 
 #include <Core/Objects/TSubclass.h>
 
-#include <External/rttr/type>
+#include <rttr/type>
 
 class Spawner;
 

@@ -8,7 +8,7 @@
 #include "AI/Spawner/SpawnerEntity.h"
 
 
-#include "External/rttr/registration.h"
+#include "rttr/registration.h"
 
 RTTR_REGISTRATION
 {

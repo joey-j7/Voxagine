@@ -1,6 +1,6 @@
 #pragma once
 #include "Core/ECS/Component.h"
-#include <External/rttr/type>
+#include <rttr/type>
 
 class ChunkViewer : public Component
 {

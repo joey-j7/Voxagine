@@ -1,7 +1,7 @@
 #include "ComboUI.h"
 #include "Core/ECS/World.h"
-#include <External/rttr/registration>
-#include <External/rttr/policy.h>
+#include <rttr/registration>
+#include <rttr/policy.h>
 #include <Core/ECS/Components/SpriteRenderer.h>
 #include "Core/ECS/Components/TextRenderer.h"
 #include "Core/MetaData/PropertyTypeMetaData.h"

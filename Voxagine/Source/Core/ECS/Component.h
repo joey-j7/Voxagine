@@ -3,8 +3,8 @@
 #include "Core/Event.h"
 #include "Core/ECS/Entity.h"
 
-#include <External/rttr/type>
-#include <External/rttr/registration_friend> 
+#include <rttr/type>
+#include <rttr/registration_friend> 
 
 class Transform;
 class Component

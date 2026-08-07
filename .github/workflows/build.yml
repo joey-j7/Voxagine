@@ -33,8 +33,14 @@ jobs:
           cmake --build sdl3/build
           sudo cmake --install sdl3/build
 
+      # VOXAGINE_CHECK_RTTR fetches RTTR and compiles Core/Settings.cpp against
+      # it. That is the only thing currently proving the reflection dependency
+      # works off Windows, so it stays on until the engine target builds.
       - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DVOXAGINE_CHECK_RTTR=ON
 
       # Compile and link only. The runner has no GPU and no display, so the
       # clear-screen loop is not exercised here; run voxagine_bringup locally

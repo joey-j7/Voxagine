@@ -2,7 +2,7 @@
 
 #include "Core/ECS/Component.h"
 
-#include <External/rttr/type>
+#include <rttr/type>
 
 #include "Core/Math.h"
 #include "Core/VColors.h"

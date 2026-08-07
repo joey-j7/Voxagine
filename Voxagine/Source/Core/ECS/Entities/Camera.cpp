@@ -9,7 +9,7 @@
 #include "Core/Platform/Window/WindowContext.h"
 #include <Core/Platform/Platform.h>
 #include "Core/ECS/Systems/Physics/VoxelGrid.h"
-#include <External/rttr/registration>
+#include <rttr/registration>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
 RTTR_REGISTRATION

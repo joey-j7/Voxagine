@@ -3,7 +3,7 @@
 #include "Humanoids/Players/Player.h"
 #include "Core/ECS/Components/UI/UISlider.h"
 
-#include <External/rttr/registration>
+#include <rttr/registration>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
 RTTR_REGISTRATION

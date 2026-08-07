@@ -50,6 +50,17 @@ Building and running today:
 
 - `voxagine_vulkan` — instance/device/swapchain, per-frame sync, clear + present
 - `voxagine_bringup` — SDL3 window driving the above
+- `voxagine_reflection_check` — compiles `Core/Settings.cpp` against RTTR, so
+  the reflection dependency is proven on Linux ahead of the engine target:
+
+  ```bash
+  cmake -S . -B build -G Ninja -DVOXAGINE_CHECK_RTTR=ON && cmake --build build
+  ```
+
+  RTTR was the blocker here: it was vendored as 126 headers with no sources
+  and only a Windows `rttr_core.lib`. That copy is gone. CMake now uses an
+  installed RTTR if there is one and otherwise fetches upstream v0.9.6 — the
+  same version the headers came from. The default build needs no network.
 
 Not yet building (`-DVOXAGINE_BUILD_ENGINE=ON` is off by default). The engine
 library is blocked on vendored dependencies that only exist here as Windows
@@ -57,7 +68,6 @@ binaries:
 
 | Dependency | State |
 |------------|-------|
-| RTTR | Headers only, no sources and no Linux library. 63 engine files use it. CMake fetches upstream v0.9.6 when the engine target is enabled. |
 | FMOD | Proprietary; needs the Linux SDK downloaded by hand. Off behind `VOXAGINE_ENABLE_FMOD`. |
 | Optick | Vendored headers reference a Windows-only `OptickCore.lib`. Off behind `VOXAGINE_ENABLE_OPTICK`. |
 | nativefiledialog | Needs the GTK backend from upstream. Off behind `VOXAGINE_ENABLE_NFD`. |

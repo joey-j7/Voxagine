@@ -2,7 +2,7 @@
 #include "OgreMonster.h"
 
 #include <Core/ECS/Components/PhysicsBody.h>
-#include <External/rttr/registration.h>
+#include <rttr/registration.h>
 #include <Core/MetaData/PropertyTypeMetaData.h>
 #include <External/glm/gtx/vector_angle.hpp>
 

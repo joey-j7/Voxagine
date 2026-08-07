@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Humanoid.h"
 
-#include "External/rttr/registration.h"
+#include "rttr/registration.h"
 
 #include "Core/ECS/Entity.h"
 #include <Core/ECS/Components/Transform.h>

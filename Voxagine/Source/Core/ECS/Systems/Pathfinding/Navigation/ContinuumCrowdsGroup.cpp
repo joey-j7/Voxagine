@@ -2,7 +2,7 @@
 #include "Core/ECS/Systems/Pathfinding/Navigation/ContinuumCrowdsGroup.h"
 
 #include <limits>
-#include <External/rttr/registration>
+#include <rttr/registration>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 #include "Core/Application.h"
 #include "Core/ECS/World.h"

@@ -4,7 +4,7 @@
 #include "Core/Application.h"
 #include "Core/ECS/World.h"
 
-#include <External/rttr/registration>
+#include <rttr/registration>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
 #include "External/DirectXTK12/GamePad.h"

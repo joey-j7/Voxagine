@@ -3,7 +3,7 @@
 
 #include "Core/ECS/World.h"
 
-#include <External/rttr/registration.h>
+#include <rttr/registration.h>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
 #include "../../Entity.h"

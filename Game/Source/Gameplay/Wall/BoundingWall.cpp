@@ -1,6 +1,6 @@
 ﻿#include "BoundingWall.h"
 
-#include <External/rttr/registration>
+#include <rttr/registration>
 
 #include "Core/ECS/World.h"
 

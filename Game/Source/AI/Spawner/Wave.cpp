@@ -1,6 +1,6 @@
 ﻿#include "Wave.h"
 
-#include <External/rttr/policy.h>
+#include <rttr/policy.h>
 
 #include "Core/MetaData/PropertyTypeMetaData.h"
 

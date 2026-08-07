@@ -6,7 +6,7 @@
 #include "Core/ECS/Components/VoxRenderer.h"
 #include "Core/ECS/Components/BoxCollider.h"
 
-#include "External/rttr/registration.h"
+#include "rttr/registration.h"
 
 RTTR_REGISTRATION
 {

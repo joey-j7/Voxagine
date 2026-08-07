@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include <External/rttr/registration>
-#include <External/rttr/registration_friend>
+#include <rttr/registration>
+#include <rttr/registration_friend>
 
 class Entity;
 

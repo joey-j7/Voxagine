@@ -2,7 +2,7 @@
 #include "UmbrellaMonster.h"
 
 #include <Core/ECS/Systems/Pathfinding/Navigation/Pathfinder.h>
-#include <External/rttr/registration.h>
+#include <rttr/registration.h>
 #include <Core/MetaData/PropertyTypeMetaData.h>
 #include "Core/ECS/Components/AudioSource.h"
 #include "Core/ECS/Components/PhysicsBody.h"

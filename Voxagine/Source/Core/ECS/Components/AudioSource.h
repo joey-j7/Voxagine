@@ -4,7 +4,7 @@
 #include "Core/ECS/Systems/Rendering/RenderSystem.h"
 #include "Core/Resources/Formats/SoundReference.h"
 
-#include <External/rttr/type>
+#include <rttr/type>
 
 class AudioSystem;
 

@@ -3,8 +3,8 @@
 
 #include "Core/Math.h"
 
-#include <External/rttr/type>
-#include <External/rttr/registration_friend> 
+#include <rttr/type>
+#include <rttr/registration_friend> 
 
 static const float PI = 3.14159265359f;
 

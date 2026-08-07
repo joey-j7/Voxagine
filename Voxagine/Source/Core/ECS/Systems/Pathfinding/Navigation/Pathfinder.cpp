@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Pathfinder.h"
 
-#include "External/rttr/registration.h"
+#include "rttr/registration.h"
 #include "Core/MetaData/PropertyTypeMetaData.h"
 #include "Core/Application.h"
 #include "Core/ECS/World.h"

@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Core/ECS/Systems/Pathfinding/Grid/PathfindingObstacle.h"
 
-#include <External/rttr/registration>
+#include <rttr/registration>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 #include "Core/ECS/Components/BoxCollider.h"
 #include "Core/ECS/Systems/Pathfinding/Grid/PathfindingChunkGrid.h"

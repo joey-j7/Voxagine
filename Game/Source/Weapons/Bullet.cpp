@@ -12,8 +12,8 @@
 #include "Core/ECS/Systems/Rendering/RenderSystem.h"
 #include "General/Managers/WeaponManager.h"
 
-#include <External/rttr/registration.h>
-#include <External/rttr/policy.h>
+#include <rttr/registration.h>
+#include <rttr/policy.h>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
 #include "Core/Math.h"

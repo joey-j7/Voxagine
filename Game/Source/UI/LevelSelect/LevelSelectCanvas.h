@@ -6,7 +6,7 @@
 
 #include "Core/Objects/VClass.h"
 
-#include <External/rttr/type>
+#include <rttr/type>
 
 class World;
 class SpriteRenderer;
