@@ -1,0 +1,24 @@
+# Visual Studio / MSVC build output
+[Dd]ebug/
+[Dd]ebugEditor/
+[Dd]ebugGame/
+[Rr]elease/
+[Rr]eleaseEditor/
+[Rr]eleaseGame/
+x64/
+x86/
+*.obj
+*.ilk
+*.pdb
+*.idb
+*.log
+*.tlog/
+*.vcxproj.user
+*.vcxproj.FileListAbsolute.txt
+*.sdf
+*.opensdf
+*.suo
+.vs/
+
+# OAuth/credential files — never commit real tokens
+**/token_v2.json
