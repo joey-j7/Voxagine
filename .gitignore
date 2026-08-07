@@ -25,5 +25,10 @@ x86/
 *.suo
 .vs/
 
+# Editors / IDEs
+.idea/
+.cache/
+*.swp
+
 # OAuth/credential files — never commit real tokens
 **/token_v2.json
