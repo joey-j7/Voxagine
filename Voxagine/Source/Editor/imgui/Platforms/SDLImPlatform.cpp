@@ -28,7 +28,9 @@ void SDLImPlatform::NewFrame()
 
 	float fX = 0.f;
 	float fY = 0.f;
-	const SDL_MouseButtonFlags buttons = SDL_GetMouseState(&fX, &fY);
+	SDLWindowContext::GetMousePositionInPixels(&fX, &fY);
+
+	const SDL_MouseButtonFlags buttons = SDL_GetMouseState(nullptr, nullptr);
 
 	io.MousePos = ImVec2(fX, fY);
 	io.MouseDown[0] = (buttons & SDL_BUTTON_LMASK) != 0;

@@ -34,6 +34,11 @@ public:
 
 	bool ShouldClose() const { return m_bShouldClose; }
 
+	/* Cursor in framebuffer pixels. SDL reports logical units, which differ
+	   from pixels on a high-density window, and everything downstream wants
+	   pixels. */
+	static void GetMousePositionInPixels(float* pfX, float* pfY);
+
 	/* True from the moment SDL reports a resize until the renderer clears it
 	   by rebuilding the swapchain. */
 	bool ConsumeResizeRequest();

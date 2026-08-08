@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "SDLMouse.h"
 
+#include "Core/Platform/Window/SDL/SDLWindowContext.h"
+
 #include <SDL3/SDL.h>
 
 Mouse* Mouse::s_pInstance = nullptr;
@@ -37,7 +39,9 @@ Mouse::State Mouse::GetState() const
 
 	float fX = 0.f;
 	float fY = 0.f;
-	const SDL_MouseButtonFlags buttons = SDL_GetMouseState(&fX, &fY);
+	SDLWindowContext::GetMousePositionInPixels(&fX, &fY);
+
+	const SDL_MouseButtonFlags buttons = SDL_GetMouseState(nullptr, nullptr);
 
 	state.x = static_cast<int>(fX);
 	state.y = static_cast<int>(fY);

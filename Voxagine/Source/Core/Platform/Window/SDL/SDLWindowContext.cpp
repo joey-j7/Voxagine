@@ -35,7 +35,10 @@ void SDLWindowContext::CreateWindow()
 {
 	Settings& settings = m_pPlatform->GetApplication()->GetSettings();
 
-	SDL_WindowFlags flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE;
+	/* Without HIGH_PIXEL_DENSITY a fractionally scaled display gives us a
+	   logical-size surface that the compositor upscales, softening the whole
+	   frame. With it, SDL_GetWindowSizeInPixels is the true size. */
+	SDL_WindowFlags flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
 	if (settings.IsFullscreen())
 		flags |= SDL_WINDOW_FULLSCREEN;
 
@@ -71,6 +74,21 @@ void SDLWindowContext::Initialize()
 	int iY = 0;
 	SDL_GetWindowPosition(m_pWindow, &iX, &iY);
 	m_v2Position = UVector2(static_cast<uint32_t>(iX), static_cast<uint32_t>(iY));
+}
+
+void SDLWindowContext::GetMousePositionInPixels(float* pfX, float* pfY)
+{
+	SDL_GetMouseState(pfX, pfY);
+
+	/* Null when the cursor is outside our windows; logical is the best
+	   answer there. */
+	const float fDensity = SDL_GetWindowPixelDensity(SDL_GetMouseFocus());
+
+	if (fDensity <= 0.f)
+		return;
+
+	*pfX *= fDensity;
+	*pfY *= fDensity;
 }
 
 std::vector<const char*> SDLWindowContext::GetRequiredInstanceExtensions() const
