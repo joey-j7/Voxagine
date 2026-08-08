@@ -33,8 +33,8 @@ void HealthUI::AddComponents()
 	m_pSpriteRenderer->SetFilePath(healthSprite);
 	m_pSpriteRenderer->SetAlignment(RA_CENTERED);
 	m_pSpriteRenderer->SetScreenAlignment(RA_CENTERED);
-	m_pSpriteRenderer->SetToScreenSpace(TRUE);
-	m_pSpriteRenderer->SetScaleWithScreen(TRUE);
+	m_pSpriteRenderer->SetToScreenSpace(true);
+	m_pSpriteRenderer->SetScaleWithScreen(true);
 }
 
 void HealthUI::SetHealthCullingEnd(float currentHealth)

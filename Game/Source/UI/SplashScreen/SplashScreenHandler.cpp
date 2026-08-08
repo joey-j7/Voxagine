@@ -4,7 +4,7 @@
 
 #include "Core/ECS/Components/SpriteRenderer.h"
 
-#include <External\glm\gtx\compatibility.hpp>
+#include <External/glm/gtx/compatibility.hpp>
 
 #include "Core/ECS/World.h"
 #include "Core/Application.h"

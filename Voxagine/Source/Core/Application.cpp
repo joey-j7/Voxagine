@@ -125,6 +125,11 @@ void Application::Run()
 				pCamera = activeWorld->GetMainCamera();
 			}
 
+			/* pCamera is null-checked into existence above and was then
+			   dereferenced unconditionally. A world with no main camera - or
+			   no world at all, before a level finishes loading - crashed here. */
+			if (pCamera != nullptr)
+			{
 			m_Platform.GetRenderContext()->SetCameraData(
 				CameraRenderData(
 					pCamera->GetMVP(),
@@ -143,6 +148,7 @@ void Application::Run()
 			);
 
 			pCamera->SetRecalculated(false);
+			}
 
 			if (activeWorld)
 			{
@@ -186,6 +192,10 @@ void Application::Run()
 				pCamera = activeWorld->GetMainCamera();
 			}
 
+			/* Same block as the fixed-step path above: pCamera is null-checked
+			   into existence and was then dereferenced regardless. */
+			if (pCamera != nullptr)
+			{
 			m_Platform.GetRenderContext()->SetCameraData(
 				CameraRenderData(
 					pCamera->GetMVP(),
@@ -204,6 +214,7 @@ void Application::Run()
 			);
 
 			pCamera->SetRecalculated(false);
+			}
 
 			if (activeWorld)
 			{

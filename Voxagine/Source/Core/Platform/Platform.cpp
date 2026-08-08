@@ -16,7 +16,11 @@
 #include "Editor/imgui/Contexts/VKImContext.h"
 #include "Editor/imgui/Platforms/SDLImPlatform.h"
 
+#ifdef VOXAGINE_FMOD
 #include "Audio/FMODContext.h"
+#else
+#include "Audio/NullAudioContext.h"
+#endif
 
 #include <filesystem>
 
@@ -82,7 +86,12 @@ void Platform::Initialize()
 	/* Setup rendering API */
 	switch (audioApi) {
 	case AA_FMOD:
+#ifdef VOXAGINE_FMOD
 		m_pAudioContext = new FMODContext(this);
+#else
+		/* FMOD needs a proprietary SDK; run silent rather than not at all. */
+		m_pAudioContext = new NullAudioContext(this);
+#endif
 		m_pAudioContext->Initialize();
 		break;
 	default:

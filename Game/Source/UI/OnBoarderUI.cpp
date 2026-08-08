@@ -4,7 +4,7 @@
 
 #include <Core/ECS/Components/BoxCollider.h>
 
-#include <External\glm\gtx\compatibility.hpp>
+#include <External/glm/gtx/compatibility.hpp>
 
 #include <rttr/registration>
 #include "Core/MetaData/PropertyTypeMetaData.h"

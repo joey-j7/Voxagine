@@ -1,13 +1,9 @@
 #include "pch.h"
+
+#include "Core/Platform/Input/SDL/SDLKeyboard.h"
 #include "KeyboardController.h"
 
-#ifdef _WINDOWS
-#include <wrl/wrappers/corewrappers.h>
-#include <External/DirectXTK12/Keyboard.h>
-#endif
 
-#ifdef _ORBIS
-#endif
 
 // Initialization of boolean indicating libraries being initialized
 bool KeyboardController::m_bInitLibraries = false;
@@ -30,14 +26,13 @@ InputBindingAxisValue KeyboardController::GetAxisValue(InputKey inputKey) const
 	return inputBindingAxisValue;
 }
 
-#ifdef _WINDOWS
 void KeyboardController::OnInitialize()
 {
 	// Skip if libraries or dependencies have been initialized
 	if (!m_bInitLibraries)
 	{
 		// Create DirectX keyboard singleton
-		new DirectX::Keyboard();
+		new Keyboard();
 
 		m_bInitLibraries = true;
 	}
@@ -46,16 +41,16 @@ void KeyboardController::OnInitialize()
 void KeyboardController::OnUninitialize()
 {
 	// Delete DirectX keyboard singleton
-	delete &DirectX::Keyboard::Get();
+	delete &Keyboard::Get();
 }
 
 void KeyboardController::OnUpdate()
 {
 	// Get the keyboard and state
-	DirectX::Keyboard::State keyboardState = DirectX::Keyboard::Get().GetState();
+	Keyboard::State keyboardState = Keyboard::Get().GetState();
 
 	// Update keyboard connected state
-	SetConnected(DirectX::Keyboard::Get().IsConnected());
+	SetConnected(Keyboard::Get().IsConnected());
 
 	// Update keyboard button states
 	UpdateKeyState(IK_BACK, keyboardState.Back);
@@ -173,21 +168,7 @@ void KeyboardController::OnUpdate()
 	UpdateKeyState(IK_LEFTALT, keyboardState.LeftAlt);
 	UpdateKeyState(IK_RIGHTALT, keyboardState.RightAlt);
 }
-#endif
 
-#ifdef _ORBIS
-void KeyboardController::OnInitialize()
-{
-}
-
-void KeyboardController::OnUninitialize()
-{
-}
-
-void KeyboardController::OnUpdate()
-{
-}
-#endif
 
 void KeyboardController::InitializeButtons()
 {

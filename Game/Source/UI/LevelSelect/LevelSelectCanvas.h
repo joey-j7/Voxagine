@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core\ECS\Entities\UI\Canvas.h"
+#include "Core/ECS/Entities/UI/Canvas.h"
 
 #include "Core/Math.h"
 

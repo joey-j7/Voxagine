@@ -7,6 +7,8 @@
 set(VOXAGINE_ENGINE_SOURCES
     ${VOXAGINE_SOURCE_DIR}/Core/Application.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Input/SDL/SDLGamePad.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Input/SDL/SDLKeyboard.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Input/SDL/SDLMouse.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/ECS/Component.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/ECS/Components/AudioPlaylist.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/ECS/Components/AudioSource.cpp
@@ -74,7 +76,8 @@ set(VOXAGINE_ENGINE_SOURCES
     ${VOXAGINE_SOURCE_DIR}/Core/Objects/TSubclass.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Objects/VClass.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Audio/AudioContext.cpp
-    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Audio/FMODContext.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Audio/NullAudioContext.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Resources/Formats/NullSoundReference.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Input/InputContext.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Input/Temp/GamePadController.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Input/Temp/InputBindingAction.cpp
@@ -117,7 +120,6 @@ set(VOXAGINE_ENGINE_SOURCES
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Window/SDL/SDLWindowContext.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Window/WindowContext.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/PlayerPrefs/PlayerPrefs.cpp
-    ${VOXAGINE_SOURCE_DIR}/Core/Resources/Formats/FMODSoundReference.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Resources/Formats/ShaderReference.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Resources/Formats/TextureReference.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Resources/Formats/VoxModel.cpp
@@ -181,4 +183,12 @@ set(VOXAGINE_ENGINE_SOURCES
     ${VOXAGINE_SOURCE_DIR}/External/STB/image_DXT.c
     ${VOXAGINE_SOURCE_DIR}/External/STB/image_helper.c
     ${VOXAGINE_SOURCE_DIR}/External/STB/stb_image_aug.c
+)
+
+# FMOD is a proprietary SDK downloaded by hand, so its translation units are
+# only compiled when VOXAGINE_ENABLE_FMOD is on. NullAudioContext stands in
+# otherwise and the engine runs silent.
+set(VOXAGINE_FMOD_SOURCES
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Audio/FMODContext.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Resources/Formats/FMODSoundReference.cpp
 )

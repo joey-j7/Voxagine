@@ -36,7 +36,7 @@ void ComboUI::AddComponents()
 	m_pTextRenderer->SetText("Combo: 0");
 	m_pTextRenderer->SetAlignment(RA_CENTERED);
 	m_pTextRenderer->SetScreenAlignment(RA_CENTERED);
-	m_pTextRenderer->SetScaleWithScreen(TRUE);
+	m_pTextRenderer->SetScaleWithScreen(true);
 	
 }
 

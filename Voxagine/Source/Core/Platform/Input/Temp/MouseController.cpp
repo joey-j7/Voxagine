@@ -1,16 +1,11 @@
 #include "pch.h"
+
+#include "Core/Platform/Input/SDL/SDLMouse.h"
 #include "MouseController.h"
 
 #include "Core/Platform/Window/WindowContext.h"
 
-#ifdef _WINDOWS
-#include <wrl/wrappers/corewrappers.h>
-#include <External/DirectXTK12/Mouse.h>
-#endif
 
-#ifdef _ORBIS
-#include <mouse.h>
-#endif
 
 // Initialization of boolean indicating libraries being initialized
 bool MouseController::m_bInitLibraries = false;
@@ -24,7 +19,6 @@ MouseController::~MouseController()
 {
 }
 
-#ifdef _WINDOWS
 void MouseController::OnInitialize()
 {
 	// Skip if libraries or dependencies have been initialized
@@ -32,8 +26,8 @@ void MouseController::OnInitialize()
 	{
 		// Create DirectX mouse singleton
 		// Set DirectX mouse Window handle
-		new DirectX::Mouse();
-		DirectX::Mouse::Get().SetWindow(*(HWND*)GetWindowContext()->GetHandle());
+		new Mouse();
+		Mouse::Get().SetWindow(GetWindowContext()->GetHandle());
 
 		m_bInitLibraries = true;
 	}
@@ -42,16 +36,16 @@ void MouseController::OnInitialize()
 void MouseController::OnUninitialize()
 {
 	// Delete DirectX mouse singleton
-	delete &DirectX::Mouse::Get();
+	delete &Mouse::Get();
 }
 
 void MouseController::OnUpdate()
 {
 	// Get the mouse and state
-	DirectX::Mouse::State mouseState = DirectX::Mouse::Get().GetState();
+	Mouse::State mouseState = Mouse::Get().GetState();
 
 	// Update mouse connected state
-	SetConnected(DirectX::Mouse::Get().IsConnected());
+	SetConnected(Mouse::Get().IsConnected());
 
 	// Update mouse button states
 	UpdateKeyState(IK_MOUSEBUTTONLEFT, mouseState.leftButton);
@@ -70,21 +64,7 @@ void MouseController::OnUpdate()
 	UpdateAxisValue(IK_MOUSEAXISY, static_cast<float>(mouseState.y));
 	UpdateAxisValue(IK_MOUSEWHEELAXIS, static_cast<float>(mouseState.scrollWheelValue));
 }
-#endif
 
-#ifdef _ORBIS
-void MouseController::OnInitialize()
-{
-}
-
-void MouseController::OnUninitialize()
-{
-}
-
-void MouseController::OnUpdate()
-{
-}
-#endif
 
 void MouseController::InitializeButtons()
 {

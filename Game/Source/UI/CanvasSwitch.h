@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core\ECS\Components\BehaviorScript.h"
+#include "Core/ECS/Components/BehaviorScript.h"
 
 class UIButton;
 class Canvas;

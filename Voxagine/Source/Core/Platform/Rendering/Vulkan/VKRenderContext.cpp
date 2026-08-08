@@ -8,6 +8,8 @@
 
 #include "Core/Resources/Formats/ShaderReference.h"
 
+#include "External/imgui/imgui.h"
+
 #include <cstdio>
 
 VKRenderContext::VKRenderContext(Platform* pPlatform) : RenderContext(pPlatform)
@@ -107,8 +109,13 @@ bool VKRenderContext::Present()
 	if (!m_bBackendReady)
 		return false;
 
-	/* Until the pass layer is ported this presents the clear colour only,
-	   which is the first milestone: a window with a Vulkan clear screen. */
+	/* ImguiSystem::Update calls ImGui::NewFrame every frame, so the frame has
+	   to be ended even though its geometry is not submitted yet. Skipping this
+	   trips NewFrame's "forgot to call Render()" assert on the next frame. */
+	ImGui::Render();
+
+	/* Until the passes are wired into this path it presents the clear colour
+	   only, which is the first milestone: a window with a Vulkan clear screen. */
 	const float fClear[4] = {
 		m_pSettings != nullptr ? 0.1f : 0.1f,
 		0.1f,

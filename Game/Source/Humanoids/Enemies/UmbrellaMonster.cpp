@@ -99,7 +99,7 @@ void UmbrellaMonster::MeleeAttack(Vector3& velocity)
 		float height = GetTransform()->GetPosition().y - m_pClosestTarget->GetTransform()->GetPosition().y;
 		height -= 10.f;
 
-		float initialVelocity = (1.f / cos(0.7f)) * sqrt(std::max((0.5f * glm::length(PhysicsBody::GRAVITY) * distance * distance) / (distance * tan(0.7f) + height), 1.f));
+		float initialVelocity = (1.f / cos(0.7f)) * sqrt(std::max(static_cast<float>((0.5f * glm::length(PhysicsBody::GRAVITY) * distance * distance) / (distance * tan(0.7f) + height)), 1.f));
 		Vector3 desiredVelocity = Vector3(0, initialVelocity * sin(0.7f) * m_fJumpForce.y, initialVelocity * cos(0.7f) * m_fJumpForce.x / m_fJumpForce.y);
 		desiredVelocity.y = std::min(desiredVelocity.y, m_fMaxJumpVelocity.y);
 		desiredVelocity.z = std::min(std::abs(desiredVelocity.z), m_fMaxJumpVelocity.x) * (desiredVelocity.z / std::abs(desiredVelocity.z));

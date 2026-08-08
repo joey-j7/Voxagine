@@ -14,6 +14,7 @@ project(Voxagine
 # ---------------------------------------------------------------------------
 option(VOXAGINE_BUILD_BRINGUP "Build the Vulkan bring-up target" ON)
 option(VOXAGINE_BUILD_ENGINE  "Build the engine library" OFF)
+option(VOXAGINE_BUILD_EDITOR  "Build the game with the editor (EDITOR define)" ON)
 option(VOXAGINE_FETCH_RTTR    "Fetch RTTR from upstream instead of find_package" ON)
 option(VOXAGINE_CHECK_RTTR    "Compile the reflection TU to prove RTTR works" OFF)
 option(VOXAGINE_ENABLE_FMOD   "Enable FMOD audio (needs the FMOD Linux SDK)" OFF)
@@ -155,6 +156,13 @@ if(VOXAGINE_BUILD_ENGINE)
     # includes from all 147 TUs first; not worth doing mid-port.
 
     if(VOXAGINE_ENABLE_FMOD)
+        # The real FMOD implementations replace the silent stubs, which define
+        # the same symbols.
+        list(REMOVE_ITEM VOXAGINE_ENGINE_SOURCES
+            ${VOXAGINE_SOURCE_DIR}/Core/Platform/Audio/NullAudioContext.cpp
+            ${VOXAGINE_SOURCE_DIR}/Core/Resources/Formats/NullSoundReference.cpp
+        )
+        target_sources(voxagine PRIVATE ${VOXAGINE_FMOD_SOURCES})
         target_compile_definitions(voxagine PUBLIC VOXAGINE_FMOD)
     endif()
 
@@ -167,6 +175,27 @@ if(VOXAGINE_BUILD_ENGINE)
     if(VOXAGINE_ENABLE_NFD)
         target_compile_definitions(voxagine PUBLIC VOXAGINE_NFD)
     endif()
+endif()
+
+# ---------------------------------------------------------------------------
+# Bit Buster
+#
+# EDITOR selects the editor build; the old .sln expressed this as separate
+# *Editor and *Game configurations.
+# ---------------------------------------------------------------------------
+if(VOXAGINE_BUILD_ENGINE)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/GameSources.cmake)
+
+    add_executable(BitBuster ${VOXAGINE_GAME_SOURCES})
+
+    target_include_directories(BitBuster PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Game/Source)
+    target_link_libraries(BitBuster PRIVATE voxagine voxagine_warnings)
+
+    if(VOXAGINE_BUILD_EDITOR)
+        target_compile_definitions(BitBuster PRIVATE EDITOR)
+    endif()
+
+    add_dependencies(BitBuster voxagine_shaders_game)
 endif()
 
 # ---------------------------------------------------------------------------

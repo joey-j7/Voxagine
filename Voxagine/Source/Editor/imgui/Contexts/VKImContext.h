@@ -26,4 +26,5 @@ public:
 
 private:
 	VKRenderContext* m_pContext = nullptr;
+	bool m_bFontsBuilt = false;
 };
