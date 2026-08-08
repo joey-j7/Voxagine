@@ -55,5 +55,9 @@ x86/
 .cache/
 *.swp
 
+# Phased agent planning docs - kept local, not checked in.
+/RENDERING_PLAN.md
+/MOBILE_PORT_PLAN.md
+
 # OAuth/credential files — never commit real tokens
 **/token_v2.json

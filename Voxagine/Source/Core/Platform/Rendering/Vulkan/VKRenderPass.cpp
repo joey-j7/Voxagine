@@ -437,6 +437,8 @@ void VKRenderPass::Begin(PCommandEngine* pEngine)
 	renderingInfo.pColorAttachments = colorAttachments.data();
 	renderingInfo.pDepthAttachment = m_pDepthView ? &depthAttachment : nullptr;
 
+	m_uiTimestampBeginIndex = pEngine->WriteTimestampBegin();
+
 	vkCmdBeginRendering(pEngine->GetCommandBuffer(), &renderingInfo);
 
 	m_bIsRendering = true;
@@ -794,6 +796,9 @@ void VKRenderPass::End(PCommandEngine* pEngine)
 		return;
 
 	vkCmdEndRendering(pEngine->GetCommandBuffer());
+
+	pEngine->WriteTimestampEnd(m_Data.m_Name, m_uiTimestampBeginIndex);
+	m_uiTimestampBeginIndex = UINT32_MAX;
 
 	m_bIsRendering = false;
 	pEngine->SetRenderingOpen(false);

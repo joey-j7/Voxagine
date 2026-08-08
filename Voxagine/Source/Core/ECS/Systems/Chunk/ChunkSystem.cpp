@@ -7,6 +7,7 @@
 #include "Core/ECS/Systems/Rendering/DebugRenderer.h"
 
 #include "Core/Platform/Platform.h"
+#include "Core/Platform/Rendering/FrameProfiler.h"
 #include "Core/Platform/Rendering/RenderContext.h"
 #include "Core/ECS/World.h"
 #include "Core/Application.h"
@@ -218,6 +219,14 @@ void ChunkSystem::UpdateChunks(IVector2 gridOffset, ChunkUpdateGroup& group, boo
 {
 	OPTICK_CATEGORY("ChunkSystem", Optick::Category::GameLogic);
 	OPTICK_EVENT();
+
+	/* RENDERING_PLAN.md Phase 0: the other known main-thread cost, alongside
+	   VoxelBaker::Bake. Guarded so a disabled profiler pays nothing but this
+	   one branch. */
+	const bool bProfiling = FrameProfiler::Get().IsEnabled();
+	const std::chrono::steady_clock::time_point start =
+		bProfiling ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
+
 	for (uint32_t x = 0; x < m_uiNumChunkX; ++x)
 	{
 		for (uint32_t y = 0; y < m_uiNumChunkY; ++y)
@@ -254,6 +263,14 @@ void ChunkSystem::UpdateChunks(IVector2 gridOffset, ChunkUpdateGroup& group, boo
 				group.AddItem(ChunkUpdateGroup::Item(ChunkUpdateGroup::Item::Target::T_ASYNC_UNLOAD, pChunk, pChunk->GetGridTarget()));
 			}
 		}
+	}
+
+	if (bProfiling)
+	{
+		const double fMilliseconds =
+			std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+
+		FrameProfiler::Get().Report("CPU ChunkSystem::UpdateChunks", fMilliseconds);
 	}
 }
 

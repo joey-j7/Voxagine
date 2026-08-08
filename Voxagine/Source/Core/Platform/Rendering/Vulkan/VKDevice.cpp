@@ -189,6 +189,9 @@ bool VKDevice::PickPhysicalDevice(VkSurfaceKHR surface)
 			m_uiGraphicsFamily = uiGraphics;
 			m_uiPresentFamily = uiPresent;
 			m_DeviceName = props.deviceName;
+			m_bTimestampsSupported = props.limits.timestampComputeAndGraphics == VK_TRUE &&
+			                          props.limits.timestampPeriod > 0.0f;
+			m_fTimestampPeriod = props.limits.timestampPeriod;
 			return true;
 		}
 
@@ -198,6 +201,9 @@ bool VKDevice::PickPhysicalDevice(VkSurfaceKHR surface)
 			uiFallbackGraphics = uiGraphics;
 			uiFallbackPresent = uiPresent;
 			m_DeviceName = props.deviceName;
+			m_bTimestampsSupported = props.limits.timestampComputeAndGraphics == VK_TRUE &&
+			                          props.limits.timestampPeriod > 0.0f;
+			m_fTimestampPeriod = props.limits.timestampPeriod;
 		}
 	}
 

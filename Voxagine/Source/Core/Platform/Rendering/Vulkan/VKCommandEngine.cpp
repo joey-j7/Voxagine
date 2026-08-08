@@ -4,6 +4,8 @@
 #include "VKDevice.h"
 #include "VKTranslate.h"
 
+#include "Core/Platform/Rendering/FrameProfiler.h"
+
 #include <cstdio>
 #include <mutex>
 
@@ -27,6 +29,9 @@ VKCommandEngine::~VKCommandEngine()
 	{
 		if (m_Frames[i].m_CommandPool != VK_NULL_HANDLE)
 			vkDestroyCommandPool(m_pDevice->Get(), m_Frames[i].m_CommandPool, nullptr);
+
+		if (m_Frames[i].m_QueryPool != VK_NULL_HANDLE)
+			vkDestroyQueryPool(m_pDevice->Get(), m_Frames[i].m_QueryPool, nullptr);
 	}
 
 	if (m_Timeline != VK_NULL_HANDLE)
@@ -57,6 +62,11 @@ bool VKCommandEngine::Initialize()
 		return false;
 	}
 
+	/* RENDERING_PLAN.md Phase 0. Decided once here, not per-call: a query
+	   pool that failed to create would otherwise make every later
+	   WriteTimestamp* call re-check a handle for no reason. */
+	m_bTimingEnabled = FrameProfiler::Get().IsEnabled() && m_pDevice->SupportsTimestamps();
+
 	for (uint32_t i = 0; i < m_uiFrameCount; ++i)
 	{
 		VkCommandPoolCreateInfo poolInfo{};
@@ -84,6 +94,21 @@ bool VKCommandEngine::Initialize()
 			fprintf(stderr, "[vulkan] command buffer allocation failed for '%s'\n",
 			        m_Info.m_Name.c_str());
 			return false;
+		}
+
+		if (m_bTimingEnabled)
+		{
+			VkQueryPoolCreateInfo queryPoolInfo{};
+			queryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+			queryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
+			queryPoolInfo.queryCount = m_uiMaxTimestampsPerFrame;
+
+			if (vkCreateQueryPool(m_pDevice->Get(), &queryPoolInfo, nullptr, &m_Frames[i].m_QueryPool) != VK_SUCCESS)
+			{
+				fprintf(stderr, "[vulkan] query pool creation failed for '%s'; GPU timing disabled\n",
+				        m_Info.m_Name.c_str());
+				m_bTimingEnabled = false;
+			}
 		}
 	}
 
@@ -121,6 +146,42 @@ void VKCommandEngine::Reset()
 		}
 	}
 
+	/* The wait above guarantees this slot's previous submission has
+	   retired, so its queries are ready - vkGetQueryPoolResults here never
+	   stalls waiting on the GPU, it just reads results already sitting
+	   there. This is the "one frame later" readback RENDERING_PLAN.md Phase
+	   0 asks for. */
+	if (m_bTimingEnabled && !frame.m_PendingQueries.empty())
+	{
+		std::vector<uint64_t> results(frame.m_uiQueryCursor, 0);
+
+		const VkResult queryResult = vkGetQueryPoolResults(
+			m_pDevice->Get(), frame.m_QueryPool, 0, frame.m_uiQueryCursor,
+			results.size() * sizeof(uint64_t), results.data(), sizeof(uint64_t),
+			VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+
+		if (queryResult == VK_SUCCESS)
+		{
+			const float fTimestampPeriod = m_pDevice->GetTimestampPeriod();
+
+			for (const PendingPassQuery& query : frame.m_PendingQueries)
+			{
+				const uint64_t uiBeginTicks = results[query.m_uiBeginIndex];
+				const uint64_t uiEndTicks = results[query.m_uiEndIndex];
+
+				if (uiEndTicks <= uiBeginTicks)
+					continue;
+
+				const double fMilliseconds =
+					static_cast<double>(uiEndTicks - uiBeginTicks) * fTimestampPeriod / 1000000.0;
+
+				FrameProfiler::Get().Report(query.m_Name, fMilliseconds);
+			}
+		}
+
+		frame.m_PendingQueries.clear();
+	}
+
 	vkResetCommandPool(m_pDevice->Get(), frame.m_CommandPool, 0);
 
 	/* Safe now that the GPU is done with this slot's upload pages. */
@@ -143,7 +204,59 @@ void VKCommandEngine::Start()
 
 	vkBeginCommandBuffer(GetCommandBuffer(), &beginInfo);
 
+	if (m_bTimingEnabled)
+	{
+		FrameData& frame = m_Frames[m_uiFrameIndex];
+
+		/* Every query written by the last recording into this slot has
+		   already been read back in Reset(); resetting the pool here is
+		   what vkCmdWriteTimestamp2 requires before it will write again. */
+		vkCmdResetQueryPool(GetCommandBuffer(), frame.m_QueryPool, 0, m_uiMaxTimestampsPerFrame);
+		frame.m_uiQueryCursor = 0;
+	}
+
 	m_bIsStarted = true;
+}
+
+uint32_t VKCommandEngine::WriteTimestampBegin()
+{
+	if (!m_bTimingEnabled)
+		return UINT32_MAX;
+
+	FrameData& frame = m_Frames[m_uiFrameIndex];
+
+	/* Need room for this query and its still-to-come End(). */
+	if (frame.m_uiQueryCursor + 1 >= m_uiMaxTimestampsPerFrame)
+	{
+		static bool s_bWarned = false;
+
+		if (!s_bWarned)
+		{
+			s_bWarned = true;
+			fprintf(stderr, "[timing] '%s' ran out of timestamp queries for one frame; "
+			                "some passes will be unmeasured\n", m_Info.m_Name.c_str());
+		}
+
+		return UINT32_MAX;
+	}
+
+	const uint32_t uiIndex = frame.m_uiQueryCursor++;
+	vkCmdWriteTimestamp2(GetCommandBuffer(), VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, frame.m_QueryPool, uiIndex);
+
+	return uiIndex;
+}
+
+void VKCommandEngine::WriteTimestampEnd(const std::string& name, uint32_t uiBeginIndex)
+{
+	if (!m_bTimingEnabled || uiBeginIndex == UINT32_MAX)
+		return;
+
+	FrameData& frame = m_Frames[m_uiFrameIndex];
+
+	const uint32_t uiEndIndex = frame.m_uiQueryCursor++;
+	vkCmdWriteTimestamp2(GetCommandBuffer(), VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT, frame.m_QueryPool, uiEndIndex);
+
+	frame.m_PendingQueries.push_back({ name, uiBeginIndex, uiEndIndex });
 }
 
 void VKCommandEngine::QueueBarrier(VKResource* pResource, PEResourceState newState)

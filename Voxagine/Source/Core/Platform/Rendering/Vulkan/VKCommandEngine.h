@@ -7,6 +7,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstdint>
+#include <string>
 #include <vector>
 
 class VKDevice;
@@ -31,6 +33,11 @@ class VKCommandEngine : public CommandEngine
 
 public:
 	static const uint32_t m_uiFrameCount = 2;
+
+	/* Timestamps per frame slot, i.e. up to 32 Begin/End pass pairs. Every
+	   pass this engine records in one frame shares this budget; running out
+	   drops (and warns once) rather than crashing. */
+	static const uint32_t m_uiMaxTimestampsPerFrame = 64;
 
 	VKCommandEngine(VKDevice* pDevice, const VKAllocator* pAllocator, const Info& info);
 	virtual ~VKCommandEngine();
@@ -78,10 +85,30 @@ public:
 	bool IsRenderingOpen() const { return m_bRenderingOpen; }
 	void SetRenderingOpen(bool bOpen) { m_bRenderingOpen = bOpen; }
 
+	/* RENDERING_PLAN.md Phase 0. Writes a GPU timestamp into this frame
+	   slot's query pool and returns its index, or UINT32_MAX when profiling
+	   is disabled or the device has no timestamp support - callers do not
+	   need to check that themselves. Pair with WriteTimestampEnd(). */
+	uint32_t WriteTimestampBegin();
+
+	/* Pairs with the index from WriteTimestampBegin() under `name`; a
+	   UINT32_MAX index (profiling disabled, or the frame ran out of query
+	   slots) is a no-op. Results are read back non-stalling in Reset(),
+	   once this slot's submission that recorded them has retired. */
+	void WriteTimestampEnd(const std::string& name, uint32_t uiBeginIndex);
+
 protected:
 	virtual void AdvanceFrame() override;
 
 private:
+	/* One frame's worth of paired GPU timestamps awaiting readback. */
+	struct PendingPassQuery
+	{
+		std::string m_Name;
+		uint32_t m_uiBeginIndex;
+		uint32_t m_uiEndIndex;
+	};
+
 	struct FrameData
 	{
 		VkCommandPool m_CommandPool = VK_NULL_HANDLE;
@@ -89,6 +116,14 @@ private:
 
 		/* Timeline value this slot's last submission signals. */
 		uint64_t m_uiSubmitValue = 0;
+
+		/* One query pool per frame slot, exactly like the command pool
+		   above: reading back slot i's queries only ever happens after
+		   waiting for slot i's own previous submission, so a pool being
+		   read never races a new recording into it. */
+		VkQueryPool m_QueryPool = VK_NULL_HANDLE;
+		uint32_t m_uiQueryCursor = 0;
+		std::vector<PendingPassQuery> m_PendingQueries;
 	};
 
 	struct PendingBarrier
@@ -111,6 +146,11 @@ private:
 	std::vector<PendingBarrier> m_PendingBarriers;
 
 	bool m_bRenderingOpen = false;
+
+	/* Cached once in Initialize(): profiling asked for and the device can
+	   actually do it. Checked on every WriteTimestamp* call so passes never
+	   have to know why timing might be unavailable. */
+	bool m_bTimingEnabled = false;
 
 	/* Engines this one must wait on before its next submit. */
 	std::vector<VkSemaphoreSubmitInfo> m_WaitSemaphores;
