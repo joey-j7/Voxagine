@@ -9,8 +9,9 @@ project(Voxagine
 # ---------------------------------------------------------------------------
 # Options
 #
-# The Linux/Vulkan port is in progress. VOXAGINE_BUILD_ENGINE stays OFF until
-# the vendored Windows-only dependencies below have Linux equivalents.
+# VOXAGINE_BUILD_ENGINE defaults off so a plain configure stays offline-capable
+# (no RTTR fetch). Use the game/editor presets in CMakePresets.json to build
+# BitBuster.
 # ---------------------------------------------------------------------------
 option(VOXAGINE_BUILD_BRINGUP "Build the Vulkan bring-up target" ON)
 option(VOXAGINE_BUILD_ENGINE  "Build the engine library" OFF)

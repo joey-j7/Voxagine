@@ -38,7 +38,7 @@ jobs:
       # works off Windows, so it stays on until the engine target builds.
       - name: Configure
         run: |
-          cmake -S . -B build -G Ninja \
+          cmake -S . -B Build/ci -G Ninja \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DVOXAGINE_CHECK_RTTR=ON
 
@@ -47,4 +47,4 @@ jobs:
       # to verify presentation. Adding a lavapipe + SDL_VIDEODRIVER=offscreen
       # job would make that testable in CI.
       - name: Build
-        run: cmake --build build
+        run: cmake --build Build/ci

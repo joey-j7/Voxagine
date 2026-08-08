@@ -42,24 +42,26 @@ zenity or kdialog on Linux.
 
 ## Building & running
 
-The game:
+Builds go through `CMakePresets.json`, which any recent CMake, CLion or Rider
+reads directly. Five presets - `game`, `game-release`, `editor`,
+`editor-release`, `bringup` - each writing to `Build/<preset>/`.
 
 ```bash
-cmake -S . -B build-game -G Ninja -DVOXAGINE_BUILD_ENGINE=ON -DVOXAGINE_BUILD_EDITOR=OFF
-cmake --build build-game
-cd Game && ../build-game/bin/BitBuster    # run from Game/, asset paths are relative
+cmake --preset game && cmake --build --preset game
+cd Game && ../Build/game/bin/BitBuster    # run from Game/, asset paths are relative
 ```
 
-The editor is the same executable built with `-DVOXAGINE_BUILD_EDITOR=ON`.
+The editor is the same executable with the editor compiled in; swap `game` for
+`editor`. Add `-release` for an optimised build - that also drops the Vulkan
+validation layers, which are tied to Debug.
 
 There is also `voxagine_bringup`, a standalone SDL3 + Vulkan target that clears
-the screen without any of the engine. It is the default build and needs no
-assets, which makes it the quickest check that a toolchain is set up:
+the screen without any of the engine. It needs no assets and pulls in no RTTR,
+which makes it the quickest check that a toolchain is set up:
 
 ```bash
-cmake -S . -B build -G Ninja
-cmake --build build
-./build/bin/voxagine_bringup --frames 120
+cmake --preset bringup && cmake --build --preset bringup
+./Build/bringup/bin/voxagine_bringup --frames 120
 ```
 
 ## Port status
