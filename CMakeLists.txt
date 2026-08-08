@@ -87,6 +87,16 @@ target_link_libraries(voxagine_vulkan
 )
 
 # ---------------------------------------------------------------------------
+# Shaders
+# ---------------------------------------------------------------------------
+include(cmake/Shaders.cmake)
+
+voxagine_add_shaders(voxagine_shaders_game
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Game/Engine/Assets/Shaders
+    OUTPUT_DIR ${CMAKE_BINARY_DIR}/shaders/game
+)
+
+# ---------------------------------------------------------------------------
 # Bring-up target: SDL3 window + Vulkan clear screen
 # ---------------------------------------------------------------------------
 if(VOXAGINE_BUILD_BRINGUP)
