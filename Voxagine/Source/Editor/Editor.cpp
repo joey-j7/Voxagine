@@ -642,6 +642,10 @@ void Editor::SetWorldFilePath(std::string sWorldFilePath)
 
 	foundExtension = resolvedFilePath.rfind(".wld");
 	m_sWorldAutoSaveFilePath = resolvedFilePath.insert(foundExtension, m_sWorldAutoSaveExtension);
+
+	/* A full interval before the first save, rather than one the moment the
+	   world finishes loading. */
+	m_fAutoSaveTimer = static_cast<float>(m_UserSettings.GetAutoSaveTime());
 }
 
 void Editor::SaveEditorWorld(std::string sFilePath)
@@ -709,6 +713,16 @@ void Editor::UpdateAutoSaveWorld(float fDeltaTime)
 
 void Editor::AutoSaveWorld()
 {
+	/* A world that has never been saved has nowhere to auto-save to, and the
+	   serializer rejects the empty path. */
+	if (m_sWorldAutoSaveFilePath.empty())
+		return;
+
+	/* SerializeWorldToFile is marked to become a job; skipping while one is
+	   in flight keeps two saves off the same file. */
+	if (m_bIsAutoSaving)
+		return;
+
 	if (GetEditorModus() == EditorModus::EM_EDITOR)
 	{
 		EditorWorld * pWorld = static_cast<EditorWorld*>(GetApplication()->GetWorldManager().GetTopWorld());
@@ -925,7 +939,12 @@ void Editor::RenderMainMenuBar()
 		ImGui::BeginMainMenuBar();
 
 		ImGui::Unindent(7.0f);
-		ImGui::Image(*(ImTextureID*)m_Textures["main_menu_bar_bg"]->Descriptor, ImVec2(static_cast<float>(m_pRenderContext->GetRenderResolution().x), 26.0f));
+
+		TextureReference* pBackground = m_Textures["main_menu_bar_bg"];
+
+		ImGui::Image(static_cast<ImTextureID>(pBackground != nullptr ? pBackground->TextureView : nullptr),
+			ImVec2(static_cast<float>(m_pRenderContext->GetRenderResolution().x), 26.0f));
+
 		ImGui::Indent(7.0f);
 
 		ImGui::SameLine(5.0f);

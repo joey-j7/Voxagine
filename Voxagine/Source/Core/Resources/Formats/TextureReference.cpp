@@ -6,9 +6,6 @@
 TextureReference::~TextureReference()
 {
 	Free();
-
-	if (Descriptor)
-		delete Descriptor;
 }
 
 bool TextureReference::Load(const std::string& filePath)

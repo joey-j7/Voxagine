@@ -2,10 +2,13 @@
 #include "VKImContext.h"
 
 #include "Core/Platform/Rendering/Objects/Shader.h"
+#include "Core/Platform/Rendering/Objects/View.h"
 #include "Core/Platform/Rendering/Vulkan/VKCommandEngine.h"
 #include "Core/Platform/Rendering/Vulkan/VKRenderContext.h"
+#include "Core/Platform/Rendering/Vulkan/VKResource.h"
 #include "Core/Platform/Rendering/Vulkan/VKShaderBindings.h"
 #include "Core/Platform/Rendering/Vulkan/VKTranslate.h"
+#include "Core/Platform/Rendering/Vulkan/Managers/VKTextureManager.h"
 
 #include "External/imgui/imgui.h"
 
@@ -37,26 +40,24 @@ VKImContext::~VKImContext()
 
 void VKImContext::NewFrame()
 {
-	/* Built on the first frame rather than in the constructor: Platform
-	   constructs this before ImguiSystem::Initialize calls
-	   ImGui::CreateContext, so there is no ImGuiIO to touch yet. */
+	/* First frame, not the constructor: Platform builds this before
+	   ImGui::CreateContext, so there is no ImGuiIO yet. And here rather than
+	   in Draw, because the draw data already carries the atlas's TexID. */
 	if (m_bFontsBuilt)
 		return;
 
-	ImGuiIO& io = ImGui::GetIO();
-
-	unsigned char* pPixels = nullptr;
-	int iWidth = 0;
-	int iHeight = 0;
-
-	/* ImGui::NewFrame asserts unless the atlas has been built. */
-	io.Fonts->GetTexDataAsRGBA32(&pPixels, &iWidth, &iHeight);
-
-	/* Every draw command samples the same atlas, so the ID only has to be
-	   non-null for ImGui to treat the font as resident. */
-	io.Fonts->TexID = reinterpret_cast<ImTextureID>(this);
-
 	m_bFontsBuilt = true;
+
+	if (!BuildFontTexture())
+	{
+		fprintf(stderr, "[vulkan] imgui font atlas failed\n");
+
+		/* ImGui::NewFrame asserts on a null TexID, so leave a non-null one
+		   that resolves to no texture and skips its draw commands. */
+		ImGui::GetIO().Fonts->TexID = reinterpret_cast<ImTextureID>(this);
+
+		m_bInitFailed = true;
+	}
 }
 
 bool VKImContext::BuildFontTexture()
@@ -72,70 +73,26 @@ bool VKImContext::BuildFontTexture()
 	if (pPixels == nullptr || iWidth <= 0 || iHeight <= 0)
 		return false;
 
-	const VkDeviceSize uiBytes =
-		static_cast<VkDeviceSize>(iWidth) * iHeight * 4;
-
-	if (!m_FontTexture.CreateImage(m_pContext->GetDevice(), m_pContext->GetAllocator(),
-	                               VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM,
-	                               static_cast<uint32_t>(iWidth), static_cast<uint32_t>(iHeight),
-	                               1, 1,
-	                               VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT))
-	{
-		return false;
-	}
-
-	m_FontTexture.SetDebugName("ImGui Font Atlas");
-
-	VKResource staging;
-
-	if (!staging.CreateBuffer(m_pContext->GetDevice(), m_pContext->GetAllocator(), uiBytes,
-	                          VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-	                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
-	{
-		return false;
-	}
-
-	void* pMapped = staging.Map();
-
-	if (pMapped == nullptr)
-	{
-		staging.Destroy();
-		return false;
-	}
-
-	std::memcpy(pMapped, pPixels, uiBytes);
-
 	/* The dedicated upload engine, so this cannot land in the middle of the
 	   frame the Direct engine is recording. */
 	PCommandEngine* pEngine = m_pContext->GetEngine("Texture");
+	PTextureManager* pTextures = m_pContext->GetTextureManager();
 
-	if (pEngine == nullptr)
-	{
-		staging.Destroy();
+	if (pEngine == nullptr || pTextures == nullptr)
 		return false;
-	}
 
-	pEngine->Reset();
-	pEngine->Start();
+	/* Through the texture manager, so the atlas is a View like any sprite and
+	   both resolve the same way in Draw. */
+	const uint32_t uiID = pTextures->CreateTexture(pEngine, "ImGui Font Atlas", pPixels,
+	                                               UVector2(static_cast<uint32_t>(iWidth),
+	                                                        static_cast<uint32_t>(iHeight)));
 
-	pEngine->QueueBarrier(&m_FontTexture, E_STATE_COPY_DEST);
-	pEngine->ApplyBarriers();
+	if (uiID == UINT32_MAX)
+		return false;
 
-	VkBufferImageCopy region{};
-	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	region.imageSubresource.layerCount = 1;
-	region.imageExtent = { static_cast<uint32_t>(iWidth), static_cast<uint32_t>(iHeight), 1 };
+	m_pFontTexture = pTextures->m_pViews[uiID].get();
 
-	vkCmdCopyBufferToImage(pEngine->GetCommandBuffer(), staging.GetBuffer(),
-	                       m_FontTexture.GetImage(),
-	                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-	pEngine->QueueBarrier(&m_FontTexture, E_STATE_PIXEL_SHADER_RESOURCE);
-
-	pEngine->Execute();
-	pEngine->WaitForGPU();
-
-	staging.Destroy();
+	io.Fonts->TexID = static_cast<ImTextureID>(m_pFontTexture);
 
 	/* ImGui keeps its own copy of the atlas; the GPU has it now. */
 	io.Fonts->ClearTexData();
@@ -183,19 +140,10 @@ bool VKImContext::BuildPipeline()
 	m_DescriptorLayout.AddTexture(0, VK_SHADER_STAGE_FRAGMENT_BIT);
 	m_DescriptorLayout.AddSampler(0, VK_SHADER_STAGE_FRAGMENT_BIT);
 
-	if (!m_DescriptorLayout.Build(m_pContext->GetDevice(),
-	                              static_cast<uint32_t>(m_DescriptorSets.size())))
-	{
+	/* Sets are allocated on demand; the pool only has to be sized for the
+	   worst case. */
+	if (!m_DescriptorLayout.Build(m_pContext->GetDevice(), m_uiFrameSlots * m_uiTexturesPerFrame))
 		return false;
-	}
-
-	for (VkDescriptorSet& set : m_DescriptorSets)
-	{
-		set = m_DescriptorLayout.Allocate();
-
-		if (set == VK_NULL_HANDLE)
-			return false;
-	}
 
 	VkDescriptorSetLayout setLayout = m_DescriptorLayout.GetLayout();
 
@@ -338,6 +286,87 @@ bool VKImContext::BuildPipeline()
 	return true;
 }
 
+VkDescriptorSet VKImContext::GetTextureSet(View* pTexture, const VkDescriptorBufferInfo& constants)
+{
+	if (pTexture == nullptr || pTexture->GetNative() == nullptr)
+		return VK_NULL_HANDLE;
+
+	std::vector<VkDescriptorSet>& sets = m_DescriptorSets[m_uiFrameSlot];
+
+	/* One set per distinct texture, not per command: most commands in a
+	   frame name the same atlas. */
+	for (size_t i = 0; i < m_FrameTextures.size(); ++i)
+	{
+		if (m_FrameTextures[i] == pTexture)
+			return sets[i];
+	}
+
+	if (m_FrameTextures.size() >= m_uiTexturesPerFrame)
+	{
+		static bool s_bWarned = false;
+
+		if (!s_bWarned)
+		{
+			s_bWarned = true;
+			fprintf(stderr, "[vulkan] imgui frame names more than %u textures; the rest will not draw\n",
+			        m_uiTexturesPerFrame);
+		}
+
+		return VK_NULL_HANDLE;
+	}
+
+	VkImageView imageView = pTexture->GetNative()->GetOrCreateImageView(VK_IMAGE_VIEW_TYPE_2D);
+
+	if (imageView == VK_NULL_HANDLE)
+		return VK_NULL_HANDLE;
+
+	if (sets.size() <= m_FrameTextures.size())
+	{
+		VkDescriptorSet allocated = m_DescriptorLayout.Allocate();
+
+		if (allocated == VK_NULL_HANDLE)
+			return VK_NULL_HANDLE;
+
+		sets.push_back(allocated);
+	}
+
+	VkDescriptorSet set = sets[m_FrameTextures.size()];
+	m_FrameTextures.push_back(pTexture);
+
+	VkDescriptorImageInfo imageInfo{};
+	imageInfo.imageView = imageView;
+	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+	VkDescriptorImageInfo samplerInfo{};
+	samplerInfo.sampler = m_Sampler;
+
+	VkWriteDescriptorSet writes[3]{};
+	writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writes[0].dstSet = set;
+	writes[0].dstBinding = VKBindings::ConstantBuffer(0);
+	writes[0].descriptorCount = 1;
+	writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	writes[0].pBufferInfo = &constants;
+
+	writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writes[1].dstSet = set;
+	writes[1].dstBinding = VKBindings::Texture(0);
+	writes[1].descriptorCount = 1;
+	writes[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+	writes[1].pImageInfo = &imageInfo;
+
+	writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writes[2].dstSet = set;
+	writes[2].dstBinding = VKBindings::Sampler(0);
+	writes[2].descriptorCount = 1;
+	writes[2].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+	writes[2].pImageInfo = &samplerInfo;
+
+	vkUpdateDescriptorSets(m_pContext->GetDevice()->Get(), 3, writes, 0, nullptr);
+
+	return set;
+}
+
 void VKImContext::Draw(ImDrawData* pDrawData)
 {
 	if (pDrawData == nullptr || pDrawData->CmdListsCount == 0 || m_bInitFailed)
@@ -348,9 +377,9 @@ void VKImContext::Draw(ImDrawData* pDrawData)
 
 	if (!m_bInitialised)
 	{
-		/* Deferred to the first draw: the font atlas and the host pass both
-		   have to exist, and neither does when Platform builds this. */
-		if (!BuildFontTexture() || !BuildPipeline())
+		/* First draw: the pipeline declares the host pass's attachment
+		   format, and that pass does not exist earlier. */
+		if (!BuildPipeline())
 		{
 			fprintf(stderr, "[vulkan] imgui rendering disabled\n");
 			m_bInitFailed = true;
@@ -424,50 +453,19 @@ void VKImContext::Draw(ImDrawData* pDrawData)
 
 	std::memcpy(constantAlloc.CPU, projection, sizeof(projection));
 
-	VkDescriptorSet set = m_DescriptorSets[m_uiSetIndex];
-	m_uiSetIndex = (m_uiSetIndex + 1) % static_cast<uint32_t>(m_DescriptorSets.size());
-
 	VkDescriptorBufferInfo bufferInfo{};
 	bufferInfo.buffer = constantAlloc.Buffer;
 	bufferInfo.offset = constantAlloc.Offset;
 	bufferInfo.range = sizeof(projection);
 
-	VkDescriptorImageInfo imageInfo{};
-	imageInfo.imageView = m_FontTexture.GetOrCreateImageView(VK_IMAGE_VIEW_TYPE_2D);
-	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-	VkDescriptorImageInfo samplerInfo{};
-	samplerInfo.sampler = m_Sampler;
-
-	VkWriteDescriptorSet writes[3]{};
-	writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	writes[0].dstSet = set;
-	writes[0].dstBinding = VKBindings::ConstantBuffer(0);
-	writes[0].descriptorCount = 1;
-	writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	writes[0].pBufferInfo = &bufferInfo;
-
-	writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	writes[1].dstSet = set;
-	writes[1].dstBinding = VKBindings::Texture(0);
-	writes[1].descriptorCount = 1;
-	writes[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-	writes[1].pImageInfo = &imageInfo;
-
-	writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	writes[2].dstSet = set;
-	writes[2].dstBinding = VKBindings::Sampler(0);
-	writes[2].descriptorCount = 1;
-	writes[2].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-	writes[2].pImageInfo = &samplerInfo;
-
-	vkUpdateDescriptorSets(m_pContext->GetDevice()->Get(), 3, writes, 0, nullptr);
+	/* Next frame's sets before writing any, so none is one the GPU is still
+	   reading. */
+	m_uiFrameSlot = (m_uiFrameSlot + 1) % m_uiFrameSlots;
+	m_FrameTextures.clear();
 
 	VkCommandBuffer cmd = pEngine->GetCommandBuffer();
 
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
-	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout,
-	                        0, 1, &set, 0, nullptr);
 
 	vkCmdBindVertexBuffers(cmd, 0, 1, &vertexAlloc.Buffer, &vertexAlloc.Offset);
 	vkCmdBindIndexBuffer(cmd, indexAlloc.Buffer, indexAlloc.Offset,
@@ -493,6 +491,12 @@ void VKImContext::Draw(ImDrawData* pDrawData)
 		{
 			const ImDrawCmd& command = pList->CmdBuffer[j];
 
+			/* This ImGui predates per-command index offsets: a list's
+			   commands consume its indices in order, so this must advance
+			   even when the command below is skipped. */
+			const uint32_t uiFirstIndex = uiIndexOffset;
+			uiIndexOffset += command.ElemCount;
+
 			if (command.UserCallback != nullptr)
 			{
 				command.UserCallback(pList, &command);
@@ -509,6 +513,16 @@ void VKImContext::Draw(ImDrawData* pDrawData)
 			if (fClipW <= 0.f || fClipH <= 0.f)
 				continue;
 
+			/* A command whose texture never loaded gets no set, and is
+			   skipped rather than drawn with whatever was bound last. */
+			VkDescriptorSet set = GetTextureSet(static_cast<View*>(command.TextureId), bufferInfo);
+
+			if (set == VK_NULL_HANDLE)
+				continue;
+
+			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout,
+			                        0, 1, &set, 0, nullptr);
+
 			VkRect2D scissor{};
 			scissor.offset.x = static_cast<int32_t>(fClipX < 0.f ? 0.f : fClipX);
 			scissor.offset.y = static_cast<int32_t>(fClipY < 0.f ? 0.f : fClipY);
@@ -517,13 +531,8 @@ void VKImContext::Draw(ImDrawData* pDrawData)
 
 			vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-			/* This ImGui predates per-command vertex/index offsets: a list's
-			   commands consume its indices in order, so the running offset is
-			   the command's own start. */
-			vkCmdDrawIndexed(cmd, command.ElemCount, 1, uiIndexOffset,
+			vkCmdDrawIndexed(cmd, command.ElemCount, 1, uiFirstIndex,
 			                 static_cast<int32_t>(uiVertexOffset), 0);
-
-			uiIndexOffset += command.ElemCount;
 		}
 
 		uiVertexOffset += static_cast<uint32_t>(pList->VtxBuffer.Size);
@@ -554,7 +563,13 @@ void VKImContext::Deinitialize()
 		m_PipelineLayout = VK_NULL_HANDLE;
 	}
 
+	/* Destroying the pool invalidates every set handed out of it. */
 	m_DescriptorLayout.Destroy();
+
+	for (std::vector<VkDescriptorSet>& sets : m_DescriptorSets)
+		sets.clear();
+
+	m_FrameTextures.clear();
 
 	if (m_Sampler != VK_NULL_HANDLE)
 	{
@@ -562,7 +577,8 @@ void VKImContext::Deinitialize()
 		m_Sampler = VK_NULL_HANDLE;
 	}
 
-	m_FontTexture.Destroy();
+	/* The font atlas is the texture manager's; it frees it with the rest. */
+	m_pFontTexture = nullptr;
 
 	m_bInitialised = false;
 }
