@@ -61,3 +61,7 @@ x86/
 
 # OAuth/credential files — never commit real tokens
 **/token_v2.json
+
+# Editor autosaves (UserSettings::AutoSaveWorld, every 5s by default) - these
+# are working-copy artifacts, not real content, and churn constantly.
+**/*_AutoSave.wld
