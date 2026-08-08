@@ -68,6 +68,7 @@ endif()
 # a Debug build here would silently behave like a release one.
 add_compile_definitions($<$<CONFIG:Debug>:_DEBUG>)
 
+
 add_library(voxagine_warnings INTERFACE)
 target_compile_options(voxagine_warnings INTERFACE
     $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall;-Wextra;-Wno-unused-parameter>
