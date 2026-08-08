@@ -45,6 +45,7 @@ VoxelPass::VoxelPass(
 	RenderPassData.m_Textures.push_back(pParticleDepthTexture);
 
 	RenderPassData.m_uiBindlessResourceCount = 1;
+	RenderPassData.m_BindlessSource = RenderPass::E_BINDLESS_SOURCE_MODELS;
 
 #ifdef _WINDOWS
 	SetHeapManager(m_pContext->GetModelManager()->GetHeapManager());

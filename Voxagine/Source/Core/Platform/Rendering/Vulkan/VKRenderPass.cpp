@@ -11,6 +11,7 @@
 #include "Core/Platform/Rendering/Vulkan/VKPassBindings.h"
 #include "Core/Platform/Rendering/Vulkan/VKRenderContext.h"
 #include "Core/Platform/Rendering/Vulkan/VKTranslate.h"
+#include "Core/Platform/Rendering/Vulkan/Managers/VKTextureManager.h"
 
 #include <cstdio>
 
@@ -599,6 +600,63 @@ bool VKRenderPass::WriteDescriptors(PCommandEngine* pEngine, VkDescriptorSet set
 		}
 
 		writes.push_back(write);
+	}
+
+	/* Bindless texture array, filled from the texture manager's live views so
+	   sprites and fonts loaded at any point appear without the pass being
+	   told. Model buffers (E_BINDLESS_SOURCE_MODELS) stay unwritten until the
+	   VoxModel GPU upload is restored; the array is PARTIALLY_BOUND, so that
+	   is legal as long as no shader indexes them. */
+	std::vector<VkDescriptorImageInfo> bindlessInfos;
+
+	if (m_Data.m_BindlessSource == RenderPass::E_BINDLESS_SOURCE_TEXTURES)
+	{
+		for (const VKPassBinding& binding : m_Bindings)
+		{
+			if (binding.m_Kind != VKPassBinding::E_BINDLESS_TEXTURES)
+				continue;
+
+			TextureManager* pManager = m_pContext->GetTextureManager();
+
+			bindlessInfos.reserve(pManager->m_pViews.size());
+
+			for (const auto& entry : pManager->m_pViews)
+			{
+				if (entry.first >= binding.m_uiCount)
+					continue;
+
+				View* pTexture = entry.second.get();
+
+				/* A view that was never uploaded is still UNDEFINED; binding
+				   it as sampled would be invalid. */
+				if (pTexture == nullptr || pTexture->GetNative() == nullptr ||
+				    pTexture->GetNative()->IsLayoutUndefined())
+					continue;
+
+				const VkImageView imageView =
+					pTexture->GetNative()->GetOrCreateImageView(VK_IMAGE_VIEW_TYPE_2D);
+
+				if (imageView == VK_NULL_HANDLE)
+					continue;
+
+				VkDescriptorImageInfo info{};
+				info.imageView = imageView;
+				info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+				bindlessInfos.push_back(info);
+
+				VkWriteDescriptorSet write{};
+				write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				write.dstSet = set;
+				write.dstBinding = binding.m_uiBinding;
+				write.dstArrayElement = entry.first;
+				write.descriptorCount = 1;
+				write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+				write.pImageInfo = &bindlessInfos.back();
+
+				writes.push_back(write);
+			}
+		}
 	}
 
 	if (!writes.empty())

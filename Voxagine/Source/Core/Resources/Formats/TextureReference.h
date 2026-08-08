@@ -10,6 +10,7 @@ class RenderContext;
 class TextureReference : public ReferenceObject {
 	friend class DXTextureManager;
 	friend class ORBTextureManager;
+	friend class VKTextureManager;
 
 public:
 	friend class TextureManager;

@@ -55,6 +55,7 @@ void VKDescriptorLayout::AddBindlessTextures(uint32_t uiRegister, VkShaderStageF
 	Add(VKBindings::Texture(uiRegister), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, stages, uiMaxCount);
 
 	m_bHasBindless = true;
+	m_uiBindlessBinding = VKBindings::Texture(uiRegister);
 	m_uiBindlessMaxCount = uiMaxCount;
 }
 
@@ -70,6 +71,7 @@ void VKDescriptorLayout::AddExplicitBindless(uint32_t uiBinding, VkDescriptorTyp
 	Add(uiBinding, type, stages, uiMaxCount);
 
 	m_bHasBindless = true;
+	m_uiBindlessBinding = uiBinding;
 	m_uiBindlessMaxCount = uiMaxCount;
 }
 
@@ -89,31 +91,19 @@ bool VKDescriptorLayout::Build(VKDevice* pDevice, uint32_t uiMaxSets)
 
 	if (m_bHasBindless)
 	{
-		/* Only the highest binding number may be variable-sized, and the
-		   bindless array is always added last. */
-		uint32_t uiHighest = 0;
-		size_t uiHighestIndex = 0;
-
+		/* The array is allocated at its full fixed capacity rather than with
+		   VARIABLE_DESCRIPTOR_COUNT: Vulkan only allows a variable count on
+		   the set's highest binding number, and the register shifts place the
+		   t-class bindless array below any u or s binding. A few hundred
+		   fixed descriptors cost nothing. */
 		for (size_t i = 0; i < m_Bindings.size(); ++i)
 		{
-			if (m_Bindings[i].binding >= uiHighest)
+			if (m_Bindings[i].binding == m_uiBindlessBinding)
 			{
-				uiHighest = m_Bindings[i].binding;
-				uiHighestIndex = i;
+				flags[i] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
+				           VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
 			}
 		}
-
-		if (m_Bindings[uiHighestIndex].descriptorCount != m_uiBindlessMaxCount)
-		{
-			fprintf(stderr, "[vulkan] bindless array is not the highest binding; "
-			                "Vulkan requires that for VARIABLE_DESCRIPTOR_COUNT\n");
-			return false;
-		}
-
-		flags[uiHighestIndex] =
-			VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT |
-			VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
-			VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
 	}
 
 	VkDescriptorSetLayoutBindingFlagsCreateInfo flagsInfo{};
@@ -188,17 +178,6 @@ VkDescriptorSet VKDescriptorLayout::Allocate()
 	allocInfo.descriptorPool = m_Pool;
 	allocInfo.descriptorSetCount = 1;
 	allocInfo.pSetLayouts = &m_Layout;
-
-	VkDescriptorSetVariableDescriptorCountAllocateInfo variableInfo{};
-
-	if (m_bHasBindless)
-	{
-		variableInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
-		variableInfo.descriptorSetCount = 1;
-		variableInfo.pDescriptorCounts = &m_uiBindlessMaxCount;
-
-		allocInfo.pNext = &variableInfo;
-	}
 
 	VkDescriptorSet set = VK_NULL_HANDLE;
 

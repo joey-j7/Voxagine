@@ -83,5 +83,6 @@ private:
 	std::vector<VkDescriptorSetLayoutBinding> m_Bindings;
 
 	bool m_bHasBindless = false;
+	uint32_t m_uiBindlessBinding = 0;
 	uint32_t m_uiBindlessMaxCount = 0;
 };

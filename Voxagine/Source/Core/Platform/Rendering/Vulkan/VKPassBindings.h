@@ -30,6 +30,10 @@
  * writes drift apart, and Vulkan only reports the symptom. */
 struct VKPassBinding
 {
+	/* Slots reserved for an unbounded HLSL array; mirrors the 256-entry
+	   descriptor heaps the DX12 managers allocated. */
+	static constexpr uint32_t m_uiBindlessCapacity = 256;
+
 	enum Kind
 	{
 		E_CONSTANT_BUFFER,

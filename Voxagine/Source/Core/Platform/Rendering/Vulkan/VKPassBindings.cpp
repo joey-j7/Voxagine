@@ -191,12 +191,14 @@ std::vector<VKPassBinding> VKBuildRenderPassBindings(const RenderPass::Data& dat
 
 	/* Must be last: Vulkan only permits a variable descriptor count on the
 	   highest binding in the set. DX12 had no such rule, but the bindless
-	   array already came last there too. */
+	   array already came last there too.
+	   m_uiBindlessResourceCount counts unbounded HLSL ranges, not resources -
+	   the DX12 heap held 256 slots, so the variable count reserves that. */
 	if (data.m_uiBindlessResourceCount > 0)
 	{
 		bindings.push_back(MakeBinding(VKPassBinding::E_BINDLESS_TEXTURES,
 		                               counters.m_uiTexture, pixelStage, nullptr,
-		                               "Unbounded Resources", data.m_uiBindlessResourceCount));
+		                               "Unbounded Resources", VKPassBinding::m_uiBindlessCapacity));
 
 		counters.m_uiTexture += data.m_uiBindlessResourceCount;
 	}
@@ -230,7 +232,7 @@ std::vector<VKPassBinding> VKBuildComputePassBindings(const ComputePass::Data& d
 	{
 		bindings.push_back(MakeBinding(VKPassBinding::E_BINDLESS_TEXTURES,
 		                               counters.m_uiTexture, stage, nullptr,
-		                               "Unbounded Resources", data.m_uiBindlessResourceCount));
+		                               "Unbounded Resources", VKPassBinding::m_uiBindlessCapacity));
 
 		counters.m_uiTexture += data.m_uiBindlessResourceCount;
 	}

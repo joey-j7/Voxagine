@@ -24,6 +24,16 @@ class RenderPass
 	friend class View;
 
 public:
+	/* What fills the pass's bindless resource array. DX12 expressed this by
+	   handing the pass a heap manager; Vulkan writes the descriptors from the
+	   matching manager's views at draw time. */
+	enum BindlessSource
+	{
+		E_BINDLESS_SOURCE_NONE,
+		E_BINDLESS_SOURCE_TEXTURES,
+		E_BINDLESS_SOURCE_MODELS,
+	};
+
 	struct Data
 	{
 		std::string						m_Name = "Unnamed";
@@ -64,6 +74,7 @@ public:
 		PCullMode						m_CullType = R_DEF_CULL_TYPE;
 
 		uint32_t						m_uiBindlessResourceCount = 0;
+		BindlessSource					m_BindlessSource = E_BINDLESS_SOURCE_NONE;
 
 		Vector2							m_TargetSize = Vector2(0.f, 0.f);
 		bool							m_bUseScreenResolution = true;

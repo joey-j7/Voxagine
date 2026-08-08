@@ -205,7 +205,25 @@ bool VKRenderContext::OnResize(uint32_t uiWidth, uint32_t uiHeight)
 
 	m_v2ScreenResolution = UVector2(m_Swapchain.GetExtent().width, m_Swapchain.GetExtent().height);
 
-	return RenderContext::OnResize(uiWidth, uiHeight);
+	if (!RenderContext::OnResize(uiWidth, uiHeight))
+		return false;
+
+	/* The base class only notifies SizeChanged listeners (camera, window);
+	   the render targets themselves are resized here. */
+	for (auto& entry : m_pRenderPasses)
+	{
+		PRenderPass* pPass = entry.second.get();
+
+		if (pPass == nullptr || !pPass->GetData().m_bUseScreenResolution)
+			continue;
+
+		const float fScale = pPass->GetData().m_fRenderScale;
+
+		pPass->Resize(UVector2(static_cast<uint32_t>(uiWidth * fScale),
+		                       static_cast<uint32_t>(uiHeight * fScale)));
+	}
+
+	return true;
 }
 
 void VKRenderContext::LoadShader(ShaderReference* pShaderReference)

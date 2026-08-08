@@ -26,6 +26,7 @@ UIPass::UIPass(
 	RenderPassData.m_BlendEnabled = true;
 
 	RenderPassData.m_uiBindlessResourceCount = 1;
+	RenderPassData.m_BindlessSource = RenderPass::E_BINDLESS_SOURCE_TEXTURES;
 
 #ifdef _WINDOWS
 	SetHeapManager(m_pContext->GetTextureManager()->GetHeapManager());

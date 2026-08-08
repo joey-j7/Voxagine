@@ -3,6 +3,7 @@
 
 #include "Core/Application.h"
 #include "Core/Platform/Platform.h"
+#include "Core/Platform/Rendering/RenderContext.h"
 #include "Core/Settings.h"
 
 #include <SDL3/SDL.h>
@@ -109,11 +110,9 @@ void SDLWindowContext::Poll()
 		switch (event.type)
 		{
 		case SDL_EVENT_QUIT:
-			m_bShouldClose = true;
-			break;
-
 		case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
 			m_bShouldClose = true;
+			m_pPlatform->GetApplication()->Exit();
 			break;
 
 		case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
@@ -121,10 +120,17 @@ void SDLWindowContext::Poll()
 			const uint32_t uiWidth = static_cast<uint32_t>(event.window.data1);
 			const uint32_t uiHeight = static_cast<uint32_t>(event.window.data2);
 
+
 			const IVector2 delta(static_cast<int32_t>(uiWidth) - static_cast<int32_t>(m_v2Size.x),
 			                     static_cast<int32_t>(uiHeight) - static_cast<int32_t>(m_v2Size.y));
 
 			OnResize(uiWidth, uiHeight, delta);
+
+			/* Drives the swapchain and render target recreation; under Win32
+			   this went through the message pump instead. */
+			if (m_pPlatform->GetRenderContext() != nullptr)
+				m_pPlatform->GetRenderContext()->OnResize(uiWidth, uiHeight);
+
 			break;
 		}
 

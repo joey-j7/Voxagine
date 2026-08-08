@@ -165,4 +165,9 @@ void Camera::CalculateProjection(uint32_t fWindowSizeX, uint32_t fWindowSizeY, I
 	}
 
 	m_bIsRecalculated = true;
+
+	/* Fold the new projection into the MVP now. Outside the editor nothing
+	   calls Recalculate per frame, so a camera that never moves kept shipping
+	   the pre-resize matrix and the world rendered at the old aspect ratio. */
+	Recalculate();
 }
