@@ -32,35 +32,6 @@
    ground plane. Becomes fog input in RENDERING_PLAN.md phase 6.1. */
 #define SKY_COLOR float4(150.0 / 255.0, 230.0 / 255.0, 255.0 / 255.0, 1.0)
 
-/* Low-resolution depth prepass (RENDERING_PLAN.md phase 3).
-
-   PREPASS_ENABLED turns the consumer side off without unwiring the pass, which
-   is how the phase was measured against phase 2. The prepass still runs; only
-   the skip is dropped.
-
-   PREPASS_SCALE is the prepass target's size as a fraction of the voxel pass's,
-   and must match DepthPrepass::k_fScale on the C++ side - change both or
-   neither. One texel therefore stands in for 1/PREPASS_SCALE^2 pixels, 64 at
-   an eighth.
-
-   PREPASS_MARGIN is subtracted from the distance the prepass reports before
-   the march starts there. The prepass measures nine rays and the pixel being
-   shaded is not one of them, so the margin covers what a 3x3 minimum does not:
-   geometry that slips between them. Raise this first if geometry flickers or
-   drops out at silhouettes - the plan's own advice is to prefer margin over
-   prepass resolution. */
-#define PREPASS_ENABLED 1
-#define PREPASS_SCALE 0.125
-
-#define PREPASS_MARGIN 4.0
-
-/* Written by the prepass for a ray that enters no occupied brick, and the
-   value the target clears to. Tested against a much smaller number so that a
-   NaN - which compares false against everything - lands on "no information"
-   and skips nothing. Mirrors DepthPrepass::k_fMiss. */
-#define PREPASS_MISS 1.0e9
-#define PREPASS_MISS_TEST 1.0e8
-
 /* How far inside the resident window an entry point computed on one of its
    faces is nudged, so that floor() cannot name the cell on the far side. */
 #define WORLD_ENTRY_EPSILON 0.001

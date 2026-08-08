@@ -34,7 +34,6 @@
 /* Passes */
 #include "Core/Platform/Rendering/Passes/ParticlePass.h"
 #include "Core/Platform/Rendering/Passes/DebugPass.h"
-#include "Core/Platform/Rendering/Passes/DepthPrepass.h"
 #include "Core/Platform/Rendering/Passes/PostProcessingPass.h"
 #include "Core/Platform/Rendering/Passes/UIPass.h"
 #include "Core/Platform/Rendering/Passes/VoxelPass.h"
@@ -428,7 +427,6 @@ bool RenderContext::Present()
 	Buffer* pVoxelBakeBuffer = m_mBuffers["Bake Command Data"].get();
 
 	PRenderPass* pParticlePass = m_pRenderPasses["Particles"].get();
-	PRenderPass* pDepthPrepass = m_pRenderPasses["Depth Prepass"].get();
 	PRenderPass* pVoxelPass = m_pRenderPasses["Voxel"].get();
 	PRenderPass* pUIPass = m_pRenderPasses["UI Renderer"].get();
 	PRenderPass* pPostProcessingPass = m_pRenderPasses["Post Processing"].get();
@@ -543,14 +541,6 @@ bool RenderContext::Present()
 			pCameraBuffer->AddConstantData(m_uiParticleCount);
 			pCameraBuffer->AddConstantData(static_cast<uint32_t>(GetAABBList().size()));
 
-			/* Inverse MVP, for the depth prepass's camera rays. Inverting the
-			   matrix the voxel pass projects its proxy cubes with - rather than
-			   rebuilding a ray from FOV and aspect as Camera.hlsl's GetRay does
-			   - is what guarantees the prepass ray and the pixel's ray are the
-			   same ray. The prepass is only conservative to the extent that
-			   they are. */
-			pCameraBuffer->AddConstantData(glm::inverse(m_CameraData.m_MVP));
-
 			/* Far-field cell grid (RENDERING_PLAN.md phase 4), or zero when
 			   there is none - a level the window already covers, a build that
 			   found nothing, or the runtime toggle off. FarField.hlsl tests
@@ -611,11 +601,6 @@ bool RenderContext::Present()
 		pVDirectEngine->Begin(pParticlePass);
 		pVDirectEngine->Draw(pParticlePass);
 		pVDirectEngine->End(pParticlePass);
-
-		/* The voxel pass samples this, so it closes before that one opens. */
-		pVDirectEngine->Begin(pDepthPrepass);
-		pVDirectEngine->Draw(pDepthPrepass);
-		pVDirectEngine->End(pDepthPrepass);
 
 		pVDirectEngine->Begin(pVoxelPass);
 		pVDirectEngine->Draw(pVoxelPass);
@@ -929,30 +914,6 @@ void RenderContext::InitializeRenderLoop()
 		m_pRenderPasses.emplace(m_pParticlePass->GetData().m_Name, std::unique_ptr<ParticlePass>(m_pParticlePass));
 	}
 
-	/* Low-resolution depth prepass (RENDERING_PLAN.md phase 3). Before the
-	   voxel pass, which samples its target. */
-	DepthPrepass* pDepthPrepass = nullptr;
-
-	{
-		/* The same full-screen triangle post processing draws. */
-		Shader::Info vertexShader;
-		vertexShader.m_FilePath = "Engine/Assets/Shaders/ScreenQuad.vs";
-		vertexShader.m_Type = Shader::E_VERTEX;
-
-		m_pShaders.push_back(std::make_unique<Shader>(Get(), vertexShader));
-		Shader* pVertexShader = m_pShaders.back().get();
-
-		Shader::Info pixelShader;
-		pixelShader.m_FilePath = "Engine/Assets/Shaders/SDFPrepass.ps";
-		pixelShader.m_Type = Shader::E_PIXEL;
-
-		m_pShaders.push_back(std::make_unique<Shader>(Get(), pixelShader));
-		Shader* pPixelShader = m_pShaders.back().get();
-
-		pDepthPrepass = new DepthPrepass(Get(), pVertexShader, pPixelShader, pCameraBuffer, m_pVoxelMapper, m_pBrickMapper);
-		m_pRenderPasses.emplace(pDepthPrepass->GetData().m_Name, std::unique_ptr<DepthPrepass>(pDepthPrepass));
-	}
-
 	// Voxel Pass
 	{
 		// Vertex shader
@@ -972,7 +933,7 @@ void RenderContext::InitializeRenderLoop()
 		Shader* pPixelShader = m_pShaders.back().get();
 
 		// Create screen render target from data
-		pVoxelPass = new VoxelPass(Get(), pVertexShader, pPixelShader, pPointSampler, m_pVoxelMapper, m_pBrickMapper, pCameraBuffer, pAABBBuffer, m_pParticlePass->GetTargetView(0), m_pParticlePass->GetTargetView(1), pDepthPrepass->GetTargetView(0));
+		pVoxelPass = new VoxelPass(Get(), pVertexShader, pPixelShader, pPointSampler, m_pVoxelMapper, m_pBrickMapper, pCameraBuffer, pAABBBuffer, m_pParticlePass->GetTargetView(0), m_pParticlePass->GetTargetView(1));
 		m_pRenderPasses.emplace(pVoxelPass->GetData().m_Name, std::unique_ptr<VoxelPass>(pVoxelPass));
 	}
 

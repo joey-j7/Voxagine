@@ -12,7 +12,7 @@ public:
 	VoxelPass(
 		PRenderContext* pContext, Shader* pVertex, Shader* pPixel, Sampler* pSampler,
 		Mapper* pVoxelMapper, Mapper* pBrickMapper, Buffer* pCameraBuffer, Buffer* pAABBBuffer,
-		View* pParticleTexture, View* pParticleDepthTexture, View* pPrepassTexture
+		View* pParticleTexture, View* pParticleDepthTexture
 	);
 
 	virtual void Begin(PCommandEngine* pEngine) override;

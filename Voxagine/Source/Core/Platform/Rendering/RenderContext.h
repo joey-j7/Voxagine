@@ -282,16 +282,6 @@ public:
 	   On demand only, for the same reason. */
 	uint32_t ValidateFarField();
 
-	/* Low-resolution depth prepass (RENDERING_PLAN.md phase 3). Toggleable at
-	   runtime because what it saves depends on how much empty space the primary
-	   rays cross before they reach geometry, which is a property of where the
-	   camera is standing - so the comparison is only meaningful without moving
-	   between the two measurements. Disabled, the pass stops drawing and its
-	   target keeps the miss value it clears to, which the marcher reads as "no
-	   information" and skips nothing. */
-	bool IsDepthPrepassEnabled() const { return m_bDepthPrepassEnabled; }
-	void SetDepthPrepassEnabled(bool bEnabled) { m_bDepthPrepassEnabled = bEnabled; }
-
 	/* Far-field LOD volume (RENDERING_PLAN.md phase 4): the whole level at a
 	   quarter resolution, so a ray that leaves the 3x3 detail window has
 	   something to hit. See FarFieldVolume. */
@@ -306,9 +296,9 @@ public:
 	   the toggle below reports when off. */
 	UVector3 GetFarFieldShaderGridSize() const;
 
-	/* Runtime toggle, for the same reason the depth prepass has one: what the
-	   far field costs depends entirely on how much sky is on screen, so an A/B
-	   is only meaningful without moving the camera between measurements. */
+	/* Runtime toggle: what the far field costs depends entirely on how much
+	   sky is on screen, so an A/B is only meaningful without moving the camera
+	   between measurements. */
 	bool IsFarFieldEnabled() const { return m_bFarFieldEnabled; }
 	void SetFarFieldEnabled(bool bEnabled) { m_bFarFieldEnabled = bEnabled; ForceCameraDataUpdate(); }
 
@@ -477,7 +467,6 @@ protected:
 	bool m_bDebugEnabled = false;
 	bool m_bDebugCleared = false;
 
-	bool m_bDepthPrepassEnabled = true;
 	bool m_bFarFieldEnabled = true;
 
 	/* The camera of the previous upload, which is the one the voxel image post
