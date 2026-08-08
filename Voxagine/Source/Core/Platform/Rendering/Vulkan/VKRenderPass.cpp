@@ -386,7 +386,7 @@ void VKRenderPass::Begin(PCommandEngine* pEngine)
 	pEngine->SetRenderingOpen(true);
 }
 
-void VKRenderPass::WriteDescriptors(PCommandEngine* pEngine, VkDescriptorSet set)
+bool VKRenderPass::WriteDescriptors(PCommandEngine* pEngine, VkDescriptorSet set)
 {
 	std::vector<VkWriteDescriptorSet> writes;
 	std::vector<VkDescriptorBufferInfo> bufferInfos;
@@ -487,7 +487,22 @@ void VKRenderPass::WriteDescriptors(PCommandEngine* pEngine, VkDescriptorSet set
 		{
 			/* GetNative is non-const, and the binding table holds sources as
 			   const void*. */
-			View* pView = const_cast<View*>(static_cast<const View*>(binding.m_pSource));
+			View* pView = nullptr;
+
+			if (binding.m_Source == VKPassBinding::E_SOURCE_PASS)
+			{
+				/* Resolved now rather than at Init: the source pass flips its
+				   back buffer between frames, so the target view changes. */
+				PRenderPass* pSourcePass =
+					const_cast<PRenderPass*>(static_cast<const PRenderPass*>(binding.m_pSource));
+
+				if (pSourcePass != nullptr)
+					pView = pSourcePass->GetTargetView(binding.m_uiViewIndex);
+			}
+			else
+			{
+				pView = const_cast<View*>(static_cast<const View*>(binding.m_pSource));
+			}
 
 			if (pView == nullptr || pView->GetNative() == nullptr)
 				continue;
@@ -537,6 +552,24 @@ void VKRenderPass::WriteDescriptors(PCommandEngine* pEngine, VkDescriptorSet set
 	}
 
 	VX_UNUSED(pEngine);
+
+	/* Every binding the layout declares must have been written. Drawing with a
+	   partially updated set means the shader samples undefined descriptors;
+	   for the SDF marcher that is not a visual glitch but an unbounded loop,
+	   which stalls the GPU long enough for the compositor to freeze. */
+	/* The bindless array is declared PARTIALLY_BOUND, so leaving it unwritten
+	   is legal as long as the shader does not index a slot that was never
+	   filled. It holds the voxel model textures, which are populated as models
+	   load, so requiring it here would block the pass from ever drawing. */
+	size_t uiRequired = 0;
+
+	for (const VKPassBinding& binding : m_Bindings)
+	{
+		if (binding.m_Kind != VKPassBinding::E_BINDLESS_TEXTURES)
+			++uiRequired;
+	}
+
+	return writes.size() >= uiRequired;
 }
 
 void VKRenderPass::Draw(PCommandEngine* pEngine)
@@ -580,13 +613,22 @@ void VKRenderPass::Draw(PCommandEngine* pEngine)
 	{
 		VkDescriptorSet set = m_DescriptorLayout.Allocate();
 
-		if (set != VK_NULL_HANDLE)
+		if (set == VK_NULL_HANDLE || !WriteDescriptors(pEngine, set))
 		{
-			WriteDescriptors(pEngine, set);
+			/* Skip the draw rather than risk a GPU hang. Reported once so an
+			   incomplete pass is visible instead of silently blank. */
+			if (!m_bWarnedIncomplete)
+			{
+				fprintf(stderr, "[vulkan] '%s' has incomplete descriptors; skipping its draw\n",
+				        m_Data.m_Name.c_str());
+				m_bWarnedIncomplete = true;
+			}
 
-			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout,
-			                        0, 1, &set, 0, nullptr);
+			return;
 		}
+
+		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout,
+		                        0, 1, &set, 0, nullptr);
 	}
 
 	vkCmdDraw(cmd, m_Data.m_uiVertexCount, m_Data.m_uiInstanceCount, 0, 0);

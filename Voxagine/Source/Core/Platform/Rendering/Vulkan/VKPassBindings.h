@@ -58,7 +58,11 @@ struct VKPassBinding
 		E_SOURCE_BUFFER,
 		E_SOURCE_MAPPER,
 		E_SOURCE_VIEW,
-		E_SOURCE_SAMPLER
+		E_SOURCE_SAMPLER,
+
+		/* Another pass's render target, resolved at write time because
+		   the source pass may flip back buffers between frames. */
+		E_SOURCE_PASS
 	};
 
 	Source m_Source = E_SOURCE_NONE;
@@ -77,6 +81,9 @@ struct VKPassBinding
 	/* Whichever of Buffer/Mapper/View/Sampler produced this, or null for
 	   pass outputs and bindless slots. Not owned. */
 	const void* m_pSource = nullptr;
+
+	/* Which of the source pass's render views this binding refers to. */
+	uint32_t m_uiViewIndex = 0;
 
 	std::string m_Name;
 };

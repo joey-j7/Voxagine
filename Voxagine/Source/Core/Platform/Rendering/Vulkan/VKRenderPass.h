@@ -47,7 +47,8 @@ private:
 	bool CreateAttachments();
 
 	/* Fills a freshly allocated set from m_Bindings. */
-	void WriteDescriptors(PCommandEngine* pEngine, VkDescriptorSet set);
+	/* False when any declared binding could not be written. */
+	bool WriteDescriptors(PCommandEngine* pEngine, VkDescriptorSet set);
 
 	/* Begin, ignoring the has-anything-to-draw test. */
 	void ForceBegin(PCommandEngine* pEngine);
@@ -64,4 +65,5 @@ private:
 
 	/* True between vkCmdBeginRendering and vkCmdEndRendering. */
 	bool m_bIsRendering = false;
+	bool m_bWarnedIncomplete = false;
 };

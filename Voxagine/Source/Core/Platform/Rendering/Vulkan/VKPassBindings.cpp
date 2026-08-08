@@ -169,9 +169,13 @@ std::vector<VKPassBinding> VKBuildRenderPassBindings(const RenderPass::Data& dat
 
 		for (uint32_t j = 0; j < pPass->GetData().m_uiRenderViewCount; ++j)
 		{
-			bindings.push_back(MakeBinding(VKPassBinding::E_SAMPLED_IMAGE,
-			                               counters.m_uiTexture++, pixelStage, nullptr,
-			                               "Pass " + std::to_string(i) + " View " + std::to_string(j)));
+			VKPassBinding binding = MakeBinding(VKPassBinding::E_SAMPLED_IMAGE,
+			                                    counters.m_uiTexture++, pixelStage, pPass,
+			                                    "Pass " + std::to_string(i) + " View " + std::to_string(j),
+			                                    1, VKPassBinding::E_SOURCE_PASS);
+			binding.m_uiViewIndex = j;
+
+			bindings.push_back(binding);
 		}
 	}
 

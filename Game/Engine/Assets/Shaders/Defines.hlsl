@@ -19,6 +19,7 @@
 
 #define VOXEL_BUFFER BUFFER(VOXEL_FORMAT)
 #define VOXEL_RW_BUFFER RW_BUFFER(VOXEL_FORMAT)
+#define VOXEL_BUFFER_LOCAL BUFFER(VOXEL_FORMAT)
 
 #define EMPTY_VOXEL 0
 
@@ -49,8 +50,22 @@
 
 #define VOXEL_FORMAT float4
 
-#define VOXEL_BUFFER BUFFER(VOXEL_FORMAT)
-#define VOXEL_RW_BUFFER RW_BUFFER(VOXEL_FORMAT)
+/* The voxel buffers are float4 in the shader but the engine stores one 32-bit
+   RGBA8 texel per voxel and relies on the view converting on read. D3D12 took
+   that from the UAV format; SPIR-V carries the format on the declaration, and
+   without this DXC assumes Rgba32f and the view no longer matches. */
+#ifdef __spirv__
+#define VOXEL_IMAGE_FORMAT [[vk::image_format("rgba8")]]
+#else
+#define VOXEL_IMAGE_FORMAT
+#endif
+
+#define VOXEL_BUFFER VOXEL_IMAGE_FORMAT BUFFER(VOXEL_FORMAT)
+#define VOXEL_RW_BUFFER VOXEL_IMAGE_FORMAT RW_BUFFER(VOXEL_FORMAT)
+
+/* Same type without the annotation, for local aliases - the attribute is only
+   valid on a resource declaration. */
+#define VOXEL_BUFFER_LOCAL BUFFER(VOXEL_FORMAT)
 
 #define EMPTY_VOXEL float4(0.0, 0.0, 0.0, 0.0)
 
