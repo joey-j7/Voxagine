@@ -206,6 +206,9 @@ private:
 
 	/* Mirrors RenderContext::IsDepthPrepassEnabled's default. */
 	bool m_bDepthPrepassEnabled = true;
+
+	/* Mirrors RenderContext::IsFarFieldEnabled's default. */
+	bool m_bFarFieldEnabled = true;
 	bool m_bInEditor = true;
 
 	ImGuizmo::OPERATION m_bCurrentGizmoOperation = ImGuizmo::OPERATION::TRANSLATE;

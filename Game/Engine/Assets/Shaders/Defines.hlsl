@@ -65,6 +65,45 @@
    faces is nudged, so that floor() cannot name the cell on the far side. */
 #define WORLD_ENTRY_EPSILON 0.001
 
+/* Far-field LOD volume (RENDERING_PLAN.md phase 4). The whole level at
+   FARFIELD_SIZE voxels per cell, marched where the 3x3 detail window does not
+   reach. FARFIELD_SHIFT is FarFieldVolume::k_uiShift on the C++ side - change
+   both or neither.
+
+   The far field reuses BRICK_SHIFT for its own occupancy bricks, over its cell
+   grid rather than the window's voxels, so one cell-space brick spans
+   BRICK_SIZE * FARFIELD_SIZE = 32 world units. */
+#define FARFIELD_SHIFT 2
+#define FARFIELD_SIZE 4
+#define FARFIELD_SIZE_F 4.0
+#define FARFIELD_INV_SIZE 0.25
+
+/* Cell crossings a ray can make inside one far-field brick: 3 axes x
+   BRICK_SIZE cells, as BRICK_MAX_VOXEL_STEPS is for the window. */
+#define FARFIELD_MAX_CELL_STEPS 24
+
+/* How the far field is lit: exactly what VoxelRenderer.ps.hlsl does for a
+   surface whose shadow ray found nothing, and nothing else. No shadow ray and
+   no AO - at four voxels per cell there is no detail for either to land on, and
+   it is only ever seen at a distance.
+
+   Sharing AMBIENT_VALUE rather than picking a far-field constant is what keeps
+   the same hillside from changing brightness as it crosses the detail window's
+   edge. A tuned value here reads as a seam, which is how the first attempt at
+   this was found. */
+#define FARFIELD_AMBIENT AMBIENT_VALUE
+
+/* Pushed off the window's face before the far-field march starts, in world
+   units, so that a ray leaving the detail window cannot re-enter the cell it
+   just left through rounding. One far-field cell. */
+#define FARFIELD_ENTRY_EPSILON 4.0
+
+/* Height of the endless ground plane GetBackground draws, which has to be the
+   *top* of the chunk ground plane rather than its base: Chunk::UpdateGroundPlane
+   fills the voxel layer at integer y = 0, and a voxel at integer y occupies
+   [y, y+1]. */
+#define GROUND_PLANE_HEIGHT 1.0
+
 #define DEG2RAD 0.0174532925
 #define RAD2DEG 57.2957795
 

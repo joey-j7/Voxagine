@@ -154,6 +154,39 @@ MarchResult MarchBricks(float3 v3Origin, float3 v3Direction, int iMaxBrickSteps)
 
 			if (bFirstBrick) {
 				v3Position = int3(floor(v3Origin));
+
+				/* A march that begins *inside* an occupied voxel has no entry
+				   face, so there is no normal to report. The DDA below would
+				   derive one anyway, from the next crossing rather than a
+				   crossing already made - and for an origin sitting on a voxel
+				   face, the nearest crossing is that same face. The result is a
+				   horizontal normal on a piece of floor.
+
+				   That is what draws the strip along the resident window's
+				   boundary. VoxelRenderer.vs.hlsl clamps the proxy cube's
+				   surface to worldSize, so the edge fragments start the march
+				   exactly on the window's face and immediately inside the
+				   ground layer. Every pixel there came out +/-X or +/-Z where
+				   its neighbours were +Y: dark, because it faces away from the
+				   light, with GetShineLine's vertical-wall branch adding a lit
+				   rim along the top.
+
+				   This is the place for the test rather than MarchDiffuse's
+				   out-of-window path, which only sees the fragments whose
+				   clamped origin floors to *outside* the window. The ones that
+				   land a fraction inside come straight here, and fixing only
+				   the first turned the strip into a dashed version of itself.
+
+				   Reporting a miss hands the pixel to the background, which is
+				   the honest answer at a boundary that is a cut through the
+				   world rather than a surface in it: the endless ground plane
+				   and the far-field volume both already draw what is on the
+				   other side, so the world continues instead of ending in a
+				   wall. */
+				if (IsInChunk(v3Position) && GetVoxel(float3(v3Position)).a > 0.0) {
+					result.Color = float4(CLEAR_COLOR, 0.0);
+					return result;
+				}
 			}
 			else {
 				/* Reconstruct the entry point from the crossing parameter. It

@@ -5,7 +5,9 @@
 
 PostProcessingPass::PostProcessingPass(
 	PRenderContext* pContext, Shader* pVertex, Shader* pPixel, Sampler* pSampler,
-	Buffer* pCameraBuffer, Mapper* pVoxelMapper, std::vector<View*> pTextures
+	Buffer* pCameraBuffer, Mapper* pVoxelMapper,
+	Mapper* pFarFieldMapper, Mapper* pFarFieldBrickMapper,
+	std::vector<View*> pTextures
 ) : PRenderPass(pContext)
 {
 	// Creates a screen render target (for each buffer, m_uiFrameCount)
@@ -24,7 +26,13 @@ PostProcessingPass::PostProcessingPass(
 
 	RenderPassData.m_Buffers.push_back(pCameraBuffer);
 	RenderPassData.m_Samplers.push_back(pSampler);
+	/* Order is the SPIR-V contract: mappers take u registers in the order they
+	   are pushed, so the voxel buffer stays at u0 and the far-field volume and
+	   its bricks land at u1/u2 - matching PostProcessing.ps.hlsl. Appended
+	   rather than inserted, so nothing that was already bound moves. */
 	RenderPassData.m_Mappers.push_back(pVoxelMapper);
+	RenderPassData.m_Mappers.push_back(pFarFieldMapper);
+	RenderPassData.m_Mappers.push_back(pFarFieldBrickMapper);
 
 	for (View* pTexture : pTextures)
 	{

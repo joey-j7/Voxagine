@@ -97,6 +97,13 @@ void ChunkSystem::Start()
 	}
 
 	SetGroundPlane(m_pWorld->GetGroundTexturePath());
+
+	/* Far-field LOD volume (RENDERING_PLAN.md phase 4). Here rather than in
+	   JsonSerializer::DeserializeWorld because it needs every chunk registered
+	   with this system and the voxel grid sized, both of which are only true
+	   once the system exists - and it is the chunk window's own limit that the
+	   far field exists to work around, so this is where it belongs. */
+	m_pWorld->GetApplication()->GetPlatform().GetRenderContext()->BuildFarField(m_pWorld);
 }
 
 bool ChunkSystem::CanProcessComponent(Component* pComponent)
@@ -323,6 +330,30 @@ void ChunkSystem::UpdateGroup(ChunkUpdateGroup& group)
 				return true;
 			}, [this, &group](bool bFinished)
 			{
+				/* This callback is the *main thread* - JobQueue runs the body
+				   above on a worker and the completion here - so everything in
+				   it is a frame stall, and a chunk becoming resident for the
+				   first time is the expensive case. Measured per phase rather
+				   than as a total, because the candidates behave differently:
+				   LoadEntities pulls models and textures off disk and each
+				   texture costs a GPU round trip (CLAUDE.md), while the physics
+				   and entity-update loops are pure CPU.
+
+				   Guarded so a disabled profiler pays one branch, as elsewhere.
+				   FrameProfiler has no mutex, which is why nothing reports from
+				   the worker body. */
+				const bool bProfiling = FrameProfiler::Get().IsEnabled();
+
+				auto now = []() { return std::chrono::steady_clock::now(); };
+				auto since = [](const std::chrono::steady_clock::time_point& start)
+				{
+					return std::chrono::duration<double, std::milli>(
+						std::chrono::steady_clock::now() - start).count();
+				};
+
+				std::chrono::steady_clock::time_point phase =
+					bProfiling ? now() : std::chrono::steady_clock::time_point();
+
 				//Update physics first
 				for (ChunkUpdateGroup::Item& item : group.GetItems())
 				{
@@ -330,7 +361,15 @@ void ChunkSystem::UpdateGroup(ChunkUpdateGroup& group)
 						m_pVoxelGrid->SetChunkVolumeAt(item.GridTargetIndex, item.pChunk->GetVoxelData());
 				}
 
+				if (bProfiling)
+				{
+					FrameProfiler::Get().Report("CPU Chunk SetChunkVolumeAt", since(phase));
+					phase = now();
+				}
+
 				//Load new entities
+				uint32_t uiLoaded = 0;
+
 				for (ChunkUpdateGroup::Item& item : group.GetItems())
 				{
 					if (item.ItemTarget == ChunkUpdateGroup::Item::Target::T_ASYNC_LOAD)
@@ -338,12 +377,21 @@ void ChunkSystem::UpdateGroup(ChunkUpdateGroup& group)
 						item.pChunk->LoadEntities();
 						item.pChunk->m_bIsLoaded = true;
 						item.pChunk->m_bFirstLoad = false;
+
+						++uiLoaded;
 					}
 					if (item.ItemTarget == ChunkUpdateGroup::Item::Target::T_MOVE)
 					{
 						item.pChunk->UpdateEntities();
 						item.pChunk->SetGridTarget(item.GridTargetIndex);
 					}
+				}
+
+				if (bProfiling)
+				{
+					FrameProfiler::Get().Report(
+						uiLoaded > 0 ? "CPU Chunk LoadEntities" : "CPU Chunk UpdateEntities", since(phase));
+					phase = now();
 				}
 
 				// Update offsets
@@ -358,6 +406,12 @@ void ChunkSystem::UpdateGroup(ChunkUpdateGroup& group)
 				pMainCamera->Recalculate();
 				pMainCamera->ForceUpdate();
 
+				if (bProfiling)
+				{
+					FrameProfiler::Get().Report("CPU Chunk Offsets", since(phase));
+					phase = now();
+				}
+
 				// Unload chunk with entities
 				for (ChunkUpdateGroup::Item& item : group.GetItems())
 				{
@@ -367,6 +421,9 @@ void ChunkSystem::UpdateGroup(ChunkUpdateGroup& group)
 						item.pChunk->UnloadAsync(&item, std::bind(&ChunkSystem::OnChunkUnloaded, this, std::placeholders::_1));
 					}
 				}
+
+				if (bProfiling)
+					FrameProfiler::Get().Report("CPU Chunk Unload", since(phase));
 
 				group.SetState(ChunkUpdateGroup::UpdateState::US_UNLOADING);
 				group.SetRendering(false);

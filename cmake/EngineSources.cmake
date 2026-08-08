@@ -43,6 +43,7 @@ set(VOXAGINE_ENGINE_SOURCES
     ${VOXAGINE_SOURCE_DIR}/Core/ECS/Systems/AudioSystem.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/ECS/Systems/Chunk/Chunk.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/ECS/Systems/Chunk/ChunkSystem.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/ECS/Systems/Chunk/FarFieldBaker.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/ECS/Systems/Chunk/ChunkUpdateGroup.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/ECS/Systems/Pathfinding/Grid/PathfindingChunk.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/ECS/Systems/Pathfinding/Grid/PathfindingChunkGrid.cpp
@@ -116,6 +117,7 @@ set(VOXAGINE_ENGINE_SOURCES
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Passes/VoxelPass.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/RenderContext.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/VoxelBrickGrid.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/FarFieldVolume.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/Managers/VKModelManager.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/Managers/VKTextureManager.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/VKRenderContext.cpp

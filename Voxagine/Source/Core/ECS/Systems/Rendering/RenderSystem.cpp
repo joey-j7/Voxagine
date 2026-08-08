@@ -239,10 +239,27 @@ void RenderSystem::PostTick(float fDeltaTime)
 	// Sort AABBs
 	m_pRenderContext->SortAABBs();
 
-	/* Ground plane SDF */
+	/* Ground plane SDF.
+
+	   Raised so the box's underside sits on *top* of the chunk ground plane
+	   rather than inside it. The ground is the voxel layer at integer y = 0,
+	   which occupies [0, 1], and this proxy used to span [0, 10] - so a ray
+	   entering through one of its side faces within that first unit began the
+	   march already inside an occupied voxel. VoxelRenderer.ps.hlsl takes the
+	   normal of a hit on the very first sample from the face the ray crossed to
+	   get in, which for a side face is horizontal: a piece of floor shaded as a
+	   wall, with GetShineLine's vertical-wall branch putting a lit rim along the
+	   top of it. Perspective stretches that one-voxel strip along the window's
+	   boundary into a receding line of dark wedges under a bright line.
+
+	   Starting at y = 1 leaves no way in below the ground's top face. A
+	   descending ray still crosses into the y = 0 layer during the march and
+	   gets the up normal it should, and one entering through the underside is
+	   travelling upward and correctly hits nothing. */
 	DebugBox box;
 	box.m_Extents = Vector3((float)m_v3WorldSize.x, 5.0f, (float)m_v3WorldSize.z) * 0.5f;
-	box.m_Center = m_pPhysicsSystem->m_VoxelGrid.GridToWorld(box.m_Extents);
+	box.m_Center = m_pPhysicsSystem->m_VoxelGrid.GridToWorld(
+		box.m_Extents + Vector3(0.f, R_GROUND_PLANE_HEIGHT, 0.f));
 	box.m_Color = VColors::LightSkyBlue;
 
 	StructuredVoxelBuffer buffer;

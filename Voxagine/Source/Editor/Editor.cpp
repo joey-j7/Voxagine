@@ -1144,6 +1144,26 @@ void Editor::RenderMainMenuBar()
 				m_pRenderContext->SetDepthPrepassEnabled(m_bDepthPrepassEnabled);
 			}
 
+			/* A/B for the far-field LOD volume (RENDERING_PLAN.md phase 4).
+			   Off, the horizon goes back to being the 3x3 chunk window's edge
+			   and post processing draws sky there instead - which is both the
+			   before picture and the way to measure what marching it costs.
+			   Watch [timing] Post Processing in the log. */
+			if (ImGui::MenuItem("Far Field", NULL, &m_bFarFieldEnabled))
+			{
+				m_pRenderContext->SetFarFieldEnabled(m_bFarFieldEnabled);
+			}
+
+			/* Cross-checks the far field's placement against the window's
+			   full-resolution copy of the same geometry, and names cells that
+			   disagree. Same reasoning as Validate Occupancy Bricks above: it
+			   reads the whole window back out of uncached memory, so it is a
+			   menu item rather than a per-frame check. */
+			if (ImGui::MenuItem("Validate Far Field", NULL))
+			{
+				m_pRenderContext->ValidateFarField();
+			}
+
 			ImGui::EndMenu();
 		}
 
