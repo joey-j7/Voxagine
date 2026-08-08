@@ -86,7 +86,7 @@ void ChunkSystem::Start()
 			m_pVoxelGrid->SetChunkVolumeAt(item.GridTargetIndex, item.pChunk->GetVoxelData());
 			if (!item.pChunk->IsFirstLoad())
 			{
-				RenderChunk(item, m_pWorld->GetApplication()->GetPlatform().GetRenderContext()->GetVoxelData());
+				RenderChunk(item, m_pWorld->GetApplication()->GetPlatform().GetRenderContext()->GetVoxelData(), false);
 			}
 			item.pChunk->SetGridTarget(item.GridTargetIndex);
 			break;
@@ -318,7 +318,7 @@ void ChunkSystem::UpdateGroup(ChunkUpdateGroup& group)
 				for (ChunkUpdateGroup::Item& item : group.GetItems())
 				{
 					if (item.ItemTarget != ChunkUpdateGroup::Item::Target::T_ASYNC_UNLOAD)
-						RenderChunk(item, viewPortData);
+						RenderChunk(item, viewPortData, true);
 				}
 				return true;
 			}, [this, &group](bool bFinished)
@@ -417,13 +417,28 @@ std::vector<ChunkUpdateGroup>::iterator ChunkSystem::RemoveUpdateGroup(const std
 	return m_UpdateGroups.erase(iter);
 }
 
-void ChunkSystem::RenderChunk(ChunkUpdateGroup::Item& updateItem, uint32_t* viewPortData)
+void ChunkSystem::RenderChunk(ChunkUpdateGroup::Item& updateItem, uint32_t* viewPortData, bool bBackBuffer)
 {
 	UVector3 gridDimensions = m_pVoxelGrid->GetDimensions();
 	UVector2 chunkOffset = updateItem.GridTargetIndex * m_ChunkSize;
 	std::vector<Voxel>& voxelData = updateItem.pChunk->GetVoxelData();
-	if (voxelData.size() > 0 && viewPortData != nullptr && m_pWorld->GetApplication()->GetPlatform().GetRenderContext()->GetVoxelDataSize() == m_pVoxelGrid->GetNumVoxels())
+
+	RenderContext* pRenderContext = m_pWorld->GetApplication()->GetPlatform().GetRenderContext();
+
+	if (voxelData.size() > 0 && viewPortData != nullptr && pRenderContext->GetVoxelDataSize() == m_pVoxelGrid->GetNumVoxels())
 	{
+		/* This overwrites the chunk's slice of the window in full, so its
+		   occupancy bricks are rebuilt from the chunk's own CPU-side voxels
+		   rather than by diffing against the mapping. Diffing would mean
+		   reading eight million voxels back out of uncached host-visible
+		   memory, which costs far more than the write itself. */
+		VoxelBrickGrid& brickGrid = pRenderContext->GetBrickGrid();
+
+		const UVector3 v3RegionMin(chunkOffset.x, 0, chunkOffset.y);
+		const UVector3 v3RegionSize(m_ChunkSize.x, gridDimensions.y, m_ChunkSize.y);
+
+		brickGrid.BeginRegion(bBackBuffer, v3RegionMin, v3RegionSize);
+
 		for (uint32_t z = chunkOffset.y; z < m_ChunkSize.y + chunkOffset.y; ++z)
 		{
 			for (uint32_t y = 0; y < gridDimensions.y; ++y)
@@ -432,12 +447,21 @@ void ChunkSystem::RenderChunk(ChunkUpdateGroup::Item& updateItem, uint32_t* view
 				Voxel* voxPtr = &voxelData[y * m_ChunkSize.x + (z - chunkOffset.y) * m_ChunkSize.x * gridDimensions.y];
 				for (uint32_t x = chunkOffset.x; x < m_ChunkSize.x + chunkOffset.x; ++x)
 				{
-					*ptr = voxPtr->Color;
+					const uint32_t uiColor = voxPtr->Color;
+					*ptr = uiColor;
+
+					/* Occupancy is alpha > 0 (rule 3) - the byte is a
+					   rendererState tag, not an opacity. */
+					if ((uiColor >> 24) != 0)
+						brickGrid.AddVoxel(bBackBuffer, x, y, z);
+
 					++ptr;
 					++voxPtr;
 				}
 			}
 		}
+
+		brickGrid.EndRegion(bBackBuffer, v3RegionMin, v3RegionSize);
 	}
 }
 
@@ -496,7 +520,7 @@ void ChunkSystem::OnWorldResumed(World* pWorld)
 		if (iter.second->IsLoaded())
 		{
 			ChunkUpdateGroup::Item item(ChunkUpdateGroup::Item::Target::T_ASYNC_LOAD, iter.second, iter.second->GetGridTarget(), false);
-			RenderChunk(item, viewPortData);
+			RenderChunk(item, viewPortData, false);
 			item.pChunk->UpdateEntities();
 		}
 	}

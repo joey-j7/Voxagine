@@ -5,6 +5,11 @@ SamplerState s0 : register(s0);
 
 VOXEL_RW_BUFFER voxelWorldData : register(u0);
 
+/* Occupancy counts per BRICK_SIZE^3 block - see SDFMarcher.hlsl. Declared
+   read-write because the pass binds it as a read-write mapper, which is what
+   keeps it out of the t register range the textures below already use. */
+RW_STRUCTURED_BUFFER(uint) voxelBrickData : register(u1);
+
 Texture2D<float4> particlePass : register(t1);
 Texture2D<float> particleDepthPass : register(t2);
 VOXEL_BUFFER voxelModelData[] : register(t3) {};
@@ -31,12 +36,18 @@ float4 main(PS_in IN) : TAR_OUT
     float3 rayOrigin = IN.WorldPosition - camOffset.xyz;
 	float3 rayDirection = normalize(IN.Direction.xyz);
 
+    /* Budget the walk by the window's diagonal in bricks, so nothing distant
+       is truncated. This replaces the hardcoded 700-voxel cap the scale-up
+       introduced - on a 768x128x768 window the diagonal is ~1094 voxels, so
+       700 cut every long sightline short. The brick walk is what makes the
+       full diagonal affordable (RENDERING_PLAN.md phase 2). */
+    int maxBrickSteps = int(length(float3(worldSize.xyz)) * BRICK_INV_SIZE) + 2;
+
     MarchResult marchDiffuse = MarchDiffuse
     (
 		rayOrigin,
 		rayDirection,
-		worldSize,
-		700
+		maxBrickSteps
 	);
 
     if (particleDepth < distance(marchDiffuse.SmoothPosition + camOffset, camPosition.xyz) && particleColor.a != 0.0)
@@ -60,15 +71,14 @@ float4 main(PS_in IN) : TAR_OUT
 
     if (difference > 0.1)
 	{
+        /* Same budget as the primary ray, and at full stride. The 64-step,
+           2x-stride walk this replaces could not reach across the level and
+           stepped straight over single-voxel-thick occluders; its coarse
+           quantization is also what made phase 1's distance fade band. */
         MarchResult marchLighting = MarchLight(
             marchDiffuse.SmoothPosition - lightDirection.xyz,
             -lightDirection.xyz,
-            float3(
-                float(worldSize.x),
-                float(worldSize.y),
-                float(worldSize.z)
-            ),
-            64
+            maxBrickSteps
         );
 
         if (marchLighting.Color.a > 0.0) {

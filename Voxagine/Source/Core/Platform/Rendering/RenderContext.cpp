@@ -246,7 +246,20 @@ bool RenderContext::ResizeWorldBuffer()
 	bool bChanged =  m_pVoxelMapper->Resize(uWorldSize.x * uWorldSize.y * uWorldSize.z, sizeof(uint32_t));
 	m_pVoxelData = m_pVoxelMapper->GetData();
 
+	/* The brick grid describes this window, so it follows the same resize.
+	   Order matters: the grid drops its mirror pointers first, the mapper is
+	   then free to reallocate underneath it, and Flush repopulates. */
+	m_BrickGrid.Resize(uWorldSize);
+	m_pBrickMapper->Resize(m_BrickGrid.GetBrickCount(), sizeof(uint32_t));
+	m_BrickGrid.SetBuffers(m_pBrickMapper->GetData(), m_pBrickMapper->GetBackBufferData());
+	m_BrickGrid.Flush();
+
 	return bChanged;
+}
+
+uint32_t RenderContext::ValidateBrickGrid()
+{
+	return m_BrickGrid.Validate(false, m_pVoxelData);
 }
 
 uint32_t RenderContext::GetVoxel(uint32_t uiID) const
@@ -258,6 +271,8 @@ void RenderContext::ClearVoxels()
 {
 	memset(m_pVoxelMapper->GetData(), 0, m_pVoxelMapper->GetInfo().m_uiElementCount * m_pVoxelMapper->GetInfo().m_uiElementSize);
 	memset(m_pVoxelMapper->GetBackBufferData(), 0, m_pVoxelMapper->GetInfo().m_uiElementCount * m_pVoxelMapper->GetInfo().m_uiElementSize);
+
+	m_BrickGrid.ClearAll();
 }
 
 void RenderContext::Clear()
@@ -687,7 +702,38 @@ void RenderContext::InitializeRenderLoop()
 		m_pVoxelMapper->BufferSwapped += Event<uint32_t*&>::Subscriber([this](uint32_t*& newData)
 		{
 			m_pVoxelData = newData;
+
+			/* The brick grid and its mapper describe the voxel window, so they
+			   flip with it or they describe the wrong one. Doing it from here
+			   rather than at the ChunkSystem call site is what guarantees the
+			   three stay in lockstep. */
+			m_pBrickMapper->SwapBuffer();
+			m_BrickGrid.Swap();
+			m_BrickGrid.SetBuffers(m_pBrickMapper->GetData(), m_pBrickMapper->GetBackBufferData());
 		}, this);
+	}
+
+	/* Occupancy brick mapper (RENDERING_PLAN.md phase 2)
+	 *
+	 * No colour format, so it binds as a plain storage buffer rather than a
+	 * texel buffer - the shader reads raw counts, not texels. Read-write only
+	 * so that it lands in the u register range: the t range in front of it is
+	 * already occupied by the AABB buffer and the particle textures, and
+	 * taking a t register would renumber all of them. Nothing writes to it
+	 * from the GPU.
+	 *
+	 * Back-buffered for the same reason the voxel mapper is - see the
+	 * BufferSwapped subscriber above. */
+	{
+		Mapper::Info brickMapperDesc;
+		brickMapperDesc.m_Name = "Voxel Brick Mapper";
+		brickMapperDesc.m_ColorFormat = E_UNKNOWN;
+		brickMapperDesc.m_GPUAccessType = E_READ_WRITE;
+
+		brickMapperDesc.m_bHasBackBuffer = true;
+
+		m_pMappers.push_back(std::make_unique<Mapper>(Get(), brickMapperDesc, false));
+		m_pBrickMapper = m_pMappers.back().get();
 	}
 
 	// Particle Pass
@@ -740,7 +786,7 @@ void RenderContext::InitializeRenderLoop()
 		Shader* pPixelShader = m_pShaders.back().get();
 
 		// Create screen render target from data
-		pVoxelPass = new VoxelPass(Get(), pVertexShader, pPixelShader, pPointSampler, m_pVoxelMapper, pCameraBuffer, pAABBBuffer, m_pParticlePass->GetTargetView(0), m_pParticlePass->GetTargetView(1));
+		pVoxelPass = new VoxelPass(Get(), pVertexShader, pPixelShader, pPointSampler, m_pVoxelMapper, m_pBrickMapper, pCameraBuffer, pAABBBuffer, m_pParticlePass->GetTargetView(0), m_pParticlePass->GetTargetView(1));
 		m_pRenderPasses.emplace(pVoxelPass->GetData().m_Name, std::unique_ptr<VoxelPass>(pVoxelPass));
 	}
 

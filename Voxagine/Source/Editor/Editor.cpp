@@ -1121,6 +1121,18 @@ void Editor::RenderMainMenuBar()
 				GetEditorWorld()->GetRenderSystem()->EnableDebugLines(m_bRenderDebugLines);
 			}
 
+			/* Recomputes the marcher's occupancy bricks from the voxel buffer
+			   and logs anything that disagrees - a brick counted at zero while
+			   it holds geometry is how a bad increment shows up, and it shows
+			   up as geometry quietly missing from the image rather than as a
+			   crash. Reads the whole window back out of uncached memory, so it
+			   stalls for a moment on a large level; that is why it is a menu
+			   item and not a per-frame check. */
+			if (ImGui::MenuItem("Validate Occupancy Bricks", NULL))
+			{
+				m_pRenderContext->ValidateBrickGrid();
+			}
+
 			ImGui::EndMenu();
 		}
 

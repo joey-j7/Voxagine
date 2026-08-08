@@ -5,6 +5,9 @@ SamplerState s0 : register(s0);
 
 VOXEL_RW_BUFFER voxelWorldData : register(u0);
 
+/* Occupancy counts per BRICK_SIZE^3 block - see SDFMarcher.hlsl. */
+RW_STRUCTURED_BUFFER(uint) voxelBrickData : register(u1);
+
 Texture2D<float4> particlePass : register(t1);
 VOXEL_BUFFER voxelModelData[] : register(t2) {};
 
@@ -31,12 +34,15 @@ float4 main(PS_in IN) : TAR_OUT
 	float3 rayOrigin = IN.WorldPosition - camOffset.xyz;
 	float3 rayDirection = normalize(IN.Direction.xyz);
 
+    /* Window diagonal in bricks - see VoxelRenderer.ps.hlsl for why the
+       hardcoded 700 is gone. */
+    int maxBrickSteps = int(length(float3(worldSize.xyz)) * BRICK_INV_SIZE) + 2;
+
     MarchResult marchDiffuse = MarchDiffuse
     (
 		rayOrigin,
 		rayDirection,
-		worldSize,
-		700
+		maxBrickSteps
 	);
 	
     /* Return transparent when not marched against anything. Sky and endless

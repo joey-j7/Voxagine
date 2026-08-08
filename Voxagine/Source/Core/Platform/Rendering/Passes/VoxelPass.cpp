@@ -13,7 +13,7 @@
 
 VoxelPass::VoxelPass(
 	PRenderContext* pContext, Shader* pVertex, Shader* pPixel, Sampler* pSampler,
-	Mapper* pVoxelMapper, Buffer* pCameraBuffer, Buffer* pAABBBuffer,
+	Mapper* pVoxelMapper, Mapper* pBrickMapper, Buffer* pCameraBuffer, Buffer* pAABBBuffer,
 	View* pParticleTexture, View* pParticleDepthTexture
 ) : PRenderPass(pContext)
 {
@@ -36,7 +36,11 @@ VoxelPass::VoxelPass(
 
 	RenderPassData.m_Samplers.push_back(pSampler);
 
+	/* Order is the SPIR-V contract: the mappers take u registers in the order
+	   they are pushed, so the voxel buffer is u0 and the brick counts u1,
+	   matching VoxelRenderer.ps.hlsl. */
 	RenderPassData.m_Mappers.push_back(pVoxelMapper);
+	RenderPassData.m_Mappers.push_back(pBrickMapper);
 
 	RenderPassData.m_Buffers.push_back(pCameraBuffer);
 	RenderPassData.m_Buffers.push_back(pAABBBuffer);
