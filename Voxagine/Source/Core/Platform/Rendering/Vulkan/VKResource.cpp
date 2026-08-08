@@ -66,6 +66,7 @@ bool VKResource::CreateImage(VKDevice* pDevice, const VKAllocator* pAllocator,
 
 	m_Kind = E_KIND_IMAGE;
 	m_State = E_STATE_COMMON_RESOURCE;
+	m_bLayoutUndefined = true;
 
 	return true;
 }
@@ -143,11 +144,24 @@ void VKResource::Unmap()
 
 void VKResource::Transition(VkCommandBuffer cmd, PEResourceState newState)
 {
-	if (newState == m_State)
+	/* Still worth transitioning out of an undefined layout even if the engine
+	   state happens to match. */
+	if (newState == m_State && !m_bLayoutUndefined)
 		return;
 
-	const VKResourceState from = VKStateOf(m_State);
+	VKResourceState from = VKStateOf(m_State);
 	const VKResourceState to = VKStateOf(newState);
+
+	if (m_bLayoutUndefined)
+	{
+		/* Discards any existing contents, which is correct for an image that
+		   has never been written. */
+		from.m_Layout = VK_IMAGE_LAYOUT_UNDEFINED;
+		from.m_Access = VK_ACCESS_2_NONE;
+		from.m_Stage = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+
+		m_bLayoutUndefined = false;
+	}
 
 	if (m_Kind == E_KIND_IMAGE)
 	{

@@ -242,13 +242,21 @@ bool VKDevice::CreateDevice(VkSurfaceKHR surface)
 	sync2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
 	sync2.synchronization2 = VK_TRUE;
 
+	/* CommandEngine exposes a monotonically increasing fence value that other
+	   engines wait on - an ID3D12Fence. Timeline semaphores are the direct
+	   equivalent. */
+	VkPhysicalDeviceTimelineSemaphoreFeatures timeline{};
+	timeline.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
+	timeline.timelineSemaphore = VK_TRUE;
+	timeline.pNext = &sync2;
+
 	/* Buffer::GetGPUAddress() returns a uint64 that used to be a
 	   D3D12_GPU_VIRTUAL_ADDRESS. bufferDeviceAddress is the equivalent and
 	   keeps every call site working unchanged. */
 	VkPhysicalDeviceBufferDeviceAddressFeatures bufferAddress{};
 	bufferAddress.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
 	bufferAddress.bufferDeviceAddress = VK_TRUE;
-	bufferAddress.pNext = &sync2;
+	bufferAddress.pNext = &timeline;
 
 	/* Bindless arrays: RenderPass::Data::m_uiBindlessResourceCount declares a
 	   variable-sized texture array, which needs descriptor indexing. */

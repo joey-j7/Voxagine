@@ -66,6 +66,10 @@ public:
 	VkDeviceSize GetSize() const { return m_Allocation.m_uiSize; }
 	PEResourceState GetState() const { return m_State; }
 
+	/* True until the first transition. A caller that skips barriers on
+	   matching state must still emit one while this holds. */
+	bool IsLayoutUndefined() const { return m_bLayoutUndefined; }
+
 	void SetDebugName(const std::string& name) { m_Name = name; }
 	const std::string& GetDebugName() const { return m_Name; }
 
@@ -83,6 +87,13 @@ private:
 
 	PEResourceState m_State = E_STATE_COMMON_RESOURCE;
 	bool m_bIsDepth = false;
+
+	/* A freshly created image is genuinely in VK_IMAGE_LAYOUT_UNDEFINED, which
+	   no PEResourceState can express - the engine's vocabulary has no
+	   equivalent because D3D12 had no such concept. Tracked separately so the
+	   first transition uses UNDEFINED as its old layout instead of whatever
+	   m_State claims. */
+	bool m_bLayoutUndefined = false;
 
 	void* m_pMapped = nullptr;
 	std::string m_Name;

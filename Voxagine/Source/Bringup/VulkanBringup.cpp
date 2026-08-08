@@ -13,6 +13,7 @@
  * Run headless with --frames N to make it usable from CI. */
 
 #include "Core/Platform/Rendering/Vulkan/VKAllocator.h"
+#include "Core/Platform/Rendering/Vulkan/VKCommandEngine.h"
 #include "Core/Platform/Rendering/Vulkan/VKDescriptorLayout.h"
 #include "Core/Platform/Rendering/Vulkan/VKDevice.h"
 #include "Core/Platform/Rendering/Vulkan/VKSwapchain.h"
@@ -168,7 +169,87 @@ namespace
 
 		printf("[selftest] descriptor layouts: %s\n", bDescriptorsPassed ? "pass" : "FAIL");
 
-		return bPassed && bDescriptorsPassed;
+		/* Command engine. The point of interest is that Reset() waits on one
+		   frame slot's timeline value rather than for the whole device - the
+		   thing DXCommandEngine got wrong. */
+		bool bEnginePassed = true;
+
+		{
+			CommandEngine::Info info;
+			info.m_Type = CommandEngine::E_DIRECT;
+			info.m_Name = "SelfTest";
+
+			VKCommandEngine engine(&device, &allocator, info);
+
+			if (!engine.Initialize())
+			{
+				fprintf(stderr, "[selftest] command engine init failed\n");
+				bEnginePassed = false;
+			}
+			else
+			{
+				/* A resource whose transitions give the engine something real
+				   to record. */
+				VKResource image;
+				if (!image.CreateImage(&device, &allocator, VK_IMAGE_TYPE_2D,
+				                       VK_FORMAT_R8G8B8A8_UNORM, 64, 64, 1, 1,
+				                       VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT))
+				{
+					fprintf(stderr, "[selftest] test image creation failed\n");
+					bEnginePassed = false;
+				}
+
+				/* Submit several frames so the slots wrap and Reset() has a
+				   prior submission to wait on. */
+				for (uint32_t i = 0; i < VKCommandEngine::m_uiFrameCount * 3; ++i)
+				{
+					engine.Reset();
+					engine.Start();
+
+					engine.QueueBarrier(&image, (i % 2 == 0) ? E_STATE_COPY_DEST
+					                                         : E_STATE_PIXEL_SHADER_RESOURCE);
+					engine.ApplyBarriers();
+					engine.Execute();
+				}
+
+				engine.WaitForGPU();
+
+				/* One signal per Execute. */
+				const uint64_t uiExpected = VKCommandEngine::m_uiFrameCount * 3;
+
+				if (engine.GetValue() != uiExpected)
+				{
+					fprintf(stderr, "[selftest] fence value %llu, expected %llu\n",
+					        static_cast<unsigned long long>(engine.GetValue()),
+					        static_cast<unsigned long long>(uiExpected));
+					bEnginePassed = false;
+				}
+
+				uint64_t uiCompleted = 0;
+				vkGetSemaphoreCounterValue(device.Get(), engine.GetTimeline(), &uiCompleted);
+
+				if (uiCompleted != uiExpected)
+				{
+					fprintf(stderr, "[selftest] timeline at %llu after WaitForGPU, expected %llu\n",
+					        static_cast<unsigned long long>(uiCompleted),
+					        static_cast<unsigned long long>(uiExpected));
+					bEnginePassed = false;
+				}
+
+				/* The barriers must have left the resource in its last state. */
+				if (image.GetState() != E_STATE_PIXEL_SHADER_RESOURCE)
+				{
+					fprintf(stderr, "[selftest] resource state not tracked through barriers\n");
+					bEnginePassed = false;
+				}
+
+				image.Destroy();
+			}
+		}
+
+		printf("[selftest] command engine: %s\n", bEnginePassed ? "pass" : "FAIL");
+
+		return bPassed && bDescriptorsPassed && bEnginePassed;
 	}
 
 	Options ParseArgs(int argc, char** argv)
