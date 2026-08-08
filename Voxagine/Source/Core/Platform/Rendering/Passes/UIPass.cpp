@@ -28,10 +28,6 @@ UIPass::UIPass(
 	RenderPassData.m_uiBindlessResourceCount = 1;
 	RenderPassData.m_BindlessSource = RenderPass::E_BINDLESS_SOURCE_TEXTURES;
 
-#ifdef _WINDOWS
-	SetHeapManager(m_pContext->GetTextureManager()->GetHeapManager());
-#endif
-
 	RenderPassData.m_Samplers.push_back(pSamplerPoint);
 
 	RenderPassData.m_Buffers.push_back(pCameraBuffer);

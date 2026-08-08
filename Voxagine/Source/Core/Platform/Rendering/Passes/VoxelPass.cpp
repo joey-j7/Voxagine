@@ -47,10 +47,6 @@ VoxelPass::VoxelPass(
 	RenderPassData.m_uiBindlessResourceCount = 1;
 	RenderPassData.m_BindlessSource = RenderPass::E_BINDLESS_SOURCE_MODELS;
 
-#ifdef _WINDOWS
-	SetHeapManager(m_pContext->GetModelManager()->GetHeapManager());
-#endif
-
 	Init(RenderPassData);
 }
 

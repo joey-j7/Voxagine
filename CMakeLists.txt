@@ -156,6 +156,11 @@ if(VOXAGINE_BUILD_ENGINE)
         PRIVATE voxagine_warnings
     )
 
+    # GetOpenFileName, for the editor's file dialogs.
+    if(WIN32)
+        target_link_libraries(voxagine PRIVATE comdlg32)
+    endif()
+
     # No target_precompile_headers here on purpose.
     #
     # Every engine TU already starts with #include "pch.h". CMake's PCH support

@@ -94,7 +94,9 @@ private:
 	std::string m_EngineAssetsPath = "Engine/Assets";
 	std::string m_FontPath = "Engine/Assets/Fonts/PressStart.spritefont";
 
-#ifdef _WINDOWS
+	/* _WIN32, not _WINDOWS: the latter came from the old .vcxproj and nothing
+	   defines it under CMake. Every Windows compiler defines _WIN32. */
+#ifdef _WIN32
 	PlatformType m_PlatformType = PT_WINDOWS;
 #else
 	PlatformType m_PlatformType = PT_LINUX;

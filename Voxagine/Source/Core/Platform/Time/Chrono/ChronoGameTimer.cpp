@@ -32,7 +32,13 @@ const Time& ChronoGameTimer::GetCurrentSystemTime() const
 		std::tm bt{};
 		std::time_t rawtime = std::time(nullptr);
 
+		/* localtime_r is POSIX; MSVC offers localtime_s with the arguments the
+		   other way round. Both are the thread-safe form. */
+#ifdef _WIN32
+		localtime_s(&bt, &rawtime);
+#else
 		localtime_r(&rawtime, &bt);
+#endif
 
 		m_Time.Hours = static_cast<char>(bt.tm_hour);
 		m_Time.Minutes = static_cast<char>(bt.tm_min);

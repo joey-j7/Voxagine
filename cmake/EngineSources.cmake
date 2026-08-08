@@ -67,12 +67,10 @@ set(VOXAGINE_ENGINE_SOURCES
     ${VOXAGINE_SOURCE_DIR}/Core/ECS/WorldManager.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/FileBrowser.cpp
 
-    # Both of these shipped as a header plus a Windows .lib, so the editor had
-    # nothing to link against. TeenyPath is reimplemented on std::filesystem;
-    # the file dialogs shell out to zenity or kdialog rather than pulling GTK
-    # into an SDL/Vulkan application.
+    # Both of these shipped as a header plus a Windows .lib, so there was
+    # nothing to link against. TeenyPath is reimplemented on std::filesystem
+    # and is portable; the file dialogs are per-platform and selected below.
     ${VOXAGINE_SOURCE_DIR}/External/teenypath/teenypath.cpp
-    ${VOXAGINE_SOURCE_DIR}/External/nativefiledialog/nfd_portal.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/JsonSerializer.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/LoggingSystem/LoggingSystem.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Memory/Allocators/BaseAlloc.cpp
@@ -199,3 +197,14 @@ set(VOXAGINE_FMOD_SOURCES
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Audio/FMODContext.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Resources/Formats/FMODSoundReference.cpp
 )
+
+# File dialogs are the one piece of the editor with no portable implementation:
+# Win32 has GetOpenFileName, and on Linux we shell out to whatever portal-aware
+# dialog the desktop provides rather than taking a GTK dependency.
+if(WIN32)
+    list(APPEND VOXAGINE_ENGINE_SOURCES
+        ${VOXAGINE_SOURCE_DIR}/External/nativefiledialog/nfd_win32.cpp)
+else()
+    list(APPEND VOXAGINE_ENGINE_SOURCES
+        ${VOXAGINE_SOURCE_DIR}/External/nativefiledialog/nfd_portal.cpp)
+endif()

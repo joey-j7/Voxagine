@@ -860,14 +860,10 @@ void RenderContext::OnFullscreenChanged(bool bFullscreen)
 	}
 	else
 	{
-#ifdef _WINDOWS
-		RECT Rect;
-		GetClientRect(*(HWND*)m_pPlatform->GetWindowContext()->GetHandle(), &Rect);
-
-		OnResize(Rect.right - Rect.left, Rect.bottom - Rect.top);
-#else
+		/* SDL owns the window on every desktop platform now, so there is no
+		   Win32 branch here any more: GetHandle() is an SDL_Window*, and the
+		   old code cast it to an HWND for GetClientRect. */
 		OnResize(m_v2RenderResolution.x, m_v2RenderResolution.y);
-#endif
 	}
 }
 
