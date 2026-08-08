@@ -209,8 +209,20 @@ bool VKRenderPass::CreatePipeline()
 		attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 		attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 		attachment.colorBlendOp = VK_BLEND_OP_ADD;
+		/* Alpha accumulates as coverage - dst.a = src.a + dst.a * (1 - src.a) -
+		   rather than being replaced by whatever was drawn last.
+
+		   ONE/ZERO meant the last sprite over a pixel *set* the target's alpha,
+		   so a half-faded logo drawn over an already-opaque background left the
+		   UI target reading 0.5 there. PostProcessing.ps.hlsl treats alpha as
+		   coverage (`if (uiColor.a == 1.0)` takes the UI straight through, and
+		   the final lerp blends UI against the scene by it), so those pixels
+		   composited against the sky-and-ground background instead of against
+		   the black behind them - the splash screen's background split in two
+		   at the horizon while its logo faded. Only the UI pass enables
+		   blending, so this is the only pass it changes. */
 		attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 		attachment.alphaBlendOp = VK_BLEND_OP_ADD;
 	}
 

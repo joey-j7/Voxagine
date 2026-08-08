@@ -320,8 +320,17 @@ void RenderSystem::PostFixedTick(const GameTimer& fixedTimer)
 	/* Submit sprite data */
 	SpriteData spriteData;
 
-	// Sort sprite renders by layer, so the rendering is updated in the editor when changing the layer
-	std::map<int, std::vector<SpriteRenderer*>, std::less<int>> LayeredSpriteRenderers;
+	/* Sort sprite renders by layer, so the rendering is updated in the editor
+	   when changing the layer.
+
+	   Descending, which is back to front: UIRenderer.vs.hlsl maps a higher
+	   render layer to a *greater* depth, and the UI pass depth-tests
+	   LESS_OR_EQUAL with depth writes on. Ascending submitted the nearest
+	   sprite first, so anything behind it was depth-rejected rather than
+	   blended under it - the splash screen's opaque background (layer 8) lost
+	   every pixel its logos (layer -1) had already covered. Translucent
+	   geometry has to be drawn back to front regardless; this is that. */
+	std::map<int, std::vector<SpriteRenderer*>, std::greater<int>> LayeredSpriteRenderers;
 	for (SpriteRenderer* pSpriteRenderer : m_SpriteRenderers)
 	{
 		if (pSpriteRenderer)
