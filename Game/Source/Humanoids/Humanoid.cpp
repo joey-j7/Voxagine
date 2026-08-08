@@ -127,7 +127,7 @@ bool Humanoid::Damage(float damage, Vector3 impactNormal, float launchStrength)
 	m_DamageOffset = impactNormal;
 	
 	// TODO: see why this should be 1 
-	m_DamageOffset = glm::normalize(impactNormal);
+	m_DamageOffset = SafeNormalize(impactNormal);
 	m_DamageOffset.y = 1.f;
 	m_DamageOffset *= launchStrength;
 
