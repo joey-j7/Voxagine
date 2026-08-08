@@ -396,25 +396,53 @@ bool VKSwapchain::BlitAndPresent(VKResource* pSource, VkSemaphore waitTimeline, 
 
 	const VkExtent3D srcExtent = pSource->GetExtent();
 
-	/* Fit the source into the swapchain without distorting it. The source is
-	   already at the locked aspect ratio, so this is usually a 1:1 copy into a
-	   centred rect with black bars either side. */
+	/* Fit the source into the swapchain without distorting it; usually a 1:1
+	   copy into a centred rect with black bars either side. Integer and
+	   rounded, because a float ratio loses the exact fit for some window sizes
+	   and a one-pixel mismatch resamples the whole frame. */
 	uint32_t uiDstWidth = m_Extent.width;
 	uint32_t uiDstHeight = m_Extent.height;
 
 	if (srcExtent.width > 0 && srcExtent.height > 0)
 	{
-		const float fSource = static_cast<float>(srcExtent.width) / static_cast<float>(srcExtent.height);
-		const float fTarget = static_cast<float>(m_Extent.width) / static_cast<float>(m_Extent.height);
+		const uint64_t uiTargetCross = static_cast<uint64_t>(m_Extent.width) * srcExtent.height;
+		const uint64_t uiSourceCross = static_cast<uint64_t>(m_Extent.height) * srcExtent.width;
 
-		if (fTarget > fSource)
-			uiDstWidth = static_cast<uint32_t>(m_Extent.height * fSource);
+		if (uiTargetCross > uiSourceCross)
+		{
+			/* Window is wider than the image: pillarbox. */
+			uiDstWidth = static_cast<uint32_t>((uiSourceCross + srcExtent.height / 2) / srcExtent.height);
+		}
 		else
-			uiDstHeight = static_cast<uint32_t>(m_Extent.width / fSource);
+		{
+			uiDstHeight = static_cast<uint32_t>((uiTargetCross + srcExtent.width / 2) / srcExtent.width);
+		}
 	}
+
+	uiDstWidth = std::min(std::max(uiDstWidth, 1u), m_Extent.width);
+	uiDstHeight = std::min(std::max(uiDstHeight, 1u), m_Extent.height);
 
 	const int32_t iOffsetX = static_cast<int32_t>((m_Extent.width - uiDstWidth) / 2);
 	const int32_t iOffsetY = static_cast<int32_t>((m_Extent.height - uiDstHeight) / 2);
+
+	/* Anything but a 1:1 blit resamples the whole frame; report it once. */
+	{
+		static uint32_t s_uiReportedWidth = 0;
+		static uint32_t s_uiReportedHeight = 0;
+
+		if (srcExtent.width != uiDstWidth || srcExtent.height != uiDstHeight)
+		{
+			if (s_uiReportedWidth != srcExtent.width || s_uiReportedHeight != srcExtent.height)
+			{
+				s_uiReportedWidth = srcExtent.width;
+				s_uiReportedHeight = srcExtent.height;
+
+				fprintf(stderr, "[vulkan] present rescales %ux%u to %ux%u in a %ux%u window\n",
+				        srcExtent.width, srcExtent.height, uiDstWidth, uiDstHeight,
+				        m_Extent.width, m_Extent.height);
+			}
+		}
+	}
 
 	/* The bars are never written by the blit, and a swapchain image is
 	   recycled with whatever the last frame left in it. */
