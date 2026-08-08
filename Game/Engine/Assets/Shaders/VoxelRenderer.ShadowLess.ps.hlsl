@@ -9,7 +9,13 @@ VOXEL_RW_BUFFER voxelWorldData : register(u0);
 RW_STRUCTURED_BUFFER(uint) voxelBrickData : register(u1);
 
 Texture2D<float4> particlePass : register(t1);
-VOXEL_BUFFER voxelModelData[] : register(t2) {};
+
+/* t2 is the particle depth target, which this variant does not read; the pass
+   binds it either way, so the register is spoken for. Brick entry distance per
+   low-resolution texel follows it - see Prepass.hlsl. */
+Texture2D<float> prepassPass : register(t3);
+
+VOXEL_BUFFER voxelModelData[] : register(t4) {};
 
 struct PS_in
 {
@@ -20,6 +26,7 @@ struct PS_in
 
 #include "SDFMarcher.hlsl"
 #include "AmbientOcclusion.hlsl"
+#include "Prepass.hlsl"
 
 FORCE_DEPTH_TEST
 float4 main(PS_in IN) : TAR_OUT
@@ -34,15 +41,20 @@ float4 main(PS_in IN) : TAR_OUT
 	float3 rayOrigin = IN.WorldPosition - camOffset.xyz;
 	float3 rayDirection = normalize(IN.Direction.xyz);
 
-    /* Window diagonal in bricks - see VoxelRenderer.ps.hlsl for why the
-       hardcoded 700 is gone. */
-    int maxBrickSteps = int(length(float3(worldSize.xyz)) * BRICK_INV_SIZE) + 2;
+    /* Skip the stretch of empty bricks the prepass already proved empty on
+       this pixel's behalf (RENDERING_PLAN.md phase 3). */
+    float prepassSkip = GetPrepassSkip(prepassPass, IN.NormScreenPosition.xy, IN.Direction.xyz);
+    rayOrigin += rayDirection * prepassSkip;
+
+    /* What is left of the window diagonal in bricks after the skip - see
+       VoxelRenderer.ps.hlsl for why the hardcoded 700 is gone. */
+    int primaryBrickSteps = int(max(length(float3(worldSize.xyz)) - prepassSkip, 0.0) * BRICK_INV_SIZE) + 2;
 
     MarchResult marchDiffuse = MarchDiffuse
     (
 		rayOrigin,
 		rayDirection,
-		maxBrickSteps
+		primaryBrickSteps
 	);
 	
     /* Return transparent when not marched against anything. Sky and endless

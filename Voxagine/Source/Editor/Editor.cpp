@@ -1133,6 +1133,17 @@ void Editor::RenderMainMenuBar()
 				m_pRenderContext->ValidateBrickGrid();
 			}
 
+			/* A/B for the low-resolution depth prepass (RENDERING_PLAN.md
+			   phase 3). Live rather than a build flag because what it is worth
+			   depends entirely on the vantage - how much empty space the
+			   primary rays cross before they reach anything - and the only way
+			   to compare two vantages honestly is not to move between the two
+			   measurements. Watch [timing] Voxel in the log. */
+			if (ImGui::MenuItem("Depth Prepass", NULL, &m_bDepthPrepassEnabled))
+			{
+				m_pRenderContext->SetDepthPrepassEnabled(m_bDepthPrepassEnabled);
+			}
+
 			ImGui::EndMenu();
 		}
 

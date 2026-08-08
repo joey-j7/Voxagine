@@ -12,7 +12,11 @@ RW_STRUCTURED_BUFFER(uint) voxelBrickData : register(u1);
 
 Texture2D<float4> particlePass : register(t1);
 Texture2D<float> particleDepthPass : register(t2);
-VOXEL_BUFFER voxelModelData[] : register(t3) {};
+
+/* Brick entry distance per low-resolution texel - see Prepass.hlsl. */
+Texture2D<float> prepassPass : register(t3);
+
+VOXEL_BUFFER voxelModelData[] : register(t4) {};
 
 struct PS_in
 {
@@ -23,6 +27,7 @@ struct PS_in
 
 #include "SDFMarcher.hlsl"
 #include "AmbientOcclusion.hlsl"
+#include "Prepass.hlsl"
 
 FORCE_DEPTH_TEST
 float4 main(PS_in IN) : TAR_OUT
@@ -36,6 +41,11 @@ float4 main(PS_in IN) : TAR_OUT
     float3 rayOrigin = IN.WorldPosition - camOffset.xyz;
 	float3 rayDirection = normalize(IN.Direction.xyz);
 
+    /* Skip the stretch of empty bricks the prepass already proved empty on
+       this pixel's behalf (RENDERING_PLAN.md phase 3). */
+    float prepassSkip = GetPrepassSkip(prepassPass, IN.NormScreenPosition.xy, IN.Direction.xyz);
+    rayOrigin += rayDirection * prepassSkip;
+
     /* Budget the walk by the window's diagonal in bricks, so nothing distant
        is truncated. This replaces the hardcoded 700-voxel cap the scale-up
        introduced - on a 768x128x768 window the diagonal is ~1094 voxels, so
@@ -43,11 +53,17 @@ float4 main(PS_in IN) : TAR_OUT
        full diagonal affordable (RENDERING_PLAN.md phase 2). */
     int maxBrickSteps = int(length(float3(worldSize.xyz)) * BRICK_INV_SIZE) + 2;
 
+    /* Phase 3's reduced step cap for the primary ray: what is left of that
+       diagonal after the skip. Exact rather than a tuned constant, so a ray
+       that skipped nothing keeps the full budget and cannot be truncated. The
+       shadow ray below starts at the surface, not here, and keeps its own. */
+    int primaryBrickSteps = int(max(length(float3(worldSize.xyz)) - prepassSkip, 0.0) * BRICK_INV_SIZE) + 2;
+
     MarchResult marchDiffuse = MarchDiffuse
     (
 		rayOrigin,
 		rayDirection,
-		maxBrickSteps
+		primaryBrickSteps
 	);
 
     if (particleDepth < distance(marchDiffuse.SmoothPosition + camOffset, camPosition.xyz) && particleColor.a != 0.0)
