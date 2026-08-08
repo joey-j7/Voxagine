@@ -1,9 +1,30 @@
+/* Occupancy of a neighbouring voxel, for AO and the shine line below. Both ask
+   about voxels one step outside the face they are shading, so both routinely
+   ask about positions outside the resident window.
+
+   Two things that were wrong here, and only became visible once the far field
+   put lit ground on the other side of the window's boundary:
+
+   - There was a lower bound test and **no upper bound**. PosToVoxelID of
+     x == worldSize.x is not out of range, it is (x = 0, y + 1) - so a voxel on
+     the window's far face asked about its neighbour and was answered about a
+     voxel from the opposite edge, one row up. Whatever happened to be there
+     decided the shading, which is why the artefact repeated along the boundary
+     rather than being uniform.
+   - Outside the window is not empty space. The endless ground plane continues
+     there (GetBackground in FarField.hlsl), so the ground layer is solid and
+     nothing else is. Reporting it empty makes the window's outermost ground
+     voxels look like the lip of a cliff to both callers, which draw a lit rim
+     and an occlusion band along a boundary that is not an edge in the world at
+     all - it is just where the resident window stops. */
 bool IsVoxel(float3 position) {
-	if (position.x < 0.0 || position.y < 0.0 || position.z < 0.0)
-		return false;
+	int3 v3Position = int3(position);
+
+	if (!IsInChunk(v3Position))
+		return v3Position.y == 0;
 
 	uint ID = PosToVoxelID(uint3(position));
-	
+
 #ifdef __PSSL__
 	return (0xFF & (voxelWorldData[ID] >> 24)) > 0.0;
 #else

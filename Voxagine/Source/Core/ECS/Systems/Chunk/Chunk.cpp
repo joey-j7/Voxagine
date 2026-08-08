@@ -6,6 +6,7 @@
 #include "Core/ECS/Systems/Physics/Box.h"
 #include "Core/ECS/Systems/Chunk/ChunkSystem.h"
 #include "Core/Platform/Rendering/RenderContext.h"
+#include "Core/Platform/Rendering/FrameProfiler.h"
 
 #include "External/optick/optick.h"
 
@@ -95,6 +96,21 @@ void Chunk::UnloadAsync(ChunkUpdateGroup::Item* pItem, std::function<void(ChunkU
 	if (m_bIsUnloading) return;
 	m_bIsUnloading = true;
 
+	/* Everything down to the Enqueue below is on the *main thread*, despite the
+	   name - only EncodeVoxels is a job. Measured in two halves because they
+	   are different costs: the search walks every entity in the world against
+	   this chunk's neighbours, while the save is full RTTR serialization of
+	   each entity it found into JSON. */
+	const bool bProfiling = FrameProfiler::Get().IsEnabled();
+	std::chrono::steady_clock::time_point phase =
+		bProfiling ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
+
+	auto since = [](const std::chrono::steady_clock::time_point& start)
+	{
+		return std::chrono::duration<double, std::milli>(
+			std::chrono::steady_clock::now() - start).count();
+	};
+
 	const std::vector<Entity*>& entities = m_pWorld->GetEntities();
 	const std::vector<Entity*>& addedEntities = m_pWorld->GetAddedEntities();
 	std::vector<Entity*> combinedEntities = std::vector<Entity*>(entities);
@@ -102,7 +118,17 @@ void Chunk::UnloadAsync(ChunkUpdateGroup::Item* pItem, std::function<void(ChunkU
 
 	std::vector<std::pair<Entity*, bool>> foundEntities;
 	FindEntitiesInChunk(combinedEntities, foundEntities);
+
+	if (bProfiling)
+	{
+		FrameProfiler::Get().Report("CPU Chunk FindEntitiesInChunk", since(phase));
+		phase = std::chrono::steady_clock::now();
+	}
+
 	SaveAndDeleteEntities(foundEntities);
+
+	if (bProfiling)
+		FrameProfiler::Get().Report("CPU Chunk SaveAndDeleteEntities", since(phase));
 
 	JobQueue* pJobQueue = m_pWorld->GetJobQueue();
 	if (pJobQueue)

@@ -10,6 +10,13 @@ Texture2D<float4> debugTexture : register(t2);
 
 VOXEL_RW_BUFFER voxelWorldData : register(u0);
 
+/* Far-field LOD volume and its occupancy bricks - see FarField.hlsl. Bound
+   read-write for the same reason the window's brick counts are: the u range is
+   what is free, and taking a t would renumber the textures above. Nothing
+   writes to either from the GPU. */
+VOXEL_RW_BUFFER farFieldData : register(u1);
+RW_STRUCTURED_BUFFER(uint) farFieldBrickData : register(u2);
+
 #ifndef __PSSL__
 #define FXAA_HLSL_5 1
 #define FXAA_QUALITY__PRESET 39
@@ -33,30 +40,48 @@ inline float4 PostFxGetVoxel(float3 v3Position) {
 #endif
 }
 
-/* Sky and endless ground for pixels the Voxel pass left untouched - see
-   PostProcessing.ps.hlsl. */
-float4 GetSkyOrGround(float2 v2ScreenPosition)
+/* Background for pixels the Voxel pass left untouched - either no AABB proxy
+   covered them, or MarchDiffuse found nothing (see VoxelRenderer.ps.hlsl).
+   Far-field geometry, endless ground and sky all come from GetBackground; this
+   pass runs full-screen unconditionally, so unlike the proxy-box approach it
+   always covers every pixel. */
+#include "FarField.hlsl"
+
+/* FXAA has to be kept away from the scene's silhouette against the background.
+   The Voxel pass writes float4(0, 0, 0, 0) where its march found nothing, so a
+   neighbourhood straddling a silhouette contains transparent *black* - and FXAA
+   blends colour, not coverage, so it pulls the surface toward that black and
+   leaves a one-pixel dark fringe along the edge. Against the sky that has
+   always been there and read as an outline; along the resident window's
+   boundary, where the ground continues on the far side at a matching colour, it
+   reads as a seam across the middle of a flat plane.
+
+   Nothing is lost by skipping it there. FXAA smooths high-contrast edges
+   *within* the scene, and a pixel on the silhouette is composited against the
+   background immediately below - there is no second scene sample to blend with.
+
+   Load with clamped coordinates rather than Sample with offsets: R_DEF_WRAP_MODE
+   is E_WRAP, so a neighbour offset past the screen edge would answer with a
+   pixel from the far side. */
+bool IsSceneNeighbourhoodOpaque(float2 v2PixelPosition)
 {
-	float3 rayOrigin = camPosition.xyz - camOffset.xyz;
-	float3 rayDirection = normalize(GetRay(mv, v2ScreenPosition, viewport.xy, viewport.z, viewport.w));
+	int2 v2Size = int2(max(viewport.xy, float2(1.0, 1.0)));
+	int2 v2Texel = int2(v2PixelPosition);
 
-	if (rayOrigin.y >= 0.0 && rayDirection.y < 0.0)
+	[unroll]
+	for (int y = -1; y <= 1; y++)
 	{
-		float t = (-1.0 * rayOrigin.y) / rayDirection.y;
-		float3 realEndPos = float3(rayOrigin.x + rayDirection.x * t, 0.0, rayOrigin.z + rayDirection.z * t);
+		[unroll]
+		for (int x = -1; x <= 1; x++)
+		{
+			int2 v2Sample = clamp(v2Texel + int2(x, y), int2(0, 0), v2Size - 1);
 
-		float3 groundPos;
-		groundPos.x = abs(fmod(realEndPos.x, float(worldSize.x)));
-		groundPos.y = 0.0;
-		groundPos.z = abs(fmod(realEndPos.z, float(worldSize.z)));
-
-		float4 groundColor = PostFxGetVoxel(groundPos) * 0.6;
-		groundColor.a = 1.0;
-
-		return groundColor;
+			if (targetTexture.Load(int3(v2Sample, 0)).a == 0.0)
+				return false;
+		}
 	}
 
-	return SKY_COLOR;
+	return true;
 }
 
 float4 main(float4 position : POS_OUT) : TAR_OUT
@@ -70,7 +95,11 @@ float4 main(float4 position : POS_OUT) : TAR_OUT
 
 	if (rawScene.a == 0.0)
 	{
-		sceneColor = GetSkyOrGround(position.xy);
+		sceneColor = GetBackground(position.xy);
+	}
+	else if (!IsSceneNeighbourhoodOpaque(position.xy))
+	{
+		sceneColor = rawScene;
 	}
 	else
 	{

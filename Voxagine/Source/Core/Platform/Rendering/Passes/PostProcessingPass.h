@@ -14,6 +14,8 @@ class PostProcessingPass : public PRenderPass
 public:
 	PostProcessingPass(
 		PRenderContext* pContext, Shader* pVertex, Shader* pPixel, Sampler* pSampler,
-		Buffer* pCameraBuffer, Mapper* pVoxelMapper, std::vector<View*> pTextures
+		Buffer* pCameraBuffer, Mapper* pVoxelMapper,
+		Mapper* pFarFieldMapper, Mapper* pFarFieldBrickMapper,
+		std::vector<View*> pTextures
 	);
 };

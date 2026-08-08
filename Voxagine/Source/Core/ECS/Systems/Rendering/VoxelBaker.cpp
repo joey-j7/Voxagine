@@ -5,6 +5,7 @@
 #include "Core/ECS/Systems/Physics/PhysicsSystem.h"
 
 #include "Core/ECS/Components/VoxRenderer.h"
+#include "Core/ECS/Systems/Rendering/VoxelStamp.h"
 #include "Core/Resources/Formats/VoxModel.h"
 #include "Core/Application.h"
 #include "Core/Platform/Rendering/FrameProfiler.h"
@@ -97,226 +98,102 @@ uint32_t* VoxelBaker::Occupy(VoxRenderer* pRenderer, VoxRenderer::BakeData* pBak
 
 	bool bIsStatic = pRenderer->GetOwner()->IsStatic();
 
-	const uint32_t* pColors = pFrame->GetColors();
-	const uint32_t* pPositions = pFrame->GetPositions();
+	/* Placement is shared with the far-field build (RENDERING_PLAN.md phase 4)
+	   so that the two grids cannot disagree about where a model is - see
+	   VoxelStamp.h. The window's grid origin is the chunk window's world
+	   offset, which is exactly what VoxelGrid::WorldToGrid subtracts. */
+	VoxelStampTransform stamp;
 
-	Transform* pTransform = pRenderer->GetTransform();
+	if (!ComputeVoxelStampTransform(pRenderer, grid.GetWorldOffset(), 1.f / static_cast<float>(grid.GetVoxelSize()), stamp))
+		return nullptr;
 
-	Vector3 forward = pTransform->GetForward();
-	Vector3 right = pTransform->GetRight();
-	Vector3 up = pTransform->GetUp();
-
-	Quaternion quat = pTransform->GetRotation();
-	Vector3 originOffset(0.f);
-
-	if (pRenderer->IsAxisRounded())
-	{
-		float fRotationLimit = 45.f;
-		Vector3 rotation = pTransform->GetEulerAngles();
-
-		rotation.x = std::fmod(rotation.x + 360.f, 360.f);
-		rotation.y = std::fmod(rotation.y + 360.f, 360.f);
-		rotation.z = std::fmod(rotation.z + 360.f, 360.f);
-
-		if (abs(rotation.x) > 90 + fRotationLimit / 2.f)
-			originOffset.z += 1;
-
-		if (abs(rotation.z) > 90 + fRotationLimit / 2.f)
-			originOffset.x += 1;
-
-		rotation.x = round(rotation.x / fRotationLimit) * fRotationLimit * DEG2RAD;
-		rotation.y = round(rotation.y / fRotationLimit) * fRotationLimit * DEG2RAD;
-		rotation.z = round(rotation.z / fRotationLimit) * fRotationLimit * DEG2RAD;
-
-		quat = glm::quat(glm::vec3(rotation.x, rotation.y, rotation.z));
-
-		forward = glm::round(forward);
-		right = glm::round(right);
-		up = glm::round(up);
-	}
-	else if (pRenderer->IsRotationAngleLimited())
-	{
-		float fRotationLimit = static_cast<float>(pRenderer->GetRotationAngleLimit());
-		Vector3 rotation = pTransform->GetEulerAngles();
-
-		rotation.x = std::fmod(rotation.x + 360.f, 360.f);
-		rotation.y = std::fmod(rotation.y + 360.f, 360.f);
-		rotation.z = std::fmod(rotation.z + 360.f, 360.f);
-
-		if (abs(rotation.x) > 90 + fRotationLimit / 2.f)
-			originOffset.z += 1;
-
-		if (abs(rotation.z) > 90 + fRotationLimit / 2.f)
-			originOffset.x += 1;
-
-		rotation.x = round(rotation.x / fRotationLimit) * fRotationLimit * DEG2RAD;
-		rotation.y = round(rotation.y / fRotationLimit) * fRotationLimit * DEG2RAD;
-		rotation.z = round(rotation.z / fRotationLimit) * fRotationLimit * DEG2RAD;
-
-		quat = glm::quat(rotation);
-
-		forward = glm::rotate(quat, Vector3(0, 0, 1));
-		right = glm::rotate(quat, Vector3(1, 0, 0));
-		up = glm::rotate(quat, Vector3(0, 1, 0));
-	}
-
-	Vector3 scale = pTransform->GetScale();
-	Vector3 roundedScale = glm::ceil(glm::abs(scale));
-
-	Vector3 size = pFrame->GetFittedSize();
-
-	Vector3 offset = -size * 0.5f;
-	Vector3 origin;
-
-	if (pFrame->GetModel()->GetFrameCount() > 1) {
-
-		const VoxFrame* tFrame = pFrame->GetModel()->GetFrame(0);
-		Vector3 offsetCen = -(tFrame->GetFitSizeOffset() - pFrame->GetFitSizeOffset()) * 0.5f
-			+ ((pFrame->GetFitSizeOffset() + pFrame->GetFittedSize()) - (tFrame->GetFitSizeOffset() + tFrame->GetFittedSize())) * 0.5f;
-		offsetCen.y *= -1.f;
-
-		origin = grid.WorldToGrid(pTransform->GetPosition(), true) + scale * glm::rotate(quat, offset - offsetCen);
-	}
-	else {
-		origin = grid.WorldToGrid(pTransform->GetPosition() + scale * glm::floor(glm::rotate(quat, offset)), true);
-	}
-
-	origin -= originOffset;
 	uint32_t uiSolidVoxelCount = pFrame->GetSolidVoxelCount();
 
-	uint32_t* pBaked = new uint32_t[static_cast<size_t>(uiSolidVoxelCount * roundedScale.x * roundedScale.y * roundedScale.z)];
+	uint32_t* pBaked = new uint32_t[static_cast<size_t>(uiSolidVoxelCount * stamp.RoundedScale.x * stamp.RoundedScale.y * stamp.RoundedScale.z)];
 	uint32_t uiBakedID = 0;
 
-	VColor vColPosition;
-	Vector3 modelPosition;
-
-	uint32_t uiWorldID = 0;
-	Vector3 worldPosition = Vector3(0.f, 0.f, 0.f);
-
-	UVector3 scaleOffset = UVector3(0, 0, 0);
-	Vector3 lastPosition = Vector3(0.f, 0.f, 0.f);
-
 	Voxel* pVoxel = nullptr;
-	uint32_t uiColor = 0;
 
-	VColor overrideColor = pRenderer->GetOverrideColor();
-	const bool bHasOverrideColor = overrideColor.inst.Colors.a > 0;
-
-	RenderState rendererState = pRenderer->GetState();
 	uint64_t uiEntityID = pRenderer->GetOwner()->GetId();
 
-	for (uint32_t i = 0; i < uiSolidVoxelCount; ++i)
+	ForEachStampedVoxel(pRenderer, stamp, [&](const Vector3& worldPosition, uint32_t uiColor)
 	{
-		for (scaleOffset.x = 0; scaleOffset.x < roundedScale.x; ++scaleOffset.x)
+		/* Written as an in-range test rather than a rejection test so a
+		   NaN is discarded too: every comparison against NaN is false,
+		   so the old form let it through, and static_cast<int32_t> of a
+		   NaN is INT32_MIN - which as a uint32 world ID indexes two
+		   billion elements past the voxel array. A renderer whose
+		   transform or rotation has gone non-finite is enough to
+		   produce one. */
+		if (!(worldPosition.x >= 0.f && worldPosition.x < m_pRenderSystem->m_v3WorldSize.x &&
+		      worldPosition.y >= 0.f && worldPosition.y < m_pRenderSystem->m_v3WorldSize.y &&
+		      worldPosition.z >= 0.f && worldPosition.z < m_pRenderSystem->m_v3WorldSize.z))
 		{
-			for (scaleOffset.y = 0; scaleOffset.y < roundedScale.y; ++scaleOffset.y)
+			/* Out of bounds is ordinary - a model straddling the world
+			   edge. Non-finite is not, and naming it once is the
+			   difference between a silent skip and knowing which
+			   entity's transform went bad. */
+			static bool s_bWarned = false;
+
+			if (!s_bWarned && !std::isfinite(worldPosition.x + worldPosition.y + worldPosition.z))
 			{
-				for (scaleOffset.z = 0; scaleOffset.z < roundedScale.z; ++scaleOffset.z)
-				{
-					// Translation
-					vColPosition = VColor(pPositions[i]);
-					modelPosition = Vector3(vColPosition.inst.Colors.r, vColPosition.inst.Colors.g, vColPosition.inst.Colors.b);
+				s_bWarned = true;
+				fprintf(stderr, "[bake] non-finite voxel position from '%s': origin(%.2f %.2f %.2f) voxel(%.2f %.2f %.2f)\n",
+				        pRenderer->GetOwner()->GetName().c_str(),
+				        stamp.Origin.x, stamp.Origin.y, stamp.Origin.z,
+				        worldPosition.x, worldPosition.y, worldPosition.z);
+			}
 
-					// Scale
-					modelPosition *= scale;
-					modelPosition += scaleOffset;
+			return;
+		}
 
-					// World space + rotation
-					worldPosition = glm::round(origin + glm::rotate(quat, modelPosition));
+		// World space ID
+		const uint32_t uiWorldID = static_cast<uint32_t>(
+			static_cast<int32_t>(worldPosition.x) +
+			static_cast<int32_t>(worldPosition.y) * m_pRenderSystem->m_v3WorldSize.x +
+			static_cast<int32_t>(worldPosition.z) * m_pRenderSystem->m_v3WorldSize.x * m_pRenderSystem->m_v3WorldSize.y
+			);
 
-					// Check if position is different from last time
-					if (lastPosition == worldPosition)
-					{
-						continue;
-					}
+		bool bForceVoxel = false;
 
-					lastPosition = worldPosition;
+		// Bake as static
+		if (bIsStatic)
+		{
+			// Get grid voxel
+			pVoxel = grid.GetVoxel(
+				static_cast<uint32_t>(worldPosition.x),
+				static_cast<uint32_t>(worldPosition.y),
+				static_cast<uint32_t>(worldPosition.z)
+			);
 
-					/* Written as an in-range test rather than a rejection test so a
-					   NaN is discarded too: every comparison against NaN is false,
-					   so the old form let it through, and static_cast<int32_t> of a
-					   NaN is INT32_MIN - which as a uint32 world ID indexes two
-					   billion elements past the voxel array. A renderer whose
-					   transform or rotation has gone non-finite is enough to
-					   produce one. */
-					if (!(worldPosition.x >= 0.f && worldPosition.x < m_pRenderSystem->m_v3WorldSize.x &&
-					      worldPosition.y >= 0.f && worldPosition.y < m_pRenderSystem->m_v3WorldSize.y &&
-					      worldPosition.z >= 0.f && worldPosition.z < m_pRenderSystem->m_v3WorldSize.z))
-					{
-						/* Out of bounds is ordinary - a model straddling the world
-						   edge. Non-finite is not, and naming it once is the
-						   difference between a silent skip and knowing which
-						   entity's transform went bad. */
-						static bool s_bWarned = false;
+			// Check for out-of-bounds
+			if (!pVoxel) return;
 
-						if (!s_bWarned && !std::isfinite(worldPosition.x + worldPosition.y + worldPosition.z))
-						{
-							s_bWarned = true;
-							fprintf(stderr, "[bake] non-finite voxel position from '%s': origin(%.2f %.2f %.2f) model(%.2f %.2f %.2f)\n",
-							        pRenderer->GetOwner()->GetName().c_str(),
-							        origin.x, origin.y, origin.z,
-							        modelPosition.x, modelPosition.y, modelPosition.z);
-						}
+			bForceVoxel = bIsStatic && ((!pVoxel->UserPointer && !pVoxel->Active) || pVoxel->UserPointer == uiEntityID);
 
-						continue;
-					}
+			//TODO: check for layer
+			if (bForceVoxel)
+			{
+				pVoxel->Active = true;
+				pVoxel->Color = uiColor;
+				pVoxel->UserPointer = uiEntityID;
 
-					// World space ID
-					uiWorldID = static_cast<uint32_t>(
-						static_cast<int32_t>(worldPosition.x) +
-						static_cast<int32_t>(worldPosition.y) * m_pRenderSystem->m_v3WorldSize.x +
-						static_cast<int32_t>(worldPosition.z) * m_pRenderSystem->m_v3WorldSize.x * m_pRenderSystem->m_v3WorldSize.y
-						);
-
-					// Retrieve resulting color
-					uiColor = bHasOverrideColor ?
-						(overrideColor.inst.Color | static_cast<unsigned char>(rendererState + 1) << 24) :
-						(pColors[i] | static_cast<unsigned char>(rendererState + 1) << 24)
-						;
-
-					bool bForceVoxel = false;
-
-					// Bake as static
-					if (bIsStatic)
-					{
-						// Get grid voxel
-						pVoxel = grid.GetVoxel(
-							static_cast<uint32_t>(worldPosition.x),
-							static_cast<uint32_t>(worldPosition.y),
-							static_cast<uint32_t>(worldPosition.z)
-						);
-
-						// Check for out-of-bounds
-						if (!pVoxel) continue;
-
-						bForceVoxel = bIsStatic && ((!pVoxel->UserPointer && !pVoxel->Active) || pVoxel->UserPointer == uiEntityID);
-
-						//TODO: check for layer
-						if (bForceVoxel)
-						{
-							pVoxel->Active = true;
-							pVoxel->Color = uiColor;
-							pVoxel->UserPointer = uiEntityID;
-
-							m_pRenderSystem->m_pRenderContext->ModifyVoxelFast(uiWorldID, uiColor);
-						}
-					}
-
-					// Bake color into world
-					if (
-						bForceVoxel || m_pRenderSystem->ModifyVoxel(
-							uiWorldID,
-							uiColor, false
-						)
-						)
-					{
-						pBaked[uiBakedID] = uiWorldID;
-						uiBakedID++;
-					}
-				}
+				m_pRenderSystem->m_pRenderContext->ModifyVoxelFast(uiWorldID, uiColor);
 			}
 		}
-	}
+
+		// Bake color into world
+		if (
+			bForceVoxel || m_pRenderSystem->ModifyVoxel(
+				uiWorldID,
+				uiColor, false
+			)
+			)
+		{
+			pBaked[uiBakedID] = uiWorldID;
+			uiBakedID++;
+		}
+	});
 
 	pBakeData = pBakeData ? pBakeData : &pRenderer->m_BakeData;
 

@@ -33,6 +33,7 @@
 
 #include "Core/Platform/Rendering/RenderAlignment.h"
 #include "Core/Platform/Rendering/VoxelBrickGrid.h"
+#include "Core/Platform/Rendering/FarFieldVolume.h"
 
 class Platform;
 class WindowContext;
@@ -271,6 +272,11 @@ public:
 	   uncached memory. */
 	uint32_t ValidateBrickGrid();
 
+	/* Cross-checks the far field's placement against the resident window, which
+	   holds the same geometry at full resolution. See FarFieldVolume::Validate.
+	   On demand only, for the same reason. */
+	uint32_t ValidateFarField();
+
 	/* Low-resolution depth prepass (RENDERING_PLAN.md phase 3). Toggleable at
 	   runtime because what it saves depends on how much empty space the primary
 	   rays cross before they reach geometry, which is a property of where the
@@ -280,6 +286,26 @@ public:
 	   information" and skips nothing. */
 	bool IsDepthPrepassEnabled() const { return m_bDepthPrepassEnabled; }
 	void SetDepthPrepassEnabled(bool bEnabled) { m_bDepthPrepassEnabled = bEnabled; }
+
+	/* Far-field LOD volume (RENDERING_PLAN.md phase 4): the whole level at a
+	   quarter resolution, so a ray that leaves the 3x3 detail window has
+	   something to hit. See FarFieldVolume. */
+	FarFieldVolume& GetFarField() { return m_FarField; }
+
+	/* Rebuilds the volume for pWorld's level and pushes it to the GPU. Sizes
+	   the mappers, so it must run before anything samples them. */
+	void BuildFarField(class World* pWorld);
+
+	/* The cell grid the shader marches, or (0,0,0) when there is no far field -
+	   which is what a level whose window already covers it reports, and what
+	   the toggle below reports when off. */
+	UVector3 GetFarFieldShaderGridSize() const;
+
+	/* Runtime toggle, for the same reason the depth prepass has one: what the
+	   far field costs depends entirely on how much sky is on screen, so an A/B
+	   is only meaningful without moving the camera between measurements. */
+	bool IsFarFieldEnabled() const { return m_bFarFieldEnabled; }
+	void SetFarFieldEnabled(bool bEnabled) { m_bFarFieldEnabled = bEnabled; ForceCameraDataUpdate(); }
 
 	/* Clear the screen */
 	virtual void Clear();
@@ -384,6 +410,14 @@ protected:
 	Mapper* m_pBrickMapper = nullptr;
 	VoxelBrickGrid m_BrickGrid;
 
+	/* Far field. Its own brick grid, over its own cell grid rather than the
+	   window's voxels - the two never interact, and keeping them separate is
+	   what lets the far-field marcher be the same two-level walk. */
+	Mapper* m_pFarFieldMapper = nullptr;
+	Mapper* m_pFarFieldBrickMapper = nullptr;
+	FarFieldVolume m_FarField;
+	VoxelBrickGrid m_FarFieldBricks;
+
 	bool m_bFaderUpdated = false;
 
 	// Frontend resources
@@ -405,6 +439,14 @@ protected:
 
 	float m_fFrameTimer = 0.f;
 
+	/* Per-frame deltas of the current second, for the [fps] line's percentile.
+	   Fixed size: a frame limiter of 0.005 gives 200 a second, and anything
+	   past this is a second so pathological the average is the least of it. */
+	static const uint32_t k_uiMaxFrameSamples = 4096;
+
+	float m_fFrameSamples[k_uiMaxFrameSamples] = {};
+	uint32_t m_uiFrameSamples = 0;
+
 	bool m_bIsFullscreen = false;
 	/* Off by default: physics colliders and the like are a development aid, not
 	   something the game or a freshly opened editor should draw. The editor's
@@ -419,6 +461,20 @@ protected:
 	bool m_bDebugCleared = false;
 
 	bool m_bDepthPrepassEnabled = true;
+	bool m_bFarFieldEnabled = true;
+
+	/* The camera of the previous upload, which is the one the voxel image post
+	   processing composites was rendered with - see CameraData.hlsl's
+	   sceneInvMvp. Identity until the second upload; the first frame has no
+	   previous image to be out of step with. */
+	struct SceneCamera
+	{
+		Matrix4 m_InvMVP = Matrix4(1.f);
+		Vector4 m_WorldPos = Vector4(0.f);
+		Vector4 m_Offset = Vector4(0.f);
+	};
+
+	SceneCamera m_PreviousSceneCamera;
 
 	CameraRenderData m_CameraData;
 

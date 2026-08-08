@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include <algorithm>
+
 #include "External/imgui/imgui.h"
 #include "RenderContext.h"
 
@@ -12,6 +14,8 @@
 #include "Core/ECS/World.h"
 #include "Core/ECS/WorldManager.h"
 #include "Core/ECS/Systems/Physics/PhysicsSystem.h"
+#include "Core/ECS/Systems/Chunk/ChunkSystem.h"
+#include "Core/ECS/Systems/Chunk/FarFieldBaker.h"
 
 #include "Core/Platform/Rendering/FrameProfiler.h"
 #include "RenderDefines.h"
@@ -263,6 +267,66 @@ uint32_t RenderContext::ValidateBrickGrid()
 	return m_BrickGrid.Validate(false, m_pVoxelData);
 }
 
+uint32_t RenderContext::ValidateFarField()
+{
+	return FarFieldBaker::Validate(
+		m_pPlatform->GetApplication()->GetWorldManager().GetTopWorld(),
+		m_FarField
+	);
+}
+
+UVector3 RenderContext::GetFarFieldShaderGridSize() const
+{
+	return (m_bFarFieldEnabled && m_FarField.IsBuilt())
+		? m_FarField.GetGridSize()
+		: UVector3(0, 0, 0);
+}
+
+void RenderContext::BuildFarField(World* pWorld)
+{
+	ChunkSystem* pChunkSystem = pWorld != nullptr ? pWorld->GetChunkSystem() : nullptr;
+	PhysicsSystem* pPhysics = pWorld != nullptr ? pWorld->GetSystem<PhysicsSystem>() : nullptr;
+
+	if (pChunkSystem == nullptr || pPhysics == nullptr)
+		return;
+
+	/* The level is the chunk grid; the window is at most 3x3 of it. Height is
+	   not chunked, so the window's Y is the level's Y. */
+	const UVector2 v2LevelXZ = pChunkSystem->GetWorldSize();
+	const UVector3 v3WindowSize = pPhysics->GetVoxelGrid()->GetDimensions();
+	const UVector3 v3LevelSize(v2LevelXZ.x, v3WindowSize.y, v2LevelXZ.y);
+
+	/* A level the window already covers - a 1x1 chunk grid, which every menu
+	   world is - has no far field to draw. Building one would cost the memory
+	   and the marching for a volume every ray is masked out of anyway. */
+	if (v3LevelSize.x <= v3WindowSize.x && v3LevelSize.z <= v3WindowSize.z)
+	{
+		m_FarField.Resize(UVector3(0, 0, 0));
+		return;
+	}
+
+	m_FarField.Resize(v3LevelSize);
+
+	FarFieldBaker::Build(pWorld, m_FarField);
+
+	if (!m_FarField.IsBuilt())
+		return;
+
+	/* Same order the window's brick grid is resized in: the grid drops its
+	   mirror first, the mapper reallocates, then the mirrors are re-supplied.
+	   Only the front buffer exists here - the volume never swaps. */
+	m_FarFieldBricks.Resize(m_FarField.GetGridSize());
+
+	m_pFarFieldMapper->Resize(m_FarField.GetCellCount(), sizeof(uint32_t));
+	m_pFarFieldBrickMapper->Resize(m_FarFieldBricks.GetBrickCount(), sizeof(uint32_t));
+
+	m_FarFieldBricks.SetBuffers(m_pFarFieldBrickMapper->GetData(), nullptr);
+
+	m_FarField.Flush(m_pFarFieldMapper->GetData(), m_FarFieldBricks);
+
+	ForceCameraDataUpdate();
+}
+
 uint32_t RenderContext::GetVoxel(uint32_t uiID) const
 {
 	return m_pVoxelData[uiID];
@@ -309,13 +373,38 @@ bool RenderContext::Present()
 
 	FrameProfiler::Get().Tick(fDeltaTime);
 
+	/* Worst and 99th-percentile frame of the second, alongside the average.
+	   An average cannot tell a stall from a latency problem - 200 fps with one
+	   40 ms frame in it reads exactly the same as 200 fps that are all 5 ms,
+	   and the two have nothing in common. The percentile is what separates "it
+	   hitches now and then" from "every frame is late".
+	   Sampled into a fixed ring so this costs a store per frame and no
+	   allocation; the profiler is off in Release and this line is not. */
+	if (m_uiFrameSamples < k_uiMaxFrameSamples)
+		m_fFrameSamples[m_uiFrameSamples++] = fDeltaTime * 1000.f;
+
 	if (m_fFrameTimer >= 1.0f)
 	{
 		m_fFrameTimer = std::fmod(m_fFrameTimer, 1.0f);
 
 		m_uiFPS = m_uiDrawnFrames;
 		m_uiDrawnFrames = 0;
-		fprintf(stderr, "[fps] %u\n", m_uiFPS);
+
+		float fWorst = 0.f;
+		float fP99 = 0.f;
+
+		if (m_uiFrameSamples > 0)
+		{
+			std::sort(m_fFrameSamples, m_fFrameSamples + m_uiFrameSamples);
+
+			fWorst = m_fFrameSamples[m_uiFrameSamples - 1];
+			fP99 = m_fFrameSamples[(m_uiFrameSamples * 99) / 100];
+		}
+
+		fprintf(stderr, "[fps] %u  (frame ms: p99 %.2f, worst %.2f, over %u samples)\n",
+		        m_uiFPS, fP99, fWorst, m_uiFrameSamples);
+
+		m_uiFrameSamples = 0;
 	}
 	
 #if defined(_DEBUG) || defined(EDITOR)
@@ -461,6 +550,29 @@ bool RenderContext::Present()
 			   same ray. The prepass is only conservative to the extent that
 			   they are. */
 			pCameraBuffer->AddConstantData(glm::inverse(m_CameraData.m_MVP));
+
+			/* Far-field cell grid (RENDERING_PLAN.md phase 4), or zero when
+			   there is none - a level the window already covers, a build that
+			   found nothing, or the runtime toggle off. FarField.hlsl tests
+			   this before touching either far-field mapper, which is what
+			   keeps the descriptors valid at one dummy element until a world
+			   with a real far field is loaded. */
+			pCameraBuffer->AddConstantData(UVector4(GetFarFieldShaderGridSize(), 1));
+
+			/* The camera of the *previous* upload. Post processing samples a
+			   copy of the voxel target taken at the top of this frame, so the
+			   image it composites was rendered with that camera rather than the
+			   one being uploaded now, and anything reconstructing a world-space
+			   ray there has to match it - see CameraData.hlsl's sceneInvMvp.
+			   Written after the current values and before they are latched, so
+			   the buffer carries both. */
+			pCameraBuffer->AddConstantData(m_PreviousSceneCamera.m_InvMVP);
+			pCameraBuffer->AddConstantData(m_PreviousSceneCamera.m_WorldPos);
+			pCameraBuffer->AddConstantData(m_PreviousSceneCamera.m_Offset);
+
+			m_PreviousSceneCamera.m_InvMVP = glm::inverse(m_CameraData.m_MVP);
+			m_PreviousSceneCamera.m_WorldPos = m_CameraData.m_WorldPos;
+			m_PreviousSceneCamera.m_Offset = m_CameraData.m_CameraOffset;
 
 			pCameraBuffer->Allocate();
 
@@ -751,6 +863,41 @@ void RenderContext::InitializeRenderLoop()
 		m_pBrickMapper = m_pMappers.back().get();
 	}
 
+	/* Far-field LOD volume (RENDERING_PLAN.md phase 4)
+	 *
+	 * The whole level at a quarter resolution, so that a ray leaving the 3x3
+	 * detail window has something to hit. Static after a build: no back buffer,
+	 * because unlike the window it does not slide.
+	 *
+	 * Colour format matches the voxel mapper's, so the shader reads cells the
+	 * same way it reads voxels. Read-write for the same reason the brick mapper
+	 * is - it is the u register range that is free, and taking a t would
+	 * renumber the textures that are already there. Nothing writes to either
+	 * from the GPU. */
+	{
+		Mapper::Info farFieldDesc;
+		farFieldDesc.m_Name = "Far Field Mapper";
+		farFieldDesc.m_ColorFormat = E_R8G8B8A8_UNORM;
+		farFieldDesc.m_GPUAccessType = E_READ_WRITE;
+
+		m_pMappers.push_back(std::make_unique<Mapper>(Get(), farFieldDesc, false));
+		m_pFarFieldMapper = m_pMappers.back().get();
+
+		Mapper::Info farFieldBrickDesc;
+		farFieldBrickDesc.m_Name = "Far Field Brick Mapper";
+		farFieldBrickDesc.m_ColorFormat = E_UNKNOWN;
+		farFieldBrickDesc.m_GPUAccessType = E_READ_WRITE;
+
+		m_pMappers.push_back(std::make_unique<Mapper>(Get(), farFieldBrickDesc, false));
+		m_pFarFieldBrickMapper = m_pMappers.back().get();
+
+		/* One element each so the descriptors are valid before a world has been
+		   loaded. GetFarFieldShaderGridSize reports (0,0,0) until a build
+		   succeeds, and the shader skips the far field entirely on that. */
+		m_pFarFieldMapper->Resize(1, sizeof(uint32_t));
+		m_pFarFieldBrickMapper->Resize(1, sizeof(uint32_t));
+	}
+
 	// Particle Pass
 	{
 		// Vertex shader
@@ -910,6 +1057,8 @@ void RenderContext::InitializeRenderLoop()
 			pLinearSampler,
 			pCameraBuffer,
 			m_pVoxelMapper,
+			m_pFarFieldMapper,
+			m_pFarFieldBrickMapper,
 #if defined(_DEBUG) || defined(EDITOR)
 			{ pVoxelPass->GetTargetView(), pUIPass->GetTargetView(), pDebugPass->GetTargetView() }
 #else

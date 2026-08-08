@@ -186,3 +186,11 @@ typedef PEResourceState PResourceStates;
 #define R_DEF_PRIMITIVE_TOPOLOGY E_TOPOLOGY_TRIANGLELIST
 #define R_DEF_PRIMITIVE_TOPOLOGY_TYPE E_PRIMITIVE_TOPOLOGY_TRIANGLE
 #define R_DEF_RESOURCE_STATE_TYPE E_STATE_PIXEL_SHADER_RESOURCE
+
+/* Top of the chunk ground plane, in voxels: Chunk::UpdateGroundPlane fills the
+   layer at integer y = 0, and a voxel at integer y occupies [y, y+1], so the
+   surface of the world's floor is at y = 1.
+   Must match GROUND_PLANE_HEIGHT in Game/Engine/Assets/Shaders/Defines.hlsl -
+   the shader puts the endless ground plane there and RenderSystem puts the
+   ground proxy box's underside there. Change both or neither. */
+#define R_GROUND_PLANE_HEIGHT 1.0f
