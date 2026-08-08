@@ -12,8 +12,10 @@
  *
  * Run headless with --frames N to make it usable from CI. */
 
+#include "Core/Platform/Rendering/Vulkan/VKAllocator.h"
 #include "Core/Platform/Rendering/Vulkan/VKDevice.h"
 #include "Core/Platform/Rendering/Vulkan/VKSwapchain.h"
+#include "Core/Platform/Rendering/Vulkan/VKUploadBuffer.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
@@ -29,7 +31,83 @@ namespace
 	{
 		int iMaxFrames = -1;   /* -1 runs until the window is closed. */
 		bool bValidation = true;
+		bool bSelfTest = false;
 	};
+
+	/* Exercises VKAllocator and VKUploadBuffer against the real device.
+	   Compiling proves nothing about whether the mapped pointer is writable or
+	   the device address is meaningful. */
+	bool RunSelfTest(VKDevice& device)
+	{
+		bool bPassed = true;
+
+		VKAllocator allocator;
+		allocator.Initialize(&device);
+
+		VKUploadBuffer upload(&device, &allocator, 64 * 1024);
+
+		/* A constant allocation must be aligned, mapped and addressable. */
+		const VKUploadBuffer::Allocation first = upload.AllocateConstant(256);
+
+		if (first.CPU == nullptr || first.GPU == 0 || first.Buffer == VK_NULL_HANDLE)
+		{
+			fprintf(stderr, "[selftest] constant allocation returned nothing\n");
+			bPassed = false;
+		}
+		else
+		{
+			/* If the memory is not really host-visible this faults. */
+			memset(first.CPU, 0xAB, 256);
+
+			const uint8_t uiRead = static_cast<const uint8_t*>(first.CPU)[255];
+			if (uiRead != 0xAB)
+			{
+				fprintf(stderr, "[selftest] readback mismatch: 0x%02X\n", uiRead);
+				bPassed = false;
+			}
+		}
+
+		/* A second allocation must not overlap the first. */
+		const VKUploadBuffer::Allocation second = upload.AllocateConstant(256);
+
+		if (second.CPU == first.CPU || second.GPU == first.GPU)
+		{
+			fprintf(stderr, "[selftest] second allocation aliased the first\n");
+			bPassed = false;
+		}
+
+		/* Offsets must track the device address within the same page. */
+		if (second.Buffer == first.Buffer &&
+			second.GPU - first.GPU != second.Offset - first.Offset)
+		{
+			fprintf(stderr, "[selftest] device address and offset disagree\n");
+			bPassed = false;
+		}
+
+		/* Oversized requests are rejected rather than throwing. */
+		const VKUploadBuffer::Allocation tooBig = upload.Allocate(1024 * 1024, 256);
+
+		if (tooBig.CPU != nullptr)
+		{
+			fprintf(stderr, "[selftest] oversized allocation was not rejected\n");
+			bPassed = false;
+		}
+
+		/* Reset recycles pages, so the next allocation reuses the first slot. */
+		upload.Reset();
+
+		const VKUploadBuffer::Allocation recycled = upload.AllocateConstant(256);
+
+		if (recycled.CPU != first.CPU)
+		{
+			fprintf(stderr, "[selftest] Reset did not recycle the page\n");
+			bPassed = false;
+		}
+
+		printf("[selftest] upload buffer: %s\n", bPassed ? "pass" : "FAIL");
+
+		return bPassed;
+	}
 
 	Options ParseArgs(int argc, char** argv)
 	{
@@ -41,6 +119,8 @@ namespace
 				options.iMaxFrames = atoi(argv[++i]);
 			else if (strcmp(argv[i], "--no-validation") == 0)
 				options.bValidation = false;
+			else if (strcmp(argv[i], "--selftest") == 0)
+				options.bSelfTest = true;
 		}
 
 		return options;
@@ -105,6 +185,10 @@ int main(int argc, char** argv)
 		{
 			iExit = 1;
 		}
+		else if (options.bSelfTest && !RunSelfTest(device))
+		{
+			iExit = 1;
+		}
 		else
 		{
 			printf("[bringup] device: %s\n", device.GetDeviceName().c_str());
@@ -117,6 +201,10 @@ int main(int argc, char** argv)
 
 			while (bRunning)
 			{
+				/* Checked before presenting, so --frames 0 presents nothing. */
+				if (options.iMaxFrames >= 0 && iFrame >= options.iMaxFrames)
+					break;
+
 				SDL_Event event;
 				while (SDL_PollEvent(&event))
 				{
@@ -155,9 +243,6 @@ int main(int argc, char** argv)
 				}
 
 				++iFrame;
-
-				if (options.iMaxFrames >= 0 && iFrame >= options.iMaxFrames)
-					bRunning = false;
 			}
 
 			printf("[bringup] presented %d frames\n", iFrame);

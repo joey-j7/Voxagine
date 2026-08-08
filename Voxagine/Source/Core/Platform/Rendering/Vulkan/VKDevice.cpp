@@ -242,10 +242,18 @@ bool VKDevice::CreateDevice(VkSurfaceKHR surface)
 	sync2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
 	sync2.synchronization2 = VK_TRUE;
 
+	/* Buffer::GetGPUAddress() returns a uint64 that used to be a
+	   D3D12_GPU_VIRTUAL_ADDRESS. bufferDeviceAddress is the equivalent and
+	   keeps every call site working unchanged. */
+	VkPhysicalDeviceBufferDeviceAddressFeatures bufferAddress{};
+	bufferAddress.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+	bufferAddress.bufferDeviceAddress = VK_TRUE;
+	bufferAddress.pNext = &sync2;
+
 	VkPhysicalDeviceDynamicRenderingFeatures dynamicRendering{};
 	dynamicRendering.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
 	dynamicRendering.dynamicRendering = VK_TRUE;
-	dynamicRendering.pNext = &sync2;
+	dynamicRendering.pNext = &bufferAddress;
 
 	VkDeviceCreateInfo deviceInfo{};
 	deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
