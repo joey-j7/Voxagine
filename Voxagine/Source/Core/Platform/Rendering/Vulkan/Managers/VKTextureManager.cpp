@@ -2,10 +2,52 @@
 #include "VKTextureManager.h"
 
 #include "Core/Platform/Rendering/Vulkan/VKCommandEngine.h"
+#include "Core/Platform/Rendering/Vulkan/VKPassBindings.h"
 #include "Core/Platform/Rendering/Vulkan/VKRenderContext.h"
 #include "Core/Resources/Formats/TextureReference.h"
 
 #include <cstring>
+
+uint32_t VKTextureManager::AcquireID()
+{
+	uint32_t uiID;
+
+	if (!m_FreeIDs.empty())
+	{
+		uiID = m_FreeIDs.back();
+		m_FreeIDs.pop_back();
+	}
+	else
+	{
+		uiID = m_uiNextID++;
+	}
+
+	/* The ID is a descriptor array index and the shader indexes the array with
+	   it unconditionally, so running off the end is not a missing texture but
+	   an out-of-bounds descriptor read - which hangs the GPU with no
+	   validation error to explain it. */
+	if (uiID >= VKPassBinding::m_uiBindlessCapacity)
+	{
+		static bool s_bWarned = false;
+
+		if (!s_bWarned)
+		{
+			s_bWarned = true;
+			fprintf(stderr, "[vulkan] out of bindless texture slots (%u); textures beyond this will not render\n",
+			        VKPassBinding::m_uiBindlessCapacity);
+		}
+
+		return UINT32_MAX;
+	}
+
+	return uiID;
+}
+
+void VKTextureManager::ReleaseID(uint32_t uiID)
+{
+	if (uiID < VKPassBinding::m_uiBindlessCapacity)
+		m_FreeIDs.push_back(uiID);
+}
 
 VKTextureManager::VKTextureManager(VKRenderContext* pContext) : TextureManager(pContext)
 {
@@ -29,7 +71,11 @@ uint32_t VKTextureManager::CreateTexture(CommandEngine* pEngine, const std::stri
 	info.m_State = E_STATE_COPY_DEST;
 	info.m_Type = View::E_SHADER_RESOURCE_VIEW;
 
-	const uint32_t uiID = m_uiNextID++;
+	const uint32_t uiID = AcquireID();
+
+	if (uiID == UINT32_MAX)
+		return UINT32_MAX;
+
 	m_pViews[uiID] = std::make_unique<View>(m_pContext, info);
 
 	View* pView = m_pViews[uiID].get();
@@ -103,7 +149,11 @@ uint32_t VKTextureManager::CreateEmptyTexture()
 	info.m_ColorFormat = E_R8G8B8A8_UNORM;
 	info.m_Type = View::E_SHADER_RESOURCE_VIEW;
 
-	const uint32_t uiID = m_uiNextID++;
+	const uint32_t uiID = AcquireID();
+
+	if (uiID == UINT32_MAX)
+		return UINT32_MAX;
+
 	m_pViews[uiID] = std::make_unique<View>(m_pContext, info);
 
 	return uiID;
@@ -139,5 +189,12 @@ bool VKTextureManager::LoadTexture(CommandEngine* pEngine, TextureReference* pTe
 
 void VKTextureManager::DestroyTexture(const TextureReference* pTextureReference)
 {
+	/* Reclaim the slot before the base class forgets which one it was. */
+	if (pTextureReference != nullptr &&
+		m_pViews.find(pTextureReference->GetID()) != m_pViews.end())
+	{
+		ReleaseID(pTextureReference->GetID());
+	}
+
 	TextureManager::DestroyTexture(pTextureReference);
 }

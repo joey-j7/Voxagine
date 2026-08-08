@@ -2,6 +2,8 @@
 
 #include "Core/Platform/Rendering/Managers/TextureManager.h"
 
+#include <vector>
+
 class VKRenderContext;
 class CommandEngine;
 
@@ -24,5 +26,14 @@ public:
 	virtual void DestroyTexture(const TextureReference* pTextureReference) override;
 
 private:
+	/* Texture IDs are descriptor array indices, so they have to be reused
+	   rather than handed out monotonically: the array is a fixed size and the
+	   shader indexes it with whatever ID a sprite carries. DXHeapManager did
+	   exactly this with ReserveID/FreeID; without it, streaming worlds in and
+	   out walks the IDs past the end of the array. */
+	uint32_t AcquireID();
+	void ReleaseID(uint32_t uiID);
+
 	uint32_t m_uiNextID = 0;
+	std::vector<uint32_t> m_FreeIDs;
 };
