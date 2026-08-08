@@ -259,6 +259,12 @@ public:
 
 	PCommandEngine* GetEngine(const std::string& sName) { return m_pCommandEngines[sName].get(); }
 
+	PRenderPass* GetRenderPass(const std::string& sName)
+	{
+		auto found = m_pRenderPasses.find(sName);
+		return found != m_pRenderPasses.end() ? found->second.get() : nullptr;
+	}
+
 	PTextureManager* GetTextureManager() const { return m_pTextureManager.get(); }
 	PModelManager* GetModelManager() const { return m_pModelManager.get(); }
 
