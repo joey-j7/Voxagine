@@ -43,6 +43,52 @@ public:
 		uint32_t Size = 0;
 
 		Vector3 WorldOffset = Vector3(0.f, 0.f, 0.f);
+
+		/* RenderContext::GetVoxelGeneration at the moment Positions was
+		   written. Zero means "never baked", which never matches. */
+		uint32_t Generation = 0;
+
+		/* Everything the stamped voxels are a function of.
+		   ForEachStampedVoxel reads exactly two things: the VoxelStampTransform
+		   below, and three values off the renderer - its frame, its override
+		   colour and its render state. So two stamps with equal keys produce
+		   an identical sequence of (voxel, colour) pairs, and re-baking one
+		   over the other writes what is already there.
+
+		   Deliberately the stamp's own inputs rather than the transform's:
+		   position, rotation and scale reach the stamp through quantization
+		   and a floor, so a renderer can move without moving a single voxel,
+		   which is the common case at a world load. */
+		struct StampKey
+		{
+			Vector3 Origin = Vector3(0.f);
+			Quaternion Rotation;
+			Vector3 Scale = Vector3(1.f);
+			Vector3 RoundedScale = Vector3(0.f);
+
+			const VoxFrame* Frame = nullptr;
+			uint32_t OverrideColor = 0;
+			int32_t State = -1;
+
+			bool operator==(const StampKey& other) const
+			{
+				return Frame == other.Frame &&
+					OverrideColor == other.OverrideColor &&
+					State == other.State &&
+					Origin == other.Origin &&
+					Scale == other.Scale &&
+					RoundedScale == other.RoundedScale &&
+					Rotation.x == other.Rotation.x &&
+					Rotation.y == other.Rotation.y &&
+					Rotation.z == other.Rotation.z &&
+					Rotation.w == other.Rotation.w;
+			}
+		};
+
+		/* Default RoundedScale of zero is a stamp no real one can equal, so a
+		   BakeData that has never been through Occupy never matches. */
+		StampKey Stamp;
+
 		Vector3 LastLocation = Vector3(0.f, 0.f, 0.f);
 		Vector3 LastScale = Vector3(1.f, 1.f, 1.f);
 		Quaternion LastRotation;

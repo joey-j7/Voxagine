@@ -47,6 +47,10 @@ public:
 	void ForceCameraDataUpdate();
 	void SetGroundPlane(const std::string& texturePath, bool bForce = false);
 
+	/* RENDERING_PLAN.md phase 4d's acceptance test; see the definition.
+	   Triggered by VOXAGINE_VOXEL_AUDIT=<seconds>. */
+	void AuditVoxelRepresentation();
+
 	void EnableDebugLines(bool bEnabled);
 
 	void SetFadeTime(float fFadeTime);
@@ -87,6 +91,10 @@ protected:
 
 private:
 	void CheckRendererChange(VoxRenderer* pRenderer);
+
+	/* False until Start() has wiped and sized the voxel buffer. See
+	   OnComponentAdded. */
+	bool m_bStarted = false;
 
 	bool m_bForcedUpdate = true;
 	bool m_bShouldUpdateVoxelWorld = true;

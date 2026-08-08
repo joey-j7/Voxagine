@@ -11,6 +11,10 @@
 #include <Core/Platform/Platform.h>
 #include <Core/Application.h>
 
+#include <algorithm>
+#include <cstring>
+#include <vector>
+
 VoxModel::~VoxModel()
 {
 	Free();
@@ -427,6 +431,62 @@ const VoxFrame* VoxModel::GetFrame(size_t frame) const
 	return nullptr;
 }
 
+/* A .vox file lists its voxels in the order they were authored, which is
+ * arbitrary. Everything downstream walks that list and writes one voxel per
+ * entry into structures indexed by x + y*W + z*W*H - the voxel mapping, the
+ * occupancy bitmap, the brick counts, the physics grid - so an arbitrary order
+ * means a different cache line for every write, four times over.
+ *
+ * Sorting each frame once, here, into the same major order those structures
+ * use (z, then y, then x) makes a run of consecutive entries a run of
+ * consecutive voxels: 16 share a line of the voxel mapping, 64 share a word of
+ * the occupancy bitmap, 8 share a brick. Measured on the world-load bake of
+ * Valley_Path_To_Castle_Beat1, this is most of the cost - see
+ * RENDERING_PLAN.md phase 4c.
+ *
+ * A rotated stamp permutes or reverses the runs but keeps them contiguous, so
+ * the locality survives the quantized 90-degree rotations that are the norm.
+ */
+void VoxModel::SortFrameVoxels(VoxFrame& frame)
+{
+	const uint32_t uiCount = frame.m_uiSolidVoxelCount;
+
+	if (uiCount < 2)
+		return;
+
+	/* Key in the high half, source index in the low half, so one 64-bit sort
+	   orders both arrays. Coordinates are bytes, so the key fits in 24 bits. */
+	std::vector<uint64_t> order(uiCount);
+
+	for (uint32_t i = 0; i < uiCount; ++i)
+	{
+		const VColor position(frame.m_pPositions[i]);
+
+		const uint64_t uiKey =
+			(static_cast<uint64_t>(position.inst.Colors.b) << 16) |
+			(static_cast<uint64_t>(position.inst.Colors.g) << 8) |
+			static_cast<uint64_t>(position.inst.Colors.r);
+
+		order[i] = (uiKey << 32) | i;
+	}
+
+	std::sort(order.begin(), order.end());
+
+	std::vector<uint32_t> positions(uiCount);
+	std::vector<uint32_t> colors(uiCount);
+
+	for (uint32_t i = 0; i < uiCount; ++i)
+	{
+		const uint32_t uiSource = static_cast<uint32_t>(order[i] & 0xFFFFFFFFull);
+
+		positions[i] = frame.m_pPositions[uiSource];
+		colors[i] = frame.m_pColors[uiSource];
+	}
+
+	std::memcpy(frame.m_pPositions, positions.data(), uiCount * sizeof(uint32_t));
+	std::memcpy(frame.m_pColors, colors.data(), uiCount * sizeof(uint32_t));
+}
+
 void VoxModel::Reset()
 {
 	for (VoxFrame& frame : m_Frames) {
@@ -527,6 +587,8 @@ void VoxModel::Reset()
 
 			frame.m_uiSolidVoxelCount++;
 		}
+
+		SortFrameVoxels(frame);
 
 		// Map model data to GPU
 		/*Mapper::Info mapperInfo;

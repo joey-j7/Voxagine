@@ -238,6 +238,7 @@ public:
 
 		m_pVoxelData[uiID] = uiColor;
 		m_BrickGrid.SetVoxel(uiID, (uiColor >> 24) != 0);
+
 		m_bWorldUpdated = true;
 
 		return true;
@@ -253,11 +254,21 @@ public:
 		   ordinary cached memory. See ModifyVoxel above. */
 		m_pVoxelData[uiID] = uiColor;
 		m_BrickGrid.SetVoxel(uiID, (uiColor >> 24) != 0);
+
 		m_bWorldUpdated = true;
 	}
 
 	void UpdateWorld() { m_bWorldUpdated = true; }
 	uint32_t GetVoxelDataSize() { return m_pVoxelMapper->GetInfo().m_uiElementCount; }
+
+	/* Bumped every time the voxel buffer stops holding what was stamped into
+	   it - a clear or a resize. A baker records it alongside the positions it
+	   wrote, and comparing it is how VoxelBaker::Bake tells "the world was
+	   reset under me, re-stamp" apart from "something asked for an update but
+	   my voxels are still there". Without it a forced update has to assume the
+	   worst and re-stamp every renderer, which at a world load is a clear and
+	   an occupy that exactly cancel. */
+	uint32_t GetVoxelGeneration() const { return m_uiVoxelGeneration; }
 
 	uint32_t GetVoxel(uint32_t uiID) const;
 	uint32_t* GetVoxelData() { return m_pVoxelMapper->GetData(); }
@@ -495,6 +506,10 @@ protected:
 	uint32_t m_uiMissedFrames = 0;
 	uint32_t m_uiDrawnFrames = 0;
 	uint32_t m_uiFPS = 0;
+
+	/* See GetVoxelGeneration. Starts at 1 so a BakeData that has never been
+	   written (Generation 0) always reads as stale. */
+	uint32_t m_uiVoxelGeneration = 1;
 
 	bool m_bIsDrawTextureCopied = false;
 	bool m_bWorldUpdated = true;

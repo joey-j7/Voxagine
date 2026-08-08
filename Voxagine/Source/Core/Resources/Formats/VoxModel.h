@@ -112,6 +112,11 @@ public:
 	void Reset();
 
 private:
+	/* Orders a frame's voxels the way every consumer indexes them - z, then y,
+	   then x - so that stamping one walks memory in runs instead of at random.
+	   See the definition. */
+	static void SortFrameVoxels(VoxFrame& frame);
+
 	struct Chunk {
 		int id;
 		int contentSize;

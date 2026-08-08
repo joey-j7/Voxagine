@@ -38,20 +38,78 @@ void VoxelBaker::Bake()
 
 	VoxelGrid& grid = m_pPhysicsSystem->m_VoxelGrid;
 
+
 	for (VoxRenderer* pRenderer : m_pRenderSystem->m_VoxRenderers)
 	{
 		bool bEnabled = pRenderer->IsEnabled();
 
 		bool bIsStaticChunkLoaded = pRenderer->IsChunkInstanceLoaded() && pRenderer->GetOwner()->IsStatic();
 
-		if (!m_pRenderSystem->m_bForcedUpdate && bEnabled && !pRenderer->UpdateRequested() && (!pRenderer->m_BakeData.Updated || bIsStaticChunkLoaded))
+		/* A forced update used to mean "re-stamp every renderer". It has to
+		   mean "re-examine every renderer": at a world load
+		   RenderSystem::OnComponentAdded has already stamped all of them, so
+		   the forced first bake was a clear and an occupy that exactly
+		   cancelled - two thirds of the work, and every voxel of it paid for
+		   twice in the mapping, the occupancy bitmap and the brick counts.
+
+		   What a force actually guards against is the voxel buffer no longer
+		   holding what was stamped into it, and there are exactly two ways for
+		   that to happen: the buffer was cleared or resized (Generation), or
+		   the chunk window slid underneath it (WorldOffset). Both are recorded
+		   at bake time, so each renderer can answer for itself. Transform,
+		   rotation, scale and enabled changes come through Updated as before. */
+		const bool bBakeCurrent =
+			pRenderer->m_BakeData.Positions != nullptr &&
+			pRenderer->m_BakeData.Generation == m_pRenderContext->GetVoxelGeneration() &&
+			pRenderer->m_BakeData.WorldOffset == grid.GetWorldOffset();
+
+		const bool bForced = m_pRenderSystem->m_bForcedUpdate && !bBakeCurrent;
+
+		/* bEnabled is deliberately not part of this test any more. It used to
+		   be, which meant a disabled renderer could never be skipped: it was
+		   cleared on every single frame for the rest of its life, and once the
+		   first clear had dropped its Positions every later one took Clear's
+		   fallback branch, which allocates and scans the renderer's whole
+		   bounding box out of the physics grid. The disabled path resets the
+		   same flags the enabled one does now, so it clears exactly once. */
+		if (!bForced && !pRenderer->UpdateRequested() && (!pRenderer->m_BakeData.Updated || bIsStaticChunkLoaded))
 			continue;
+
+		/* Everything above says a re-bake was *asked for*. This asks whether it
+		   would change anything, and at a world load the answer is no for every
+		   renderer in the level: RenderSystem::OnComponentAdded stamps each
+		   one, Chunk::UpdateRenderer then requests an update for each one on
+		   first load, and the resulting clear-and-re-occupy reproduces the same
+		   voxels exactly - measured, 218 of 218 identical, 780 ms of writing
+		   back what was already there.
+
+		   Note this is *not* the Updated flag. CheckRendererChange sets that
+		   from the transform, and a transform can move without moving a single
+		   voxel - it reaches the stamp through a quantized rotation and a
+		   floor. All 218 had it set. The stamp key is the thing the voxels
+		   actually depend on.
+
+		   Only meaningful while the buffer still holds the previous stamp,
+		   which is what Generation and WorldOffset establish above. */
+		if (bEnabled && bBakeCurrent && ComputeStampKey(pRenderer) == pRenderer->m_BakeData.Stamp)
+		{
+			pRenderer->m_BakeData.Updated = false;
+			pRenderer->m_bUpdateRequested = false;
+
+			continue;
+		}
+
 
 		/* Remove old voxels */
 		Clear(pRenderer);
 
 		if (!bEnabled)
 		{
+			/* Its voxels are gone; nothing more to do until something about it
+			   changes. Leaving these set is what made the clear repeat. */
+			pRenderer->m_BakeData.Updated = false;
+			pRenderer->m_bUpdateRequested = false;
+
 			continue;
 		}
 
@@ -81,6 +139,40 @@ void VoxelBaker::Bake()
 
 		FrameProfiler::Get().Report("CPU VoxelBaker::Bake", fMilliseconds);
 	}
+}
+
+namespace
+{
+	/* The renderer-side half of a stamp key, shared by the two places that
+	   build one so they cannot drift. */
+	void FillStampKey(VoxRenderer* pRenderer, const VoxelStampTransform& stamp,
+	                  VoxRenderer::BakeData::StampKey& out)
+	{
+		out.Origin = stamp.Origin;
+		out.Rotation = stamp.Rotation;
+		out.Scale = stamp.Scale;
+		out.RoundedScale = stamp.RoundedScale;
+
+		out.Frame = pRenderer->GetFrame();
+		out.OverrideColor = pRenderer->GetOverrideColor().inst.Color;
+		out.State = static_cast<int32_t>(pRenderer->GetState());
+	}
+}
+
+VoxRenderer::BakeData::StampKey VoxelBaker::ComputeStampKey(VoxRenderer* pRenderer)
+{
+	VoxRenderer::BakeData::StampKey key;
+
+	VoxelGrid& grid = m_pPhysicsSystem->m_VoxelGrid;
+	VoxelStampTransform stamp;
+
+	if (!pRenderer->GetFrame() ||
+		!ComputeVoxelStampTransform(pRenderer, grid.GetWorldOffset(), 1.f / static_cast<float>(grid.GetVoxelSize()), stamp))
+		return key;
+
+	FillStampKey(pRenderer, stamp, key);
+
+	return key;
 }
 
 uint32_t* VoxelBaker::Occupy(VoxRenderer* pRenderer, VoxRenderer::BakeData* pBakeData)
@@ -204,6 +296,15 @@ uint32_t* VoxelBaker::Occupy(VoxRenderer* pRenderer, VoxRenderer::BakeData* pBak
 	pBakeData->IsStatic = bIsStatic;
 	pBakeData->Size = uiBakedID;
 
+	/* Recorded here rather than in Bake because this is where the voxels
+	   actually land, and OnComponentAdded reaches Occupy without going through
+	   Bake at all. See RenderContext::GetVoxelGeneration. */
+	pBakeData->Generation = m_pRenderSystem->m_pRenderContext->GetVoxelGeneration();
+
+	/* Recorded from the same stamp the walk above used, so a later bake can
+	   ask whether re-running it would write anything different. */
+	FillStampKey(pRenderer, stamp, pBakeData->Stamp);
+
 	return pBaked;
 }
 
@@ -255,6 +356,8 @@ void VoxelBaker::Clear(VoxRenderer* pRenderer, VoxRenderer::BakeData* pBakeData)
 		delete[] pBakeData->Positions;
 		pBakeData->Positions = nullptr;
 		pBakeData->IsStatic = false;
+		pBakeData->Generation = 0;
+		pBakeData->Stamp = VoxRenderer::BakeData::StampKey();
 	}
 	else /* Try to remove voxels which could have been placed by the chunk system rendering */
 	{

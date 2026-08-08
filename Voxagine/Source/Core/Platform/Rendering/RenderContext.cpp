@@ -258,6 +258,9 @@ bool RenderContext::ResizeWorldBuffer()
 	m_BrickGrid.SetBuffers(m_pBrickMapper->GetData(), m_pBrickMapper->GetBackBufferData());
 	m_BrickGrid.Flush();
 
+	/* Whatever the bakers stamped is gone. See GetVoxelGeneration. */
+	++m_uiVoxelGeneration;
+
 	return bChanged;
 }
 
@@ -337,6 +340,8 @@ void RenderContext::ClearVoxels()
 	memset(m_pVoxelMapper->GetBackBufferData(), 0, m_pVoxelMapper->GetInfo().m_uiElementCount * m_pVoxelMapper->GetInfo().m_uiElementSize);
 
 	m_BrickGrid.ClearAll();
+
+	++m_uiVoxelGeneration;
 }
 
 void RenderContext::Clear()
