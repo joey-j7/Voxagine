@@ -116,35 +116,63 @@ MarchResult MarchLight(float3 v3Origin, float3 v3Direction, float3 v3ChunkSize, 
 
 MarchResult MarchDiffuse(float3 v3Origin, float3 v3Direction, float3 v3ChunkSize, int iMaxSteps) {
 	float3 v3InvDirection = 1.0 / v3Direction;
-	
+
 	int3 v3Position = floor(v3Origin);
 	float3 v3SignedRayDirection = sign(v3Direction);
 	float3 v3Distance = (v3Position - v3Origin + 0.5 + v3SignedRayDirection * 0.5) * v3InvDirection;
 	float3 v3Mask = step(v3Distance.xyz, v3Distance.yxy) * step(v3Distance.xyz, v3Distance.zzx);
-	
+
 	MarchResult result;
 
-	for (int i = 0; i < iMaxSteps; i++) {	
+	/* Callers may pass an origin outside worldSize bounds - e.g. the tall sky
+	   proxy box in RenderSystem.cpp, which extends well above the voxel
+	   volume so its silhouette covers the sky. GetVoxel has no bounds check,
+	   so without this the first sample below would read voxelWorldData past
+	   its end. */
+	if (!IsInChunk(v3Position)) {
+		result.Color = float4(CLEAR_COLOR, 0.0);
+		return result;
+	}
+
+	for (int i = 0; i < iMaxSteps; i++) {
 		result.Color = GetVoxel(v3Position);
-		
+
 		if (result.Color.a > 0) {
 			v3Distance = (v3Position - v3Origin + 0.5 - v3SignedRayDirection * 0.5) * v3InvDirection;
-			result.Distance = max(v3Distance.x, max(v3Distance.y, v3Distance.z));	
+			result.Distance = max(v3Distance.x, max(v3Distance.y, v3Distance.z));
 			result.SmoothPosition = v3Origin + v3Direction * result.Distance;
-			
+
+			result.Position = v3Position;
 			result.Normal = -v3Mask * v3SignedRayDirection;
+
+			float3 v3IntersectPlane = v3Position + v3LessThan(v3Direction, float3(0, 0, 0));
+			float3 v3EndRayPos = v3Direction / Sum(v3Mask * v3Direction) * Sum(v3Mask * (v3IntersectPlane - v3Origin)) + v3Origin;
+
+			result.UV = mod(
+				float2(
+					dot(v3Mask * v3EndRayPos.zxy, float3(1.0, 1.0, 1.0)),
+					dot(v3Mask * v3EndRayPos.yzx, float3(1.0, 1.0, 1.0))
+				),
+				float2(1.0, 1.0)
+			);
+
+			if (abs(result.Normal.b) > 0.5)
+				result.UV = float2(result.UV.y, result.UV.x);
+
+			result.Mask = v3Mask;
+			result.SRDirection = v3SignedRayDirection;
 
 			return result;
 		}
-		
+
 		v3Mask = step(v3Distance.xyz, v3Distance.yxy) * step(v3Distance.xyz, v3Distance.zzx);
 		v3Distance += v3Mask * v3SignedRayDirection * v3InvDirection;
 		v3Position += v3Mask * v3SignedRayDirection;
-		
+
 		if (!IsInChunk(v3Position))
 			break;
 	}
-	
+
 	result.Color = float4(CLEAR_COLOR, 0.0);
 	return result;
 }
