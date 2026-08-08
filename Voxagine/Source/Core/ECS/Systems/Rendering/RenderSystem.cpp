@@ -401,6 +401,27 @@ void RenderSystem::PostFixedTick(const GameTimer& fixedTimer)
 
 void RenderSystem::Render(const GameTimer& fixedTimer)
 {
+	/* VOXAGINE_VOXEL_AUDIT=<seconds> runs the scan below once, that many
+	   seconds in. It is the acceptance test for RENDERING_PLAN.md phase 4d and
+	   is kept for it; off unless the variable is set. */
+	{
+		static const double s_fAuditAfter =
+			std::getenv("VOXAGINE_VOXEL_AUDIT") ? atof(std::getenv("VOXAGINE_VOXEL_AUDIT")) : 0.0;
+		static double s_fElapsed = 0.0;
+		static bool s_bDone = false;
+
+		if (s_fAuditAfter > 0.0 && !s_bDone)
+		{
+			s_fElapsed += fixedTimer.GetElapsedSeconds();
+
+			if (s_fElapsed >= s_fAuditAfter)
+			{
+				s_bDone = true;
+				AuditVoxelRepresentation();
+			}
+		}
+	}
+
 	/* Get voxel data on fixed timestep */
 	bool bShouldUpdateVoxelWorld = m_bForcedUpdate;
 	Camera* pCamera = m_pWorld->GetMainCamera();
@@ -600,6 +621,82 @@ void RenderSystem::SetGroundPlane(const std::string& texturePath, bool bForce)
 	}
 
 	delete pTextureData;
+}
+
+/* Whether the CPU Voxel's two redundant-looking fields really are redundant,
+ * which is what RENDERING_PLAN.md phase 4d proposes to act on.
+ *
+ * Reports two things over the whole resident grid: where Voxel::Active
+ * disagrees with the alpha of Voxel::Color (phase 4d replaces the first with
+ * the second, so any disagreement is a voxel that would change state), and how
+ * many owner ids name entities that no longer exist (phase 4d moves ownership
+ * out of the voxel, and needs to know whether the restored ones still matter).
+ *
+ * Reads 75 M voxels out of ordinary cached memory, so it costs a second or two
+ * and freezes the frame - on demand only, like the brick and far-field
+ * validators. Run it *during destruction* as well as at rest: the transient
+ * owner-set-but-inactive state is the interesting one and a static scene does
+ * not have it.
+ */
+void RenderSystem::AuditVoxelRepresentation()
+{
+	VoxelGrid& grid = m_pPhysicsSystem->m_VoxelGrid;
+	const UVector3 dims = grid.GetDimensions();
+
+	uint64_t uiActiveNoAlpha = 0;
+	uint64_t uiAlphaNoActive = 0;
+	uint64_t uiActive = 0;
+	uint64_t uiOwners = 0;
+	uint64_t uiDeadOwners = 0;
+	uint64_t uiOwnerNotActive = 0;
+
+	std::unordered_map<uintptr_t, bool> aliveCache;
+
+	for (uint32_t z = 0; z < dims.z; ++z)
+	for (uint32_t y = 0; y < dims.y; ++y)
+	for (uint32_t x = 0; x < dims.x; ++x)
+	{
+		const Voxel* pVoxel = grid.GetVoxel(x, y, z);
+
+		if (!pVoxel)
+			continue;
+
+		const bool bAlpha = (pVoxel->Color >> 24) != 0;
+
+		if (pVoxel->Active)
+			++uiActive;
+
+		if (pVoxel->Active && !bAlpha)
+			++uiActiveNoAlpha;
+
+		if (!pVoxel->Active && bAlpha)
+			++uiAlphaNoActive;
+
+		if (pVoxel->UserPointer)
+		{
+			++uiOwners;
+
+			if (!pVoxel->Active)
+				++uiOwnerNotActive;
+
+			auto it = aliveCache.find(pVoxel->UserPointer);
+
+			if (it == aliveCache.end())
+				it = aliveCache.emplace(pVoxel->UserPointer,
+					m_pWorld->FindEntity(pVoxel->UserPointer) != nullptr).first;
+
+			if (!it->second)
+				++uiDeadOwners;
+		}
+	}
+
+	fprintf(stderr, "[voxel-audit] %llu active of %u; divergence: %llu active-without-alpha, %llu alpha-without-active\n",
+	        (unsigned long long)uiActive, dims.x * dims.y * dims.z,
+	        (unsigned long long)uiActiveNoAlpha, (unsigned long long)uiAlphaNoActive);
+
+	fprintf(stderr, "[voxel-audit] owners: %llu set, %llu naming a dead entity, %llu on an inactive voxel (%zu distinct ids)\n",
+	        (unsigned long long)uiOwners, (unsigned long long)uiDeadOwners,
+	        (unsigned long long)uiOwnerNotActive, aliveCache.size());
 }
 
 void RenderSystem::EnableDebugLines(bool bEnabled)
