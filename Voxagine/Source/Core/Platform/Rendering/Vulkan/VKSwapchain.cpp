@@ -234,16 +234,18 @@ void VKSwapchain::TransitionImage(VkCommandBuffer cmd, VkImage image,
 	barrier.subresourceRange.levelCount = 1;
 	barrier.subresourceRange.layerCount = 1;
 
+	/* ALL_TRANSFER rather than CLEAR: the presented image is written by a clear
+	   and a blit, and a clear-only scope does not cover the blit. */
 	if (newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
 	{
 		barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
 		barrier.srcAccessMask = VK_ACCESS_2_NONE;
-		barrier.dstStageMask = VK_PIPELINE_STAGE_2_CLEAR_BIT;
+		barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT;
 		barrier.dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
 	}
 	else
 	{
-		barrier.srcStageMask = VK_PIPELINE_STAGE_2_CLEAR_BIT;
+		barrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT;
 		barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
 		barrier.dstStageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
 		barrier.dstAccessMask = VK_ACCESS_2_NONE;
@@ -387,6 +389,41 @@ bool VKSwapchain::BlitAndPresent(VKResource* pSource, VkSemaphore waitTimeline, 
 
 	const VkExtent3D srcExtent = pSource->GetExtent();
 
+	/* Fit the source into the swapchain without distorting it. The source is
+	   already at the locked aspect ratio, so this is usually a 1:1 copy into a
+	   centred rect with black bars either side. */
+	uint32_t uiDstWidth = m_Extent.width;
+	uint32_t uiDstHeight = m_Extent.height;
+
+	if (srcExtent.width > 0 && srcExtent.height > 0)
+	{
+		const float fSource = static_cast<float>(srcExtent.width) / static_cast<float>(srcExtent.height);
+		const float fTarget = static_cast<float>(m_Extent.width) / static_cast<float>(m_Extent.height);
+
+		if (fTarget > fSource)
+			uiDstWidth = static_cast<uint32_t>(m_Extent.height * fSource);
+		else
+			uiDstHeight = static_cast<uint32_t>(m_Extent.width / fSource);
+	}
+
+	const int32_t iOffsetX = static_cast<int32_t>((m_Extent.width - uiDstWidth) / 2);
+	const int32_t iOffsetY = static_cast<int32_t>((m_Extent.height - uiDstHeight) / 2);
+
+	/* The bars are never written by the blit, and a swapchain image is
+	   recycled with whatever the last frame left in it. */
+	if (iOffsetX != 0 || iOffsetY != 0)
+	{
+		VkClearColorValue black{};
+
+		VkImageSubresourceRange range{};
+		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		range.levelCount = 1;
+		range.layerCount = 1;
+
+		vkCmdClearColorImage(cmd, m_Images[uiImageIndex],
+		                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &black, 1, &range);
+	}
+
 	VkImageBlit region{};
 	region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	region.srcSubresource.layerCount = 1;
@@ -394,8 +431,9 @@ bool VKSwapchain::BlitAndPresent(VKResource* pSource, VkSemaphore waitTimeline, 
 	                         static_cast<int32_t>(srcExtent.height), 1 };
 	region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	region.dstSubresource.layerCount = 1;
-	region.dstOffsets[1] = { static_cast<int32_t>(m_Extent.width),
-	                         static_cast<int32_t>(m_Extent.height), 1 };
+	region.dstOffsets[0] = { iOffsetX, iOffsetY, 0 };
+	region.dstOffsets[1] = { iOffsetX + static_cast<int32_t>(uiDstWidth),
+	                         iOffsetY + static_cast<int32_t>(uiDstHeight), 1 };
 
 	vkCmdBlitImage(cmd,
 	               pSource->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,

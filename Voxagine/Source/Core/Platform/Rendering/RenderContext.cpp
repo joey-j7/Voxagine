@@ -61,7 +61,12 @@ void RenderContext::Initialize()
 	settings.FullscreenChanged += Event<bool>::Subscriber(std::bind(&RenderContext::OnFullscreenChanged, this, std::placeholders::_1), this);
 
 	m_bIsFullscreen = settings.IsFullscreen();
-	m_v2RenderResolution = m_bIsFullscreen ? m_v2ScreenResolution : UVector2(m_pPlatform->GetWindowContext()->GetSize().x, m_pPlatform->GetWindowContext()->GetSize().y);
+
+	const UVector2 initialSize = m_bIsFullscreen
+		? m_v2ScreenResolution
+		: UVector2(m_pPlatform->GetWindowContext()->GetSize().x, m_pPlatform->GetWindowContext()->GetSize().y);
+
+	m_v2RenderResolution = ConstrainToAspectRatio(initialSize.x, initialSize.y);
 
 	m_pSettings = &m_pPlatform->GetApplication()->GetSettings();
 
@@ -834,8 +839,32 @@ void RenderContext::OnFullscreenChanged(bool bFullscreen)
 	}
 }
 
+UVector2 RenderContext::ConstrainToAspectRatio(uint32_t uiWidth, uint32_t uiHeight) const
+{
+	const float fLocked =
+		m_pPlatform->GetApplication()->GetSettings().GetLockedAspectRatio();
+
+	if (fLocked <= 0.f || uiWidth == 0 || uiHeight == 0)
+		return UVector2(uiWidth, uiHeight);
+
+	/* Largest box of the locked ratio that fits the window; the leftover is
+	   the letterbox the swapchain blit leaves black. */
+	const float fWindow = static_cast<float>(uiWidth) / static_cast<float>(uiHeight);
+
+	if (fWindow > fLocked)
+		uiWidth = static_cast<uint32_t>(uiHeight * fLocked);
+	else
+		uiHeight = static_cast<uint32_t>(uiWidth / fLocked);
+
+	return UVector2(std::max(uiWidth, 1u), std::max(uiHeight, 1u));
+}
+
 bool RenderContext::OnResize(uint32_t uiWidth, uint32_t uiHeight)
 {
+	const UVector2 constrained = ConstrainToAspectRatio(uiWidth, uiHeight);
+	uiWidth = constrained.x;
+	uiHeight = constrained.y;
+
 	if (m_v2RenderResolution.x == uiWidth && m_v2RenderResolution.y == uiHeight)
 		return false;
 

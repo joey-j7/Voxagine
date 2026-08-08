@@ -196,6 +196,10 @@ public:
 
 	void EnableDebugLines(bool bEnabled);
 
+	/* Window size reduced to the locked aspect ratio from Settings; equal to
+	   the input when nothing is locked. */
+	UVector2 ConstrainToAspectRatio(uint32_t uiWidth, uint32_t uiHeight) const;
+
 	bool ResizeWorldBuffer();
 	inline bool ModifyVoxel(uint32_t uiID, uint32_t uiColor, bool bOverwrite = true)
 	{

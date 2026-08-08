@@ -209,7 +209,12 @@ bool VKRenderContext::OnResize(uint32_t uiWidth, uint32_t uiHeight)
 		return false;
 
 	/* The base class only notifies SizeChanged listeners (camera, window);
-	   the render targets themselves are resized here. */
+	   the render targets themselves are resized here. Sized from the render
+	   resolution rather than the window: with an aspect ratio locked those
+	   differ, and a target larger than the viewport the shaders divide by
+	   pushes sample coordinates past 1, which a repeating sampler tiles. */
+	const UVector2 resolution = GetRenderResolution();
+
 	for (auto& entry : m_pRenderPasses)
 	{
 		PRenderPass* pPass = entry.second.get();
@@ -219,8 +224,8 @@ bool VKRenderContext::OnResize(uint32_t uiWidth, uint32_t uiHeight)
 
 		const float fScale = pPass->GetData().m_fRenderScale;
 
-		pPass->Resize(UVector2(static_cast<uint32_t>(uiWidth * fScale),
-		                       static_cast<uint32_t>(uiHeight * fScale)));
+		pPass->Resize(UVector2(static_cast<uint32_t>(resolution.x * fScale),
+		                       static_cast<uint32_t>(resolution.y * fScale)));
 	}
 
 	return true;

@@ -58,6 +58,13 @@ public:
 	float GetResolutionScale() const { return m_fResolutionScale; }
 	void SetResolutionScale(float fResolutionScale) { m_fResolutionScale = std::max(0.1f, fResolutionScale); }
 
+	/* The aspect ratio the game renders at regardless of window shape; the
+	   result is letterboxed on present. Zero renders at the window's own
+	   ratio, which is what a window manager that ignores size hints will
+	   otherwise hand us. */
+	float GetLockedAspectRatio() const { return m_fLockedAspectRatio; }
+	void SetLockedAspectRatio(float fAspectRatio) { m_fLockedAspectRatio = std::max(0.f, fAspectRatio); }
+
 	void SetFullscreen(bool bFullscreen);
 	bool IsFullscreen() const { return m_bFullscreen; }
 
@@ -106,6 +113,8 @@ private:
 
 	bool m_bShadowsEnabled = true;
 	float m_fResolutionScale = 1.f;
+
+	float m_fLockedAspectRatio = 16.f / 9.f;
 
 	bool m_bFullscreen = false;
 

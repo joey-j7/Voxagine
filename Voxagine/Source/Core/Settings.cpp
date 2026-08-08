@@ -40,6 +40,7 @@ RTTR_REGISTRATION
 		.property("FXAAEnabled", &Settings::IsFXAAEnabled, &Settings::SetFXAA)
 		.property("ShadowsEnabled", &Settings::IsShadowEnabled, &Settings::SetShadowEnabled)
 		.property("ResolutionScale", &Settings::GetResolutionScale, &Settings::SetResolutionScale)
+		.property("LockedAspectRatio", &Settings::GetLockedAspectRatio, &Settings::SetLockedAspectRatio)
 		.property("Fullscreen", &Settings::IsFullscreen, &Settings::SetFullscreen)
 		.property("InitialWindowSize", &Settings::m_v2InitialWindowSize);
 }
