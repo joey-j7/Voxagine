@@ -42,7 +42,7 @@ FH PosixFileSystem::OpenFile(const char* pFilePath, FSOpenFlags openFlags)
 	FILE* pFile = fopen(pFilePath, openMode.c_str());
 	if (pFile == nullptr)
 	{
-		printf("Failed to open file with error: %s\n", strerror(errno));
+		printf("Failed to open file '%s': %s\n", pFilePath, strerror(errno));
 		return INVALID_FH;
 	}
 

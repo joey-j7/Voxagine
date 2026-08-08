@@ -400,19 +400,21 @@ void VKImContext::Draw(ImDrawData* pDrawData)
 		pIndices += pList->IdxBuffer.Size;
 	}
 
-	/* Maps ImGui's top-left pixel space onto clip space. Row-major, because
-	   that is how DXC lays out an HLSL matrix by default and the shader
-	   multiplies matrix-first. */
-	const float fLeft = pDrawData->DisplayPos.x;
-	const float fRight = pDrawData->DisplayPos.x + pDrawData->DisplaySize.x;
-	const float fTop = pDrawData->DisplayPos.y;
-	const float fBottom = pDrawData->DisplayPos.y + pDrawData->DisplaySize.y;
+	/* Maps ImGui's top-left pixel space straight onto Vulkan's Y-down clip
+	   space, so this pass keeps a positive-height viewport rather than the
+	   flipped one the engine's own passes use for their D3D-era shaders.
+	   Stored column by column: DXC packs a cbuffer matrix column-major, which
+	   is why the engine's glm matrices work with mul(M, v) unmodified. */
+	const float fScaleX = 2.f / pDrawData->DisplaySize.x;
+	const float fScaleY = 2.f / pDrawData->DisplaySize.y;
 
 	const float projection[16] = {
-		2.f / (fRight - fLeft), 0.f, 0.f, (fRight + fLeft) / (fLeft - fRight),
-		0.f, 2.f / (fTop - fBottom), 0.f, (fTop + fBottom) / (fBottom - fTop),
-		0.f, 0.f, 0.5f, 0.5f,
-		0.f, 0.f, 0.f, 1.f
+		fScaleX, 0.f, 0.f, 0.f,
+		0.f, fScaleY, 0.f, 0.f,
+		0.f, 0.f, 1.f, 0.f,
+		-1.f - pDrawData->DisplayPos.x * fScaleX,
+		-1.f - pDrawData->DisplayPos.y * fScaleY,
+		0.f, 1.f
 	};
 
 	const VKUploadBuffer::Allocation constantAlloc = pUpload->AllocateConstant(sizeof(projection));

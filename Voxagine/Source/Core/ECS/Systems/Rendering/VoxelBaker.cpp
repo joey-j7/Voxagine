@@ -8,6 +8,8 @@
 #include "Core/Resources/Formats/VoxModel.h"
 #include "Core/Application.h"
 
+#include <cmath>
+
 #define PI 3.14159265359
 
 double degreesToRadians(double angle_in_degrees) {
@@ -213,9 +215,34 @@ uint32_t* VoxelBaker::Occupy(VoxRenderer* pRenderer, VoxRenderer::BakeData* pBak
 
 					lastPosition = worldPosition;
 
-					if (worldPosition.x >= m_pRenderSystem->m_v3WorldSize.x || worldPosition.y >= m_pRenderSystem->m_v3WorldSize.y || worldPosition.z >= m_pRenderSystem->m_v3WorldSize.z \
-						|| worldPosition.x < 0 || worldPosition.y < 0 || worldPosition.z < 0)
+					/* Written as an in-range test rather than a rejection test so a
+					   NaN is discarded too: every comparison against NaN is false,
+					   so the old form let it through, and static_cast<int32_t> of a
+					   NaN is INT32_MIN - which as a uint32 world ID indexes two
+					   billion elements past the voxel array. A renderer whose
+					   transform or rotation has gone non-finite is enough to
+					   produce one. */
+					if (!(worldPosition.x >= 0.f && worldPosition.x < m_pRenderSystem->m_v3WorldSize.x &&
+					      worldPosition.y >= 0.f && worldPosition.y < m_pRenderSystem->m_v3WorldSize.y &&
+					      worldPosition.z >= 0.f && worldPosition.z < m_pRenderSystem->m_v3WorldSize.z))
+					{
+						/* Out of bounds is ordinary - a model straddling the world
+						   edge. Non-finite is not, and naming it once is the
+						   difference between a silent skip and knowing which
+						   entity's transform went bad. */
+						static bool s_bWarned = false;
+
+						if (!s_bWarned && !std::isfinite(worldPosition.x + worldPosition.y + worldPosition.z))
+						{
+							s_bWarned = true;
+							fprintf(stderr, "[bake] non-finite voxel position from '%s': origin(%.2f %.2f %.2f) model(%.2f %.2f %.2f)\n",
+							        pRenderer->GetOwner()->GetName().c_str(),
+							        origin.x, origin.y, origin.z,
+							        modelPosition.x, modelPosition.y, modelPosition.z);
+						}
+
 						continue;
+					}
 
 					// World space ID
 					uiWorldID = static_cast<uint32_t>(

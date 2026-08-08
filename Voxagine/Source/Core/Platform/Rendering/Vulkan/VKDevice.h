@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -35,6 +36,13 @@ public:
 	VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
 	VkQueue GetPresentQueue() const { return m_PresentQueue; }
 
+	/* vkQueueSubmit and vkQueuePresentKHR require the queue to be externally
+	   synchronized, and every engine here shares one graphics queue. Resource
+	   loading submits uploads from job threads while the main thread submits
+	   the frame, so this is not theoretical - the validation layers catch it
+	   as a threading error. Hold this across any queue operation. */
+	std::mutex& GetQueueMutex() const { return m_QueueMutex; }
+
 	uint32_t GetGraphicsQueueFamily() const { return m_uiGraphicsFamily; }
 	uint32_t GetPresentQueueFamily() const { return m_uiPresentFamily; }
 
@@ -45,6 +53,8 @@ private:
 	bool FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface,
 	                       uint32_t& uiGraphics, uint32_t& uiPresent) const;
 	bool HasSwapchainSupport(VkPhysicalDevice device) const;
+
+	mutable std::mutex m_QueueMutex;
 
 	VkInstance m_Instance = VK_NULL_HANDLE;
 	VkDebugUtilsMessengerEXT m_DebugMessenger = VK_NULL_HANDLE;

@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <mutex>
 
 VKSwapchain::~VKSwapchain()
 {
@@ -325,12 +326,6 @@ bool VKSwapchain::ClearAndPresent(const float a_fColor[4])
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &m_RenderFinished[uiImageIndex];
 
-	if (vkQueueSubmit(m_pDevice->GetGraphicsQueue(), 1, &submitInfo, frame.m_InFlight) != VK_SUCCESS)
-	{
-		fprintf(stderr, "[vulkan] vkQueueSubmit failed\n");
-		return false;
-	}
-
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = 1;
@@ -339,7 +334,19 @@ bool VKSwapchain::ClearAndPresent(const float a_fColor[4])
 	presentInfo.pSwapchains = &m_Swapchain;
 	presentInfo.pImageIndices = &uiImageIndex;
 
-	VkResult present = vkQueuePresentKHR(m_pDevice->GetPresentQueue(), &presentInfo);
+	VkResult present = VK_SUCCESS;
+
+	{
+		std::lock_guard<std::mutex> lock(m_pDevice->GetQueueMutex());
+
+		if (vkQueueSubmit(m_pDevice->GetGraphicsQueue(), 1, &submitInfo, frame.m_InFlight) != VK_SUCCESS)
+		{
+			fprintf(stderr, "[vulkan] vkQueueSubmit failed\n");
+			return false;
+		}
+
+		present = vkQueuePresentKHR(m_pDevice->GetPresentQueue(), &presentInfo);
+	}
 
 	m_uiFrameIndex = (m_uiFrameIndex + 1) % m_uiFramesInFlight;
 
@@ -475,12 +482,6 @@ bool VKSwapchain::BlitAndPresent(VKResource* pSource, VkSemaphore waitTimeline, 
 	submitInfo.signalSemaphoreInfoCount = 1;
 	submitInfo.pSignalSemaphoreInfos = &signalInfo;
 
-	if (vkQueueSubmit2(m_pDevice->GetGraphicsQueue(), 1, &submitInfo, frame.m_InFlight) != VK_SUCCESS)
-	{
-		fprintf(stderr, "[vulkan] blit submit failed\n");
-		return false;
-	}
-
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = 1;
@@ -489,7 +490,21 @@ bool VKSwapchain::BlitAndPresent(VKResource* pSource, VkSemaphore waitTimeline, 
 	presentInfo.pSwapchains = &m_Swapchain;
 	presentInfo.pImageIndices = &uiImageIndex;
 
-	VkResult present = vkQueuePresentKHR(m_pDevice->GetPresentQueue(), &presentInfo);
+	VkResult present = VK_SUCCESS;
+
+	{
+		/* Submit and present as one critical section: a job thread uploading a
+		   texture shares this queue. */
+		std::lock_guard<std::mutex> lock(m_pDevice->GetQueueMutex());
+
+		if (vkQueueSubmit2(m_pDevice->GetGraphicsQueue(), 1, &submitInfo, frame.m_InFlight) != VK_SUCCESS)
+		{
+			fprintf(stderr, "[vulkan] blit submit failed\n");
+			return false;
+		}
+
+		present = vkQueuePresentKHR(m_pDevice->GetPresentQueue(), &presentInfo);
+	}
 
 	m_uiFrameIndex = (m_uiFrameIndex + 1) % m_uiFramesInFlight;
 

@@ -203,6 +203,13 @@ public:
 	bool ResizeWorldBuffer();
 	inline bool ModifyVoxel(uint32_t uiID, uint32_t uiColor, bool bOverwrite = true)
 	{
+		/* The callers derive this ID from float world positions, so a bad
+		   transform reaches here as an index rather than as a crash at the
+		   source. Writing outside the mapped voxel buffer corrupts whatever
+		   the allocator put next to it. */
+		if (uiID >= GetVoxelDataSize())
+			return false;
+
 		uint32_t& uiOldColor = m_pVoxelData[uiID];
 
 		if ((bOverwrite || uiOldColor == 0) && uiOldColor != uiColor) {
@@ -217,6 +224,9 @@ public:
 
 	inline void ModifyVoxelFast(uint32_t uiID, uint32_t uiColor)
 	{
+		if (uiID >= GetVoxelDataSize())
+			return;
+
 		m_pVoxelData[uiID] = uiColor;
 		m_bWorldUpdated = true;
 	}

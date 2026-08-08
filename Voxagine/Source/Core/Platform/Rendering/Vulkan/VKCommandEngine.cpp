@@ -5,6 +5,7 @@
 #include "VKTranslate.h"
 
 #include <cstdio>
+#include <mutex>
 
 VKCommandEngine::VKCommandEngine(VKDevice* pDevice, const VKAllocator* pAllocator, const Info& info)
 	: CommandEngine(info)
@@ -225,8 +226,14 @@ void VKCommandEngine::Execute()
 	submitInfo.signalSemaphoreInfoCount = 1;
 	submitInfo.pSignalSemaphoreInfos = &signalInfo;
 
-	if (vkQueueSubmit2(m_Queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
-		fprintf(stderr, "[vulkan] vkQueueSubmit2 failed for '%s'\n", m_Info.m_Name.c_str());
+	{
+		/* Every engine shares one graphics queue, and resource loading submits
+		   uploads from job threads while the main thread submits the frame. */
+		std::lock_guard<std::mutex> lock(m_pDevice->GetQueueMutex());
+
+		if (vkQueueSubmit2(m_Queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+			fprintf(stderr, "[vulkan] vkQueueSubmit2 failed for '%s'\n", m_Info.m_Name.c_str());
+	}
 
 	m_Frames[m_uiFrameIndex].m_uiSubmitValue = m_uiFenceValue;
 
