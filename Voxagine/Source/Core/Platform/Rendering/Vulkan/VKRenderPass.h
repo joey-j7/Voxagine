@@ -59,6 +59,11 @@ private:
 	VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
 
 	VKDescriptorLayout m_DescriptorLayout;
+
+	/* Allocated once, one per frame in flight, and rewritten each frame.
+	   Allocating per draw drained the pool after the first few frames and
+	   every later Allocate returned null. */
+	VkDescriptorSet m_DescriptorSets[2] = { VK_NULL_HANDLE, VK_NULL_HANDLE };
 	std::vector<VKPassBinding> m_Bindings;
 
 	UVector2 m_TargetSize = UVector2(0, 0);

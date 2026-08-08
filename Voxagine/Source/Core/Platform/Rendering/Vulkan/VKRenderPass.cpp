@@ -55,7 +55,19 @@ void VKRenderPass::Init(const Data& data)
 		/* One set per frame in flight, so a set being written this frame is
 		   never the one the GPU is still reading. */
 		if (!m_DescriptorLayout.Build(m_pDevice, VKCommandEngine::m_uiFrameCount))
+		{
 			fprintf(stderr, "[vulkan] '%s' descriptor layout failed\n", m_Data.m_Name.c_str());
+		}
+		else
+		{
+			for (uint32_t i = 0; i < VKCommandEngine::m_uiFrameCount; ++i)
+			{
+				m_DescriptorSets[i] = m_DescriptorLayout.Allocate();
+
+				if (m_DescriptorSets[i] == VK_NULL_HANDLE)
+					fprintf(stderr, "[vulkan] '%s' descriptor set %u failed\n", m_Data.m_Name.c_str(), i);
+			}
+		}
 	}
 
 	if (!CreateAttachments())
@@ -322,6 +334,46 @@ void VKRenderPass::Begin(PCommandEngine* pEngine)
 	if (pEngine->IsRenderingOpen())
 		return;
 
+	/* Every image this pass samples has to be readable before rendering opens,
+	   because barriers cannot be issued inside a render pass instance. A target
+	   belonging to a pass that has not drawn yet is still UNDEFINED, so this
+	   cannot be left to whoever produced it. */
+	for (const VKPassBinding& binding : m_Bindings)
+	{
+		if (binding.m_Kind != VKPassBinding::E_SAMPLED_IMAGE)
+			continue;
+
+		View* pInput = nullptr;
+
+		if (binding.m_Source == VKPassBinding::E_SOURCE_PASS)
+		{
+			PRenderPass* pSourcePass =
+				const_cast<PRenderPass*>(static_cast<const PRenderPass*>(binding.m_pSource));
+
+			if (pSourcePass != nullptr)
+				pInput = pSourcePass->GetTargetView(binding.m_uiViewIndex);
+		}
+		else if (binding.m_Source == VKPassBinding::E_SOURCE_VIEW)
+		{
+			pInput = const_cast<View*>(static_cast<const View*>(binding.m_pSource));
+		}
+
+		/* Skip anything this pass also renders to; that is handled below. */
+		bool bIsOwnTarget = false;
+
+		for (const std::unique_ptr<View>& pTarget : m_pTargetViews)
+		{
+			if (pTarget.get() == pInput)
+			{
+				bIsOwnTarget = true;
+				break;
+			}
+		}
+
+		if (pInput != nullptr && !bIsOwnTarget)
+			pInput->SetState(pEngine, E_STATE_PIXEL_SHADER_RESOURCE);
+	}
+
 	/* Move every attachment into its rendering layout before the pass opens. */
 	for (uint32_t i = 0; i < m_Data.m_uiRenderViewCount; ++i)
 	{
@@ -569,6 +621,36 @@ bool VKRenderPass::WriteDescriptors(PCommandEngine* pEngine, VkDescriptorSet set
 			++uiRequired;
 	}
 
+	if (writes.size() < uiRequired && !m_bWarnedIncomplete)
+	{
+		/* Naming the binding is the difference between "this pass is blank"
+		   and knowing which resource never arrived. */
+		for (const VKPassBinding& binding : m_Bindings)
+		{
+			if (binding.m_Kind == VKPassBinding::E_BINDLESS_TEXTURES)
+				continue;
+
+			bool bWritten = false;
+
+			for (const VkWriteDescriptorSet& write : writes)
+			{
+				if (write.dstBinding == binding.m_uiBinding)
+				{
+					bWritten = true;
+					break;
+				}
+			}
+
+			if (!bWritten)
+			{
+				fprintf(stderr, "[vulkan]   '%s' unwritten binding %u (kind %d, source %d): %s\n",
+				        m_Data.m_Name.c_str(), binding.m_uiBinding,
+				        static_cast<int>(binding.m_Kind), static_cast<int>(binding.m_Source),
+				        binding.m_Name.c_str());
+			}
+		}
+	}
+
 	return writes.size() >= uiRequired;
 }
 
@@ -611,7 +693,7 @@ void VKRenderPass::Draw(PCommandEngine* pEngine)
 
 	if (m_DescriptorLayout.IsBuilt())
 	{
-		VkDescriptorSet set = m_DescriptorLayout.Allocate();
+		VkDescriptorSet set = m_DescriptorSets[pEngine->GetFrameIndex() % VKCommandEngine::m_uiFrameCount];
 
 		if (set == VK_NULL_HANDLE || !WriteDescriptors(pEngine, set))
 		{

@@ -73,6 +73,8 @@ public:
 	   whether a render pass instance is open has to be tracked here. Each pass
 	   tracking its own flag meant one pass could open rendering and a second
 	   could open another inside it. */
+	uint32_t GetFrameIndex() const { return m_uiFrameIndex; }
+
 	bool IsRenderingOpen() const { return m_bRenderingOpen; }
 	void SetRenderingOpen(bool bOpen) { m_bRenderingOpen = bOpen; }
 
