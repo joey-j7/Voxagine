@@ -8,6 +8,10 @@
 
 #include "Core/Resources/Formats/ShaderReference.h"
 
+#include "Core/Platform/Rendering/Vulkan/VKCommandEngine.h"
+#include "Core/Platform/Rendering/Vulkan/Managers/VKModelManager.h"
+#include "Core/Platform/Rendering/Vulkan/Managers/VKTextureManager.h"
+
 #include "External/imgui/imgui.h"
 
 #include <cstdio>
@@ -76,7 +80,39 @@ void VKRenderContext::Initialize()
 		return;
 	}
 
+	/* Same set of engines DX12RenderContext created, under the same names -
+	   RenderContext::Present looks them up by string. */
+	const CommandEngine::Info engines[] = {
+		{ CommandEngine::E_COPY,    "Copy" },
+		{ CommandEngine::E_DIRECT,  "Direct" },
+		{ CommandEngine::E_DIRECT,  "Texture" },
+		{ CommandEngine::E_DIRECT,  "VDirect" },
+		{ CommandEngine::E_COMPUTE, "Compute" },
+	};
+
+	for (const CommandEngine::Info& info : engines)
+	{
+		std::unique_ptr<PCommandEngine> pEngine =
+			std::make_unique<PCommandEngine>(&m_Device, &m_Allocator, info);
+
+		if (!pEngine->Initialize())
+		{
+			fprintf(stderr, "[vulkan] command engine '%s' failed\n", info.m_Name.c_str());
+			return;
+		}
+
+		m_pCommandEngines.emplace(info.m_Name, std::move(pEngine));
+	}
+
+	m_pTextureManager = std::make_unique<PTextureManager>(this);
+	m_pModelManager = std::make_unique<PModelManager>(this);
+
 	RenderContext::Initialize();
+
+	/* Builds the buffers, samplers, mappers and the six passes. It had no
+	   caller once DX12RenderContext was deleted, which is why the renderer
+	   only ever cleared. */
+	InitializeRenderLoop();
 }
 
 void VKRenderContext::Deinitialize()
@@ -109,36 +145,11 @@ bool VKRenderContext::Present()
 	if (!m_bBackendReady)
 		return false;
 
-	/* ImguiSystem::Update calls ImGui::NewFrame every frame, so the frame has
-	   to be ended even though its geometry is not submitted yet. Skipping this
-	   trips NewFrame's "forgot to call Render()" assert on the next frame. */
-	ImGui::Render();
-
-	/* Until the passes are wired into this path it presents the clear colour
-	   only, which is the first milestone: a window with a Vulkan clear screen. */
-	const float fClear[4] = {
-		m_pSettings != nullptr ? 0.1f : 0.1f,
-		0.1f,
-		0.12f,
-		1.f
-	};
-
-	if (!m_Swapchain.ClearAndPresent(fClear))
-	{
-		/* Out of date: rebuild at the window's current size. */
-		const UVector2 size = m_pPlatform->GetWindowContext()->GetSize();
-
-		if (size.x == 0 || size.y == 0)
-			return false;
-
-		if (!m_Swapchain.Recreate(size.x, size.y))
-			return false;
-	}
-
-	m_uiFrameIndex = (m_uiFrameIndex + 1) % m_uiFrameCount;
-	++m_uiDrawnFrames;
-
-	return true;
+	/* RenderContext::Present drives the whole frame: it ends the ImGui frame,
+	   uploads the per-frame buffers, then walks the passes through the command
+	   engines. Everything below it is now implemented, so there is no reason
+	   left to short-circuit to a bare clear. */
+	return RenderContext::Present();
 }
 
 bool VKRenderContext::OnResize(uint32_t uiWidth, uint32_t uiHeight)
@@ -165,4 +176,14 @@ void VKRenderContext::LoadShader(ShaderReference* pShaderReference)
 void VKRenderContext::DestroyShader(const ShaderReference* pShaderReference)
 {
 	VX_UNUSED(pShaderReference);
+}
+
+void RenderContext::Report()
+{
+	/* DX12 called DXGI's ReportLiveObjects here. Vulkan has no equivalent
+	   built in - leaked handles are found with the validation layers'
+	   object-lifetime tracking, which reports at instance destruction, so
+	   there is nothing to trigger from here. Kept because Platform calls it
+	   under _DEBUG. */
+	printf("[vulkan] leak reporting is handled by the validation layers\n");
 }

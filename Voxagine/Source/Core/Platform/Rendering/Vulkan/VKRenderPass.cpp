@@ -369,11 +369,13 @@ void VKRenderPass::WriteDescriptors(PCommandEngine* pEngine, VkDescriptorSet set
 	std::vector<VkWriteDescriptorSet> writes;
 	std::vector<VkDescriptorBufferInfo> bufferInfos;
 	std::vector<VkDescriptorImageInfo> imageInfos;
+	std::vector<VkBufferView> texelViews;
 
 	/* Reserved up front: the infos are referenced by pointer from the writes,
 	   so reallocation while filling them would dangle. */
 	bufferInfos.reserve(m_Bindings.size());
 	imageInfos.reserve(m_Bindings.size());
+	texelViews.reserve(m_Bindings.size());
 
 	for (const VKPassBinding& binding : m_Bindings)
 	{
@@ -430,6 +432,32 @@ void VKRenderPass::WriteDescriptors(PCommandEngine* pEngine, VkDescriptorSet set
 				? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
 				: VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			write.pBufferInfo = &bufferInfos.back();
+			break;
+		}
+
+		case VKPassBinding::E_UNIFORM_TEXEL_BUFFER:
+		case VKPassBinding::E_STORAGE_TEXEL_BUFFER:
+		{
+			if (binding.m_Source != VKPassBinding::E_SOURCE_MAPPER)
+				continue;
+
+			Mapper* pMapper = const_cast<Mapper*>(static_cast<const Mapper*>(binding.m_pSource));
+
+			if (pMapper == nullptr || pMapper->GetNative() == nullptr)
+				continue;
+
+			const VkBufferView view =
+				pMapper->GetNative()->GetOrCreateBufferView(VKFormat(pMapper->GetInfo().m_ColorFormat));
+
+			if (view == VK_NULL_HANDLE)
+				continue;
+
+			texelViews.push_back(view);
+
+			write.descriptorType = binding.m_Kind == VKPassBinding::E_UNIFORM_TEXEL_BUFFER
+				? VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER
+				: VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+			write.pTexelBufferView = &texelViews.back();
 			break;
 		}
 

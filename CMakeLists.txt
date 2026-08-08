@@ -63,6 +63,11 @@ endif()
 # Warning set shared by our own targets. Vendored code is included as SYSTEM
 # so its warnings stay out of the way.
 # ---------------------------------------------------------------------------
+# MSVC defines _DEBUG automatically in debug configurations and the engine
+# leans on it in ~90 places (debug draw, validation, asserts). GCC does not, so
+# a Debug build here would silently behave like a release one.
+add_compile_definitions($<$<CONFIG:Debug>:_DEBUG>)
+
 add_library(voxagine_warnings INTERFACE)
 target_compile_options(voxagine_warnings INTERFACE
     $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall;-Wextra;-Wno-unused-parameter>
@@ -96,9 +101,13 @@ target_link_libraries(voxagine_vulkan
 # ---------------------------------------------------------------------------
 include(cmake/Shaders.cmake)
 
+# SPIR-V lands next to the HLSL it came from, because the engine asks for
+# shaders by asset path - "Engine/Assets/Shaders/Particles.vs" - and appends
+# .spv. Keeping them in the build tree would mean the runtime could not find
+# them. They are build output, so .gitignore excludes *.spv.
 voxagine_add_shaders(voxagine_shaders_game
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Game/Engine/Assets/Shaders
-    OUTPUT_DIR ${CMAKE_BINARY_DIR}/shaders/game
+    OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Game/Engine/Assets/Shaders
 )
 
 # ---------------------------------------------------------------------------

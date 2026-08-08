@@ -373,9 +373,13 @@ bool RenderContext::Present()
 
 		Application* pApplication = m_pPlatform->GetApplication();
 		World* pWorld = pApplication->GetWorldManager().GetTopWorld();
-		PhysicsSystem* pPhysics = pWorld->GetSystem<PhysicsSystem>();
 
-		m_uiParticleCount = pPhysics->m_uiActiveParticleCount;
+		/* An editor build loads no world at startup - VoxApp only does that
+		   under !EDITOR - so there is nothing to read particles from until one
+		   is opened. This was an unconditional dereference. */
+		PhysicsSystem* pPhysics = pWorld != nullptr ? pWorld->GetSystem<PhysicsSystem>() : nullptr;
+
+		m_uiParticleCount = pPhysics != nullptr ? pPhysics->m_uiActiveParticleCount : 0;
 
 		// Camera buffer
 		{

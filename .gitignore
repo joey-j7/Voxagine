@@ -1,3 +1,6 @@
+# Compiled shaders (see cmake/Shaders.cmake)
+*.spv
+
 # CMake build output
 build*/
 compile_commands.json

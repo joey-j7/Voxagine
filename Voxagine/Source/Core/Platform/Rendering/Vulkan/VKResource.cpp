@@ -241,10 +241,40 @@ VkImageView VKResource::GetOrCreateImageView(VkImageViewType type)
 	return m_ImageView;
 }
 
+VkBufferView VKResource::GetOrCreateBufferView(VkFormat format)
+{
+	if (m_BufferView != VK_NULL_HANDLE)
+		return m_BufferView;
+
+	if (m_Kind != E_KIND_BUFFER || format == VK_FORMAT_UNDEFINED)
+		return VK_NULL_HANDLE;
+
+	VkBufferViewCreateInfo viewInfo{};
+	viewInfo.sType = VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO;
+	viewInfo.buffer = m_Buffer;
+	viewInfo.format = format;
+	viewInfo.offset = 0;
+	viewInfo.range = VK_WHOLE_SIZE;
+
+	if (vkCreateBufferView(m_pDevice->Get(), &viewInfo, nullptr, &m_BufferView) != VK_SUCCESS)
+	{
+		fprintf(stderr, "[vulkan] vkCreateBufferView failed for '%s'\n", m_Name.c_str());
+		m_BufferView = VK_NULL_HANDLE;
+	}
+
+	return m_BufferView;
+}
+
 void VKResource::Destroy()
 {
 	if (m_pDevice == nullptr)
 		return;
+
+	if (m_BufferView != VK_NULL_HANDLE)
+	{
+		vkDestroyBufferView(m_pDevice->Get(), m_BufferView, nullptr);
+		m_BufferView = VK_NULL_HANDLE;
+	}
 
 	Unmap();
 

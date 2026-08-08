@@ -68,6 +68,10 @@ public:
 	   would have taken the resource directly. */
 	VkImageView GetOrCreateImageView(VkImageViewType type);
 
+	/* Texel buffer descriptors bind a VkBufferView, not the buffer itself.
+	   A formatted UAV over a buffer in D3D12 becomes one of these. */
+	VkBufferView GetOrCreateBufferView(VkFormat format);
+
 	VkDeviceSize GetSize() const { return m_Allocation.m_uiSize; }
 	PEResourceState GetState() const { return m_State; }
 
@@ -89,6 +93,7 @@ private:
 	VkFormat m_Format = VK_FORMAT_UNDEFINED;
 	VkExtent3D m_Extent = { 0, 0, 0 };
 	VkImageView m_ImageView = VK_NULL_HANDLE;
+	VkBufferView m_BufferView = VK_NULL_HANDLE;
 
 	VKAllocator::Allocation m_Allocation;
 

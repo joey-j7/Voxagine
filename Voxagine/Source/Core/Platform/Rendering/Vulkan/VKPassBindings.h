@@ -37,7 +37,14 @@ struct VKPassBinding
 		E_SAMPLED_IMAGE,
 		E_STORAGE_IMAGE,
 		E_SAMPLER,
-		E_BINDLESS_TEXTURES
+		E_BINDLESS_TEXTURES,
+
+		/* A Mapper with a colour format was a formatted SRV/UAV over a buffer
+		   in D3D12. Vulkan calls that a texel buffer and binds it through a
+		   VkBufferView - it is not a storage image, which is what the first
+		   cut of this declared. */
+		E_UNIFORM_TEXEL_BUFFER,
+		E_STORAGE_TEXEL_BUFFER
 	};
 
 	Kind m_Kind = E_CONSTANT_BUFFER;

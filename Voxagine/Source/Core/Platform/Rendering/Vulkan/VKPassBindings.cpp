@@ -47,10 +47,12 @@ namespace
 		case VKPassBinding::E_STORAGE_BUFFER:
 		case VKPassBinding::E_SAMPLED_IMAGE:
 		case VKPassBinding::E_BINDLESS_TEXTURES:
+		case VKPassBinding::E_UNIFORM_TEXEL_BUFFER:
 			binding.m_uiBinding = VKBindings::Texture(uiRegister);
 			break;
 
 		case VKPassBinding::E_STORAGE_IMAGE:
+		case VKPassBinding::E_STORAGE_TEXEL_BUFFER:
 			binding.m_uiBinding = VKBindings::Unordered(uiRegister);
 			break;
 
@@ -112,13 +114,13 @@ namespace
 
 			if (info.m_GPUAccessType == E_READ_WRITE)
 			{
-				out.push_back(MakeBinding(bIsImage ? VKPassBinding::E_STORAGE_IMAGE
+				out.push_back(MakeBinding(bIsImage ? VKPassBinding::E_STORAGE_TEXEL_BUFFER
 				                                   : VKPassBinding::E_STORAGE_BUFFER,
 				                          counters.m_uiUnordered++, stages, pMapper, info.m_Name, 1, VKPassBinding::E_SOURCE_MAPPER));
 			}
 			else if (bIsImage)
 			{
-				out.push_back(MakeBinding(VKPassBinding::E_SAMPLED_IMAGE,
+				out.push_back(MakeBinding(VKPassBinding::E_UNIFORM_TEXEL_BUFFER,
 				                          counters.m_uiTexture++, stages, pMapper, info.m_Name, 1, VKPassBinding::E_SOURCE_MAPPER));
 			}
 			else
@@ -254,6 +256,8 @@ bool VKApplyBindings(VKDescriptorLayout& layout, const std::vector<VKPassBinding
 		switch (binding.m_Kind)
 		{
 		case VKPassBinding::E_CONSTANT_BUFFER: type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; break;
+		case VKPassBinding::E_UNIFORM_TEXEL_BUFFER: type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER; break;
+		case VKPassBinding::E_STORAGE_TEXEL_BUFFER: type = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER; break;
 		case VKPassBinding::E_STORAGE_BUFFER:  type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER; break;
 		case VKPassBinding::E_SAMPLED_IMAGE:   type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;  break;
 		case VKPassBinding::E_STORAGE_IMAGE:   type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;  break;

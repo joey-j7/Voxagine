@@ -274,6 +274,13 @@ bool VKDevice::CreateDevice(VkSurfaceKHR surface)
 	dynamicRendering.dynamicRendering = VK_TRUE;
 	dynamicRendering.pNext = &descriptorIndexing;
 
+	/* The voxel and particle fragment shaders write to storage buffers, which
+	   Vulkan gates behind these. D3D12 had no equivalent switch. */
+	VkPhysicalDeviceFeatures coreFeatures{};
+	coreFeatures.fragmentStoresAndAtomics = VK_TRUE;
+	coreFeatures.vertexPipelineStoresAndAtomics = VK_TRUE;
+	coreFeatures.shaderStorageImageWriteWithoutFormat = VK_TRUE;
+
 	VkDeviceCreateInfo deviceInfo{};
 	deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceInfo.pNext = &dynamicRendering;
@@ -281,6 +288,7 @@ bool VKDevice::CreateDevice(VkSurfaceKHR surface)
 	deviceInfo.pQueueCreateInfos = queueInfos.data();
 	deviceInfo.enabledExtensionCount = 1;
 	deviceInfo.ppEnabledExtensionNames = kDeviceExtensions;
+	deviceInfo.pEnabledFeatures = &coreFeatures;
 
 	if (vkCreateDevice(m_PhysicalDevice, &deviceInfo, nullptr, &m_Device) != VK_SUCCESS)
 	{

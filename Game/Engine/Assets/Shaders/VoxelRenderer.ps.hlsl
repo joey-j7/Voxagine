@@ -1,7 +1,7 @@
 #include "Defines.hlsl"
 #include "CameraData.hlsl" // register(b0)
 
-SamplerState s0;
+SamplerState s0 : register(s0);
 
 VOXEL_RW_BUFFER voxelWorldData : register(u0);
 

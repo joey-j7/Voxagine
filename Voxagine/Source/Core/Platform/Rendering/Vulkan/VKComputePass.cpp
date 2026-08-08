@@ -104,9 +104,11 @@ void VKComputePass::WriteDescriptors(VkDescriptorSet set)
 	std::vector<VkWriteDescriptorSet> writes;
 	std::vector<VkDescriptorBufferInfo> bufferInfos;
 	std::vector<VkDescriptorImageInfo> imageInfos;
+	std::vector<VkBufferView> texelViews;
 
 	bufferInfos.reserve(m_Bindings.size());
 	imageInfos.reserve(m_Bindings.size());
+	texelViews.reserve(m_Bindings.size());
 
 	for (const VKPassBinding& binding : m_Bindings)
 	{

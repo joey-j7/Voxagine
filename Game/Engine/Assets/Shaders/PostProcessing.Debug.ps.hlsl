@@ -1,7 +1,7 @@
 #include "Defines.hlsl"
 #include "CameraData.hlsl" // register(b0)
 
-SamplerState s0;
+SamplerState s0 : register(s0);
 
 Texture2D<float4> targetTexture : register(t0);
 Texture2D<float4> uiTexture : register(t1);
