@@ -87,8 +87,17 @@ void VKRenderContext::Initialize()
 	}
 
 	/* Decided before any command engine is created: their Initialize()
-	   reads this to decide whether to allocate query pools at all. */
-	FrameProfiler::Get().SetEnabled(m_pPlatform->GetApplication()->GetSettings().IsGPUProfilingEnabled());
+	   reads this to decide whether to allocate query pools at all.
+
+	   VOXAGINE_PROFILE forces it either way, because the costs worth
+	   measuring - the bake, the chunk load - are the ones that behave
+	   differently in Release, which is exactly where the default is off. */
+	bool bProfiling = m_pPlatform->GetApplication()->GetSettings().IsGPUProfilingEnabled();
+
+	if (const char* pEnv = std::getenv("VOXAGINE_PROFILE"))
+		bProfiling = (pEnv[0] != '0');
+
+	FrameProfiler::Get().SetEnabled(bProfiling);
 
 	/* Same set of engines DX12RenderContext created, under the same names -
 	   RenderContext::Present looks them up by string. */

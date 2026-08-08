@@ -29,6 +29,11 @@ public:
 	virtual uint32_t* Occupy(VoxRenderer* pRenderer, VoxRenderer::BakeData* pBakeData = nullptr);
 	virtual void Clear(VoxRenderer* pRenderer, VoxRenderer::BakeData* pBakeData = nullptr);
 
+	/* What Occupy would stamp, as a value: see VoxRenderer::BakeData::StampKey.
+	   O(1) - it computes the stamp transform and reads three fields, it does
+	   not walk the model. */
+	VoxRenderer::BakeData::StampKey ComputeStampKey(VoxRenderer* pRenderer);
+
 protected:
 	RenderContext* m_pRenderContext = nullptr;
 	RenderSystem* m_pRenderSystem = nullptr;

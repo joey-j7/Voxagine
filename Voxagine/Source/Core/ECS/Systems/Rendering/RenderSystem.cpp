@@ -85,6 +85,11 @@ void RenderSystem::Start()
 	if (!m_pRenderContext->ResizeWorldBuffer())
 		ClearVoxels();
 
+	/* Only from here on is a stamp worth making: everything above wipes the
+	   voxel buffer, and the world's entities have already been added by now.
+	   See OnComponentAdded. */
+	m_bStarted = true;
+
 	SetGroundPlane(m_pWorld->GetGroundTexturePath(), true);
 
 	if (!m_pWorld->GetApplication()->IsInEditor())
@@ -460,7 +465,18 @@ void RenderSystem::OnComponentAdded(Component* pComponent)
 		m_VoxRenderers.push_back(pRenderer);
 		pRenderer->m_BakeData = bakeData;
 
-		if (!pRenderer->IsChunkInstanceLoaded())
+		/* Two reasons not to stamp here.
+
+		   Before Start(), because Start() wipes the voxel buffer and every
+		   entity in the world has been added by then: the stamp was thrown
+		   away a moment later and the forced first bake redid all of it. On
+		   Valley_Path_To_Castle_Beat1 that was 3.3 M voxels written, discarded
+		   and written again.
+
+		   When disabled, because the bake would only clear it again - and the
+		   bake can no longer be relied on to do that, since it now skips a
+		   renderer whose recorded stamp is still current. */
+		if (m_bStarted && !pRenderer->IsChunkInstanceLoaded() && pRenderer->IsEnabled())
 		{
 			uint32_t* voxels = m_VoxelBaker.Occupy(pRenderer, &pRenderer->m_BakeData);
 			pRenderer->m_BakeData.Positions = voxels;

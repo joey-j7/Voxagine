@@ -88,6 +88,10 @@ protected:
 private:
 	void CheckRendererChange(VoxRenderer* pRenderer);
 
+	/* False until Start() has wiped and sized the voxel buffer. See
+	   OnComponentAdded. */
+	bool m_bStarted = false;
+
 	bool m_bForcedUpdate = true;
 	bool m_bShouldUpdateVoxelWorld = true;
 	
