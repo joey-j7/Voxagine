@@ -13,6 +13,7 @@
 #include "Core/ECS/WorldManager.h"
 #include "Core/ECS/Systems/Physics/PhysicsSystem.h"
 
+#include "Core/Platform/Rendering/FrameProfiler.h"
 #include "RenderDefines.h"
 #include "Core/Platform/Rendering/Managers/TextureManagerInc.h"
 #include "Core/Platform/Rendering/CommandEngineInc.h"
@@ -289,6 +290,8 @@ bool RenderContext::Present()
 	// Hold timer that counts drawn frames
 	float fDeltaTime = static_cast<float>(m_pPlatform->GetApplication()->GetTimer().GetElapsedSeconds());
 	m_fFrameTimer += fDeltaTime;
+
+	FrameProfiler::Get().Tick(fDeltaTime);
 
 	if (m_fFrameTimer >= 1.0f)
 	{

@@ -7,7 +7,9 @@
 #include "Core/ECS/Components/VoxRenderer.h"
 #include "Core/Resources/Formats/VoxModel.h"
 #include "Core/Application.h"
+#include "Core/Platform/Rendering/FrameProfiler.h"
 
+#include <chrono>
 #include <cmath>
 
 #define PI 3.14159265359
@@ -26,6 +28,13 @@ void VoxelBaker::Init(RenderSystem* pRenderSystem, PhysicsSystem* pPhysicsSystem
 
 void VoxelBaker::Bake()
 {
+	/* RENDERING_PLAN.md Phase 0: the known main-thread cost this pass
+	   measures. Guarded so a disabled profiler pays nothing but this one
+	   branch - no chrono call, no Report(). */
+	const bool bProfiling = FrameProfiler::Get().IsEnabled();
+	const std::chrono::steady_clock::time_point start =
+		bProfiling ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
+
 	VoxelGrid& grid = m_pPhysicsSystem->m_VoxelGrid;
 
 	for (VoxRenderer* pRenderer : m_pRenderSystem->m_VoxRenderers)
@@ -62,6 +71,14 @@ void VoxelBaker::Bake()
 
 		/* Occupy new voxels if position is in bounds */
 		Occupy(pRenderer, &pRenderer->m_BakeData);
+	}
+
+	if (bProfiling)
+	{
+		const double fMilliseconds =
+			std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+
+		FrameProfiler::Get().Report("CPU VoxelBaker::Bake", fMilliseconds);
 	}
 }
 

@@ -8,6 +8,7 @@
 
 #include "Core/Resources/Formats/ShaderReference.h"
 
+#include "Core/Platform/Rendering/FrameProfiler.h"
 #include "Core/Platform/Rendering/Objects/View.h"
 #include "Core/Platform/Rendering/Vulkan/VKCommandEngine.h"
 #include "Core/Platform/Rendering/Vulkan/Managers/VKModelManager.h"
@@ -80,6 +81,10 @@ void VKRenderContext::Initialize()
 		fprintf(stderr, "[vulkan] backend initialization failed; renderer is inert\n");
 		return;
 	}
+
+	/* Decided before any command engine is created: their Initialize()
+	   reads this to decide whether to allocate query pools at all. */
+	FrameProfiler::Get().SetEnabled(m_pPlatform->GetApplication()->GetSettings().IsGPUProfilingEnabled());
 
 	/* Same set of engines DX12RenderContext created, under the same names -
 	   RenderContext::Present looks them up by string. */

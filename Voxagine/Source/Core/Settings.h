@@ -55,6 +55,13 @@ public:
 	bool IsShadowEnabled() const { return m_bShadowsEnabled; }
 	void SetShadowEnabled(bool bEnabled) { m_bShadowsEnabled = bEnabled; }
 
+	/* RENDERING_PLAN.md Phase 0: gates the per-pass GPU timestamp queries
+	   and CPU frame breakdown (see FrameProfiler). Not RTTR-registered - a
+	   dev/profiling knob has no business round-tripping through .vgs or
+	   .vguser. */
+	bool IsGPUProfilingEnabled() const { return m_bGPUProfilingEnabled; }
+	void SetGPUProfilingEnabled(bool bEnabled) { m_bGPUProfilingEnabled = bEnabled; }
+
 	float GetResolutionScale() const { return m_fResolutionScale; }
 	void SetResolutionScale(float fResolutionScale) { m_fResolutionScale = std::max(0.1f, fResolutionScale); }
 
@@ -115,6 +122,12 @@ private:
 
 	bool m_bShadowsEnabled = true;
 	float m_fResolutionScale = 1.f;
+
+#ifdef _DEBUG
+	bool m_bGPUProfilingEnabled = true;
+#else
+	bool m_bGPUProfilingEnabled = false;
+#endif
 
 	float m_fLockedAspectRatio = 16.f / 9.f;
 

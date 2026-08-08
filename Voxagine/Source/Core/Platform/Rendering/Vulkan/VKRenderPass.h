@@ -7,6 +7,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstdint>
+
 class VKDevice;
 class VKCommandEngine;
 
@@ -71,4 +73,9 @@ private:
 	/* True between vkCmdBeginRendering and vkCmdEndRendering. */
 	bool m_bIsRendering = false;
 	bool m_bWarnedIncomplete = false;
+
+	/* RENDERING_PLAN.md Phase 0: query index from Begin()'s timestamp,
+	   consumed by End(). UINT32_MAX when profiling is off or this pass did
+	   not open rendering this frame. */
+	uint32_t m_uiTimestampBeginIndex = UINT32_MAX;
 };

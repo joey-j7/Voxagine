@@ -100,6 +100,7 @@ set(VOXAGINE_ENGINE_SOURCES
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Input/Temp/PlayerController.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Platform.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/CommandEngine.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/FrameProfiler.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Managers/IDManager.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Managers/ModelManager.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Managers/TextureManager.cpp

@@ -232,6 +232,8 @@ void VKComputePass::Compute(PCommandEngine* pEngine)
 
 	VkCommandBuffer cmd = pEngine->GetCommandBuffer();
 
+	const uint32_t uiTimestampBeginIndex = pEngine->WriteTimestampBegin();
+
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_Pipeline);
 
 	if (m_DescriptorLayout.IsBuilt())
@@ -248,4 +250,6 @@ void VKComputePass::Compute(PCommandEngine* pEngine)
 	}
 
 	vkCmdDispatch(cmd, m_Data.m_ThreadGroup.x, m_Data.m_ThreadGroup.y, m_Data.m_ThreadGroup.z);
+
+	pEngine->WriteTimestampEnd(m_Data.m_Name, uiTimestampBeginIndex);
 }

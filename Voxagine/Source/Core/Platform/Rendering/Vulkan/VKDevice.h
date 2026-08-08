@@ -48,6 +48,12 @@ public:
 
 	const std::string& GetDeviceName() const { return m_DeviceName; }
 
+	/* RENDERING_PLAN.md Phase 0: whether vkCmdWriteTimestamp2 is usable on
+	   this device's graphics/compute queues, and the nanoseconds-per-tick
+	   needed to turn a timestamp delta into milliseconds. */
+	bool SupportsTimestamps() const { return m_bTimestampsSupported; }
+	float GetTimestampPeriod() const { return m_fTimestampPeriod; }
+
 private:
 	bool PickPhysicalDevice(VkSurfaceKHR surface);
 	bool FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface,
@@ -70,4 +76,7 @@ private:
 
 	std::string m_DeviceName;
 	bool m_bValidationEnabled = false;
+
+	bool m_bTimestampsSupported = false;
+	float m_fTimestampPeriod = 0.0f;
 };
