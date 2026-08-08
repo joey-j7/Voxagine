@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "FrameProfiler.h"
 
 #include <cmath>

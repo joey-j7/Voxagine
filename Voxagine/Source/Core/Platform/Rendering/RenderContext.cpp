@@ -824,6 +824,7 @@ void RenderContext::InitializeRenderLoop()
 			pPixelShader,
 			pLinearSampler,
 			pCameraBuffer,
+			m_pVoxelMapper,
 #if defined(_DEBUG) || defined(EDITOR)
 			{ pVoxelPass->GetTargetView(), pUIPass->GetTargetView(), pDebugPass->GetTargetView() }
 #else

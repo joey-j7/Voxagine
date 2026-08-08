@@ -17,6 +17,7 @@ struct PS_in
 };
 
 #include "SDFMarcher.hlsl"
+#include "AmbientOcclusion.hlsl"
 
 FORCE_DEPTH_TEST
 float4 main(PS_in IN) : TAR_OUT
@@ -43,12 +44,16 @@ float4 main(PS_in IN) : TAR_OUT
         return particleColor;
     }
 	
-    /* Return black when not marched against anything */
+    /* Return transparent when not marched against anything. Sky and endless
+       ground are composited in PostProcessing.ps.hlsl instead of here - this
+       pass only rasterizes AABB proxy cubes (see RENDERING_PLAN.md phase 1
+       notes), so it never covers the whole screen the way a full-screen sky
+       needs. */
     if (marchDiffuse.Color.a == 0.0)
     {
         return float4(0.0, 0.0, 0.0, 0.0);
     }
-    
+
     /* Directional lighting */
     float difference = clamp(dot(marchDiffuse.Normal, -lightDirection.xyz), 0.0, 1.0);
     float shadowMultiplier = difference * (1.0-AMBIENT_VALUE) + AMBIENT_VALUE;
@@ -67,11 +72,20 @@ float4 main(PS_in IN) : TAR_OUT
         );
 
         if (marchLighting.Color.a > 0.0) {
-		 	shadowMultiplier = AMBIENT_VALUE;
+		 	shadowMultiplier = min(marchLighting.Distance * SHADOW_FADE_K * difference + AMBIENT_VALUE, 1.0);
 		}
     }
 
-    marchDiffuse.Color.xyz *= float3(shadowMultiplier, shadowMultiplier, shadowMultiplier);
+    /* Fake specular "shine line" on lit voxel edges - see GetShineLine in
+       AmbientOcclusion.hlsl. Pulled forward from RENDERING_PLAN.md phase 5
+       step 6 since it only needs res.UV/res.Normal, which this phase's AO
+       work already populates. */
+    shadowMultiplier *= GetShineLine(marchDiffuse.Position, marchDiffuse.Normal, marchDiffuse.UV, lightDirection.xyz, difference);
+
+    /* Ambient occlusion - hit-time only, zero added per-step cost */
+    float4 ambient = GetAmbientOcclusion(marchDiffuse.Position, marchDiffuse.Mask, marchDiffuse.SRDirection, marchDiffuse.Normal, marchDiffuse.UV);
+
+    marchDiffuse.Color.xyz *= float3(shadowMultiplier, shadowMultiplier, shadowMultiplier) * ambient.xyz;
     marchDiffuse.Color.a = 1.0;
 
     return marchDiffuse.Color;

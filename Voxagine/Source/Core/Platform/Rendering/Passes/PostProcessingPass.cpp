@@ -5,7 +5,7 @@
 
 PostProcessingPass::PostProcessingPass(
 	PRenderContext* pContext, Shader* pVertex, Shader* pPixel, Sampler* pSampler,
-	Buffer* pCameraBuffer, std::vector<View*> pTextures
+	Buffer* pCameraBuffer, Mapper* pVoxelMapper, std::vector<View*> pTextures
 ) : PRenderPass(pContext)
 {
 	// Creates a screen render target (for each buffer, m_uiFrameCount)
@@ -24,6 +24,7 @@ PostProcessingPass::PostProcessingPass(
 
 	RenderPassData.m_Buffers.push_back(pCameraBuffer);
 	RenderPassData.m_Samplers.push_back(pSampler);
+	RenderPassData.m_Mappers.push_back(pVoxelMapper);
 
 	for (View* pTexture : pTextures)
 	{

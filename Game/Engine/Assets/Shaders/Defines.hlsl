@@ -1,7 +1,16 @@
 /* Global */
-#define AMBIENT_VALUE 0.7
+#define AMBIENT_VALUE 0.5
 #define OPTIMIZED 1
 // #define DIRECT_LIGHTING 2
+
+/* Shadow ray distance-to-fade scale. Retuned for MarchLight's 64-step,
+   double-stride walk (Phase 1 of RENDERING_PLAN.md) - the original 0.0125
+   assumed 128 full-stride steps. Tune by eye. */
+#define SHADOW_FADE_K 0.0125
+
+/* Sky colour for rays that leave the world without hitting anything or the
+   ground plane. Becomes fog input in RENDERING_PLAN.md phase 6.1. */
+#define SKY_COLOR float4(150.0 / 255.0, 230.0 / 255.0, 255.0 / 255.0, 1.0)
 
 #define DEG2RAD 0.0174532925
 #define RAD2DEG 57.2957795

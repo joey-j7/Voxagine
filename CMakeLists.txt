@@ -90,6 +90,12 @@ add_library(voxagine_vulkan STATIC
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/VKResource.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/VKSwapchain.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/VKUploadBuffer.cpp
+    # Not Vulkan-specific, but VKCommandEngine.cpp reports into it and it has
+    # no engine dependencies of its own (unlike most of Core/Platform/Rendering,
+    # it deliberately doesn't include pch.h) - see EngineSources.cmake, which
+    # does NOT list this file, to avoid compiling it into both static libraries
+    # and hitting a duplicate-symbol link error in editor/game.
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/FrameProfiler.cpp
 )
 
 target_include_directories(voxagine_vulkan PUBLIC ${VOXAGINE_SOURCE_DIR})

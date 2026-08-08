@@ -100,7 +100,9 @@ set(VOXAGINE_ENGINE_SOURCES
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Input/Temp/PlayerController.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Platform.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/CommandEngine.cpp
-    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/FrameProfiler.cpp
+    # FrameProfiler.cpp lives in the voxagine_vulkan target instead (see
+    # CMakeLists.txt) - voxagine links that publicly, so it's still callable
+    # from here, without compiling it into both libraries.
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Managers/IDManager.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Managers/ModelManager.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Managers/TextureManager.cpp
