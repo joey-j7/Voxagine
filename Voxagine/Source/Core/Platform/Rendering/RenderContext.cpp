@@ -887,6 +887,23 @@ UVector2 RenderContext::ConstrainToAspectRatio(uint32_t uiWidth, uint32_t uiHeig
 	return UVector2(std::max(uiWidth, 1u), std::max(uiHeight, 1u));
 }
 
+Vector2 RenderContext::WindowToRenderNormalized(const Vector2& v2WindowPoint) const
+{
+	const UVector2 windowSize = m_pPlatform->GetWindowContext()->GetSize();
+
+	/* m_v2RenderResolution is the constrained size in window pixels; the
+	   present blit centres it. */
+	const float fBarX = (static_cast<float>(windowSize.x) - static_cast<float>(m_v2RenderResolution.x)) * 0.5f;
+	const float fBarY = (static_cast<float>(windowSize.y) - static_cast<float>(m_v2RenderResolution.y)) * 0.5f;
+
+	if (m_v2RenderResolution.x == 0 || m_v2RenderResolution.y == 0)
+		return Vector2(0.f);
+
+	return Vector2(
+		(v2WindowPoint.x - fBarX) / static_cast<float>(m_v2RenderResolution.x),
+		(v2WindowPoint.y - fBarY) / static_cast<float>(m_v2RenderResolution.y));
+}
+
 bool RenderContext::OnResize(uint32_t uiWidth, uint32_t uiHeight)
 {
 	const UVector2 constrained = ConstrainToAspectRatio(uiWidth, uiHeight);

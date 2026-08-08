@@ -200,6 +200,11 @@ public:
 	   the input when nothing is locked. */
 	UVector2 ConstrainToAspectRatio(uint32_t uiWidth, uint32_t uiHeight) const;
 
+	/* Window pixel to 0..1 across the presented image. A locked aspect ratio
+	   centres a smaller render target in the window, so the two spaces differ
+	   by the black bar; identity when nothing is locked. */
+	Vector2 WindowToRenderNormalized(const Vector2& v2WindowPoint) const;
+
 	bool ResizeWorldBuffer();
 	inline bool ModifyVoxel(uint32_t uiID, uint32_t uiColor, bool bOverwrite = true)
 	{

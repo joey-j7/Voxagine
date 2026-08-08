@@ -78,8 +78,13 @@ void ImguiSystem::Update()
 	io.DisplaySize.x = static_cast<float>(m_pRenderContext->GetRenderResolution().x);
 	io.DisplaySize.y = static_cast<float>(m_pRenderContext->GetRenderResolution().y);
 
-	io.MousePos.x *= m_pRenderContext->GetRenderScale();
-	io.MousePos.y *= m_pRenderContext->GetRenderScale();
+	/* The cursor arrives in window pixels; DisplaySize above is the render
+	   target, which a locked aspect ratio centres inside the window. */
+	const Vector2 v2Normalized =
+		m_pRenderContext->WindowToRenderNormalized(Vector2(io.MousePos.x, io.MousePos.y));
+
+	io.MousePos.x = v2Normalized.x * io.DisplaySize.x;
+	io.MousePos.y = v2Normalized.y * io.DisplaySize.y;
 
 	ImGui::NewFrame();
 	ImGuizmo::BeginFrame();

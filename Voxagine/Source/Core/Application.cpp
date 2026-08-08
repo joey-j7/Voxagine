@@ -53,6 +53,12 @@ void Application::Run()
 
 	LoadSettings();
 
+#ifdef EDITOR
+	/* The lock is a game presentation choice; the editor wants the whole
+	   window. Play mode still uses the camera's own aspect ratio. */
+	m_Settings.SetLockedAspectRatio(0.f);
+#endif
+
 	m_JobManager.Initialize();
 	m_Platform.Initialize();
 

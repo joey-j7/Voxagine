@@ -121,10 +121,13 @@ Vector2 Camera::WorldToScreenPoint(const Vector3& worldPos)
 
 Vector3 Camera::ScreenToWorld(const Vector2& screenCoord)
 {
-	const UVector2& windowsize = GetWorld()->GetApplication()->GetPlatform().GetWindowContext()->GetSize();
+	/* Against the render target, not the window: a locked aspect ratio
+	   letterboxes the image, so window coordinates aim at the wrong pixel. */
+	const Vector2 normalized = GetWorld()->GetApplication()->GetPlatform()
+		.GetRenderContext()->WindowToRenderNormalized(screenCoord);
 
-	float devicecoordx = (2.f * screenCoord.x) / windowsize.x - 1;
-	float devicecoordy = (2.f * screenCoord.y) / windowsize.y - 1;
+	float devicecoordx = 2.f * normalized.x - 1.f;
+	float devicecoordy = 2.f * normalized.y - 1.f;
 
 	Vector4 clipCoords = Vector4(devicecoordx, -devicecoordy, -1.f, 1.f);
 
