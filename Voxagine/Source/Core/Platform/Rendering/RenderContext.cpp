@@ -504,7 +504,31 @@ bool RenderContext::Present()
 #endif
 
 	if (pDirectEngine->GetCompletedValue() < pDirectEngine->GetValue())
+	{
+		/* The GPU has not retired the frame we submitted, so there is nothing
+		   to do but come back next tick. Sustained, that is indistinguishable
+		   from a freeze: the window stops updating while the main loop keeps
+		   spinning, and no validation error is produced because nothing
+		   illegal happened. Report it once with the numbers that say whether
+		   the work is merely enormous or genuinely stuck. */
+		++m_uiStalledFrames;
+
+		if (m_uiStalledFrames == 600)
+		{
+			fprintf(stderr, "[stall] GPU has not completed for 600 frames: "
+			                "direct %llu/%llu, vdirect %llu/%llu, voxel instances %u, aabbs %zu\n",
+			        static_cast<unsigned long long>(pDirectEngine->GetCompletedValue()),
+			        static_cast<unsigned long long>(pDirectEngine->GetValue()),
+			        static_cast<unsigned long long>(pVDirectEngine->GetCompletedValue()),
+			        static_cast<unsigned long long>(pVDirectEngine->GetValue()),
+			        pVoxelPass != nullptr ? pVoxelPass->GetData().m_uiInstanceCount : 0,
+			        m_AABBList.size());
+		}
+
 		return false;
+	}
+
+	m_uiStalledFrames = 0;
 
 	// Reset command allocators
 	if (pDirectEngine->GetValue() > 0)

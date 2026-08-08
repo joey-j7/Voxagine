@@ -368,6 +368,9 @@ protected:
 
 	CameraRenderData m_CameraData;
 
+	/* Consecutive Present calls that found the GPU still busy. */
+	uint32_t m_uiStalledFrames = 0;
+
 	UVector2 m_v2RenderResolution = UVector2(1, 1);
 	UVector2 m_v2ScreenResolution = UVector2(1, 1);
 
