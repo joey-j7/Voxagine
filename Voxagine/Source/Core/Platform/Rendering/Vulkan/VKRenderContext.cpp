@@ -121,6 +121,22 @@ void VKRenderContext::Deinitialize()
 	if (m_Device.Get() != VK_NULL_HANDLE)
 		vkDeviceWaitIdle(m_Device.Get());
 
+	/* These belong to RenderContext, whose members are destroyed after this
+	   derived body runs - too late, they hold live device objects. Dependency
+	   order: passes reference views, engines own the upload pages. */
+	m_pRenderPasses.clear();
+	m_pComputePasses.clear();
+	m_pCommandEngines.clear();
+
+	m_pTextureManager.reset();
+	m_pModelManager.reset();
+
+	m_mBuffers.clear();
+	m_pMappers.clear();
+	m_pSamplers.clear();
+	m_pShaders.clear();
+	m_pViews.clear();
+
 	m_Swapchain.Destroy();
 
 	if (m_Surface != VK_NULL_HANDLE)
