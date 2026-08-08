@@ -1,9 +1,14 @@
 #include "nfd.h"
 
+#include <SDL3/SDL.h>
+
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <poll.h>
 #include <string>
+#include <unistd.h>
 #include <vector>
 
 /* The upstream nativefiledialog ships a per-platform C file and the project
@@ -90,8 +95,41 @@ namespace
 		std::string output;
 		char buffer[512];
 
-		while (fgets(buffer, sizeof(buffer), pPipe) != nullptr)
-			output += buffer;
+		/* Polled, not read straight through: a main thread parked in read()
+		   stops answering the compositor's pings and the desktop declares the
+		   editor hung. SDL_PumpEvents sends the reply; the events it collects
+		   reach the normal Poll() once the dialog closes. */
+		const int iFileDescriptor = fileno(pPipe);
+
+		for (;;)
+		{
+			pollfd descriptor{};
+			descriptor.fd = iFileDescriptor;
+			descriptor.events = POLLIN;
+
+			const int iReady = poll(&descriptor, 1, 16);
+
+			SDL_PumpEvents();
+
+			if (iReady < 0)
+			{
+				if (errno == EINTR)
+					continue;
+
+				break;
+			}
+
+			if (iReady == 0)
+				continue;
+
+			const ssize_t iBytes = read(iFileDescriptor, buffer, sizeof(buffer));
+
+			/* 0 is the child closing its end, below 0 a real error. */
+			if (iBytes <= 0)
+				break;
+
+			output.append(buffer, static_cast<size_t>(iBytes));
+		}
 
 		const int iStatus = pclose(pPipe);
 
