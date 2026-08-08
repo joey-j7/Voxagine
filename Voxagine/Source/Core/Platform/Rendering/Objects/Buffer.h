@@ -2,8 +2,9 @@
 
 #include <vector>
 #include <stdint.h>
+#include <cstring>
 
-#include "Math.h"
+#include "Core/Math.h"
 
 #include "Core/Platform/Rendering/RenderDefines.h"
 

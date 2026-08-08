@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Application.h"
+#include "Core/Application.h"
 
 #ifdef _ORBIS
 #include "Core/System/ORBIS/ORBFileSystem.h"
@@ -17,7 +17,7 @@
 #include "ECS/Entities/Camera.h"
 
 #include <iostream>
-#include "GameTimer.h"
+#include "Core/GameTimer.h"
 #include "ECS/WorldManager.h"
 #include "ECS/Systems/Physics/PhysicsSystem.h"
 

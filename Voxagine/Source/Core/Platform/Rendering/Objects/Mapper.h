@@ -2,8 +2,10 @@
 
 #include "Core/Platform/Rendering/RenderDefines.h"
 #include "Core/Math.h"
+#include "Core/Event.h"
 
 #include <string>
+#include <unordered_map>
 
 class RenderPass;
 class View;
@@ -43,11 +45,7 @@ public:
 
 	void SwapBuffer();
 
-#ifdef _ORBIS
-	PUploadBuffer*& GetNative() { return m_pNative; }
-#else
-	PResource* GetNative() { return m_pMapper[m_uiCurrentBackBuffer].Get(); }
-#endif
+	PResource* GetNative() { return m_pMapper[m_uiCurrentBackBuffer].get(); }
 
 	void AddTarget(PComputePass* pComputePass, uint32_t uiID);
 	void AddTarget(PRenderPass* pRenderPass, uint32_t uiID);
@@ -69,10 +67,6 @@ protected:
 	std::unordered_map<PComputePass*, uint32_t> m_mComputePasses;
 
 	uint32_t* m_pData[2] = { nullptr, nullptr };
-
-#ifdef _ORBIS
-	PUploadBuffer* m_pNative = nullptr;
-#endif
 
 	R_PTR_TYPE(PResource) m_pMapper[2];
 };

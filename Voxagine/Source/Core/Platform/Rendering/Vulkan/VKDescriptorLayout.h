@@ -45,6 +45,16 @@ public:
 	   permits VARIABLE_DESCRIPTOR_COUNT on the highest binding number. */
 	void AddBindlessTextures(uint32_t uiRegister, VkShaderStageFlags stages, uint32_t uiMaxCount);
 
+	/* Binding number already shifted and descriptor type already decided. Used
+	   by VKApplyBindings, which resolves both in one place; the helpers above
+	   would have to re-derive the type from the shifted number and get it
+	   wrong for read-write buffers. */
+	void AddExplicit(uint32_t uiBinding, VkDescriptorType type,
+	                 VkShaderStageFlags stages, uint32_t uiCount = 1);
+
+	void AddExplicitBindless(uint32_t uiBinding, VkDescriptorType type,
+	                         VkShaderStageFlags stages, uint32_t uiMaxCount);
+
 	/* uiMaxSets is how many sets the pool can hand out, normally one per frame
 	   in flight. */
 	bool Build(VKDevice* pDevice, uint32_t uiMaxSets);

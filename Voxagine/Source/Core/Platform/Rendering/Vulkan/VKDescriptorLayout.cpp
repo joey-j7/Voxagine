@@ -58,6 +58,21 @@ void VKDescriptorLayout::AddBindlessTextures(uint32_t uiRegister, VkShaderStageF
 	m_uiBindlessMaxCount = uiMaxCount;
 }
 
+void VKDescriptorLayout::AddExplicit(uint32_t uiBinding, VkDescriptorType type,
+                                     VkShaderStageFlags stages, uint32_t uiCount)
+{
+	Add(uiBinding, type, stages, uiCount);
+}
+
+void VKDescriptorLayout::AddExplicitBindless(uint32_t uiBinding, VkDescriptorType type,
+                                             VkShaderStageFlags stages, uint32_t uiMaxCount)
+{
+	Add(uiBinding, type, stages, uiMaxCount);
+
+	m_bHasBindless = true;
+	m_uiBindlessMaxCount = uiMaxCount;
+}
+
 bool VKDescriptorLayout::Build(VKDevice* pDevice, uint32_t uiMaxSets)
 {
 	Destroy();
