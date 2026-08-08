@@ -7,6 +7,8 @@
 #include <cstdint>
 #include <vector>
 
+class VKResource;
+
 /* Swapchain, per-frame sync objects and the command buffers that write to the
    acquired image. Frames in flight matches RenderContext::m_uiFrameCount.
 
@@ -36,6 +38,19 @@ public:
 	   presents it. Returns false when the swapchain is out of date and the
 	   caller should recreate it. */
 	bool ClearAndPresent(const float a_fColor[4]);
+
+	/* Blits pSource onto the acquired image and presents it.
+	 *
+	 * DX12 pointed the final render pass straight at the swapchain buffers,
+	 * so presenting was just a flip. Doing that here would mean the pass's
+	 * attachments had to change every frame with the acquired index; blitting
+	 * instead keeps the pass owning its own image and scales for free when the
+	 * render resolution differs from the window.
+	 *
+	 * waitTimeline/uiWaitValue are the rendering engine's timeline and the
+	 * value its frame signals, so the blit cannot start before the frame is
+	 * drawn. */
+	bool BlitAndPresent(VKResource* pSource, VkSemaphore waitTimeline, uint64_t uiWaitValue);
 
 	VkFormat GetFormat() const { return m_Format; }
 	VkExtent2D GetExtent() const { return m_Extent; }

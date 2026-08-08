@@ -1,5 +1,7 @@
 #include "VKSwapchain.h"
 
+#include "VKResource.h"
+
 #include <algorithm>
 #include <cstdio>
 
@@ -324,6 +326,120 @@ bool VKSwapchain::ClearAndPresent(const float a_fColor[4])
 	if (vkQueueSubmit(m_pDevice->GetGraphicsQueue(), 1, &submitInfo, frame.m_InFlight) != VK_SUCCESS)
 	{
 		fprintf(stderr, "[vulkan] vkQueueSubmit failed\n");
+		return false;
+	}
+
+	VkPresentInfoKHR presentInfo{};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = &m_RenderFinished[uiImageIndex];
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = &m_Swapchain;
+	presentInfo.pImageIndices = &uiImageIndex;
+
+	VkResult present = vkQueuePresentKHR(m_pDevice->GetPresentQueue(), &presentInfo);
+
+	m_uiFrameIndex = (m_uiFrameIndex + 1) % m_uiFramesInFlight;
+
+	return present != VK_ERROR_OUT_OF_DATE_KHR && present != VK_SUBOPTIMAL_KHR;
+}
+
+bool VKSwapchain::BlitAndPresent(VKResource* pSource, VkSemaphore waitTimeline, uint64_t uiWaitValue)
+{
+	if (pSource == nullptr || pSource->GetKind() != VKResource::E_KIND_IMAGE)
+		return false;
+
+	VkDevice device = m_pDevice->Get();
+	FrameData& frame = m_Frames[m_uiFrameIndex];
+
+	vkWaitForFences(device, 1, &frame.m_InFlight, VK_TRUE, UINT64_MAX);
+
+	uint32_t uiImageIndex = 0;
+	VkResult acquire = vkAcquireNextImageKHR(device, m_Swapchain, UINT64_MAX,
+	                                         frame.m_ImageAvailable, VK_NULL_HANDLE, &uiImageIndex);
+
+	if (acquire == VK_ERROR_OUT_OF_DATE_KHR)
+		return false;
+
+	if (acquire != VK_SUCCESS && acquire != VK_SUBOPTIMAL_KHR)
+	{
+		fprintf(stderr, "[vulkan] vkAcquireNextImageKHR failed (%d)\n", acquire);
+		return false;
+	}
+
+	vkResetFences(device, 1, &frame.m_InFlight);
+	vkResetCommandBuffer(frame.m_CommandBuffer, 0);
+
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	VkCommandBuffer cmd = frame.m_CommandBuffer;
+	vkBeginCommandBuffer(cmd, &beginInfo);
+
+	TransitionImage(cmd, m_Images[uiImageIndex],
+	                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+	/* The pass left this as a shader resource; the blit needs it readable as
+	   a transfer source. VKResource tracks its own state, so this is a no-op
+	   when it already matches. */
+	pSource->Transition(cmd, E_STATE_COPY_SOURCE);
+
+	const VkExtent3D srcExtent = pSource->GetExtent();
+
+	VkImageBlit region{};
+	region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	region.srcSubresource.layerCount = 1;
+	region.srcOffsets[1] = { static_cast<int32_t>(srcExtent.width),
+	                         static_cast<int32_t>(srcExtent.height), 1 };
+	region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	region.dstSubresource.layerCount = 1;
+	region.dstOffsets[1] = { static_cast<int32_t>(m_Extent.width),
+	                         static_cast<int32_t>(m_Extent.height), 1 };
+
+	vkCmdBlitImage(cmd,
+	               pSource->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+	               m_Images[uiImageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	               1, &region, VK_FILTER_LINEAR);
+
+	TransitionImage(cmd, m_Images[uiImageIndex],
+	                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+	vkEndCommandBuffer(cmd);
+
+	/* Two waits: the acquire (binary) and the render engine's timeline, so the
+	   blit cannot read a half-drawn frame. */
+	VkSemaphoreSubmitInfo waits[2]{};
+	waits[0].sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+	waits[0].semaphore = frame.m_ImageAvailable;
+	waits[0].stageMask = VK_PIPELINE_STAGE_2_BLIT_BIT;
+
+	waits[1].sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+	waits[1].semaphore = waitTimeline;
+	waits[1].value = uiWaitValue;
+	waits[1].stageMask = VK_PIPELINE_STAGE_2_BLIT_BIT;
+
+	VkCommandBufferSubmitInfo commandInfo{};
+	commandInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+	commandInfo.commandBuffer = cmd;
+
+	VkSemaphoreSubmitInfo signalInfo{};
+	signalInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+	signalInfo.semaphore = m_RenderFinished[uiImageIndex];
+	signalInfo.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+
+	VkSubmitInfo2 submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+	submitInfo.waitSemaphoreInfoCount = waitTimeline != VK_NULL_HANDLE ? 2 : 1;
+	submitInfo.pWaitSemaphoreInfos = waits;
+	submitInfo.commandBufferInfoCount = 1;
+	submitInfo.pCommandBufferInfos = &commandInfo;
+	submitInfo.signalSemaphoreInfoCount = 1;
+	submitInfo.pSignalSemaphoreInfos = &signalInfo;
+
+	if (vkQueueSubmit2(m_pDevice->GetGraphicsQueue(), 1, &submitInfo, frame.m_InFlight) != VK_SUCCESS)
+	{
+		fprintf(stderr, "[vulkan] blit submit failed\n");
 		return false;
 	}
 

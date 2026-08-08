@@ -50,7 +50,7 @@ void World::Initialize()
 
 	if (!m_bPreLoaded)
 	{
-		ScriptSystem* pScriptSystem = new ScriptSystem(this);
+	ScriptSystem* pScriptSystem = new ScriptSystem(this);
 		PhysicsSystem* pPhysicsSystem = new PhysicsSystem(this, Vector3(256, 128, 256), 1);
 		SetPhysicsSystem(pPhysicsSystem);
 

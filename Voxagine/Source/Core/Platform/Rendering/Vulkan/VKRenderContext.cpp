@@ -8,6 +8,7 @@
 
 #include "Core/Resources/Formats/ShaderReference.h"
 
+#include "Core/Platform/Rendering/Objects/View.h"
 #include "Core/Platform/Rendering/Vulkan/VKCommandEngine.h"
 #include "Core/Platform/Rendering/Vulkan/Managers/VKModelManager.h"
 #include "Core/Platform/Rendering/Vulkan/Managers/VKTextureManager.h"
@@ -145,11 +146,53 @@ bool VKRenderContext::Present()
 	if (!m_bBackendReady)
 		return false;
 
-	/* RenderContext::Present drives the whole frame: it ends the ImGui frame,
-	   uploads the per-frame buffers, then walks the passes through the command
-	   engines. Everything below it is now implemented, so there is no reason
-	   left to short-circuit to a bare clear. */
-	return RenderContext::Present();
+	if (!RenderContext::Present())
+		return false;
+
+	/* DX12 pointed the pass whose target type is E_STATE_PRESENT straight at
+	   the swapchain buffers, so presenting was a flip. Here the pass owns its
+	   own image and it is blitted across, which also rescales when the render
+	   resolution differs from the window. */
+	PRenderPass* pScreenPass = nullptr;
+
+	for (auto& entry : m_pRenderPasses)
+	{
+		if (entry.second != nullptr && entry.second->GetData().m_TargetType == E_STATE_PRESENT)
+		{
+			pScreenPass = entry.second.get();
+			break;
+		}
+	}
+
+	if (pScreenPass == nullptr)
+		return false;
+
+	View* pSourceView = pScreenPass->GetTargetView(0);
+
+	if (pSourceView == nullptr || pSourceView->GetNative() == nullptr)
+		return false;
+
+	/* Wait on the engine that drew the frame, not on the whole device. */
+	PCommandEngine* pDirectEngine = m_pCommandEngines["Direct"].get();
+
+	const VkSemaphore timeline = pDirectEngine != nullptr ? pDirectEngine->GetTimeline() : VK_NULL_HANDLE;
+	const uint64_t uiValue = pDirectEngine != nullptr ? pDirectEngine->GetValue() : 0;
+
+	if (!m_Swapchain.BlitAndPresent(pSourceView->GetNative(), timeline, uiValue))
+	{
+		const UVector2 size = m_pPlatform->GetWindowContext()->GetSize();
+
+		if (size.x == 0 || size.y == 0)
+			return false;
+
+		if (!m_Swapchain.Recreate(size.x, size.y))
+			return false;
+	}
+
+	m_uiFrameIndex = (m_uiFrameIndex + 1) % m_uiFrameCount;
+	m_bWorldUpdated = false;
+
+	return true;
 }
 
 bool VKRenderContext::OnResize(uint32_t uiWidth, uint32_t uiHeight)

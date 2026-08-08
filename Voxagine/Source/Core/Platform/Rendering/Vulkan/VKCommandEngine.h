@@ -69,6 +69,13 @@ public:
 
 	VKUploadBuffer* GetUploadBuffer() { return m_pUploadBuffer.get(); }
 
+	/* Dynamic rendering is a property of the command buffer, not of a pass, so
+	   whether a render pass instance is open has to be tracked here. Each pass
+	   tracking its own flag meant one pass could open rendering and a second
+	   could open another inside it. */
+	bool IsRenderingOpen() const { return m_bRenderingOpen; }
+	void SetRenderingOpen(bool bOpen) { m_bRenderingOpen = bOpen; }
+
 protected:
 	virtual void AdvanceFrame() override;
 
@@ -100,6 +107,8 @@ private:
 	uint32_t m_uiFrameIndex = 0;
 
 	std::vector<PendingBarrier> m_PendingBarriers;
+
+	bool m_bRenderingOpen = false;
 
 	/* Engines this one must wait on before its next submit. */
 	std::vector<VkSemaphoreSubmitInfo> m_WaitSemaphores;

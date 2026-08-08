@@ -128,6 +128,7 @@ void VKCommandEngine::Reset()
 
 	m_PendingBarriers.clear();
 	m_bIsStarted = false;
+	m_bRenderingOpen = false;
 }
 
 void VKCommandEngine::Start()

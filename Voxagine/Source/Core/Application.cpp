@@ -65,8 +65,10 @@ void Application::Run()
 	m_Platform.m_pGameTimer->ResetElapsedTime();
 	m_Platform.m_pFixedGameTimer->ResetElapsedTime();
 
+
 	while (!m_bExit)
 	{
+
 		m_Platform.m_pGameTimer->Update([this]()
 		{
 			OPTICK_FRAME("MainThread");

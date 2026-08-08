@@ -49,6 +49,9 @@ private:
 	/* Fills a freshly allocated set from m_Bindings. */
 	void WriteDescriptors(PCommandEngine* pEngine, VkDescriptorSet set);
 
+	/* Begin, ignoring the has-anything-to-draw test. */
+	void ForceBegin(PCommandEngine* pEngine);
+
 	VKDevice* m_pDevice = nullptr;
 
 	VkPipeline m_Pipeline = VK_NULL_HANDLE;

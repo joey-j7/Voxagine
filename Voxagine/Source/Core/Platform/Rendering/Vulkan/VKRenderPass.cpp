@@ -289,6 +289,22 @@ void VKRenderPass::Resize(UVector2 uSize)
 		m_pDepthView->Resize(size);
 }
 
+void VKRenderPass::ForceBegin(PCommandEngine* pEngine)
+{
+	const uint32_t uiSavedVertices = m_Data.m_uiVertexCount;
+	const uint32_t uiSavedInstances = m_Data.m_uiInstanceCount;
+
+	/* Begin bails when the pass has nothing to draw; a clear still needs the
+	   attachments opened. */
+	m_Data.m_uiVertexCount = m_Data.m_uiVertexCount > 0 ? m_Data.m_uiVertexCount : 1;
+	m_Data.m_uiInstanceCount = m_Data.m_uiInstanceCount > 0 ? m_Data.m_uiInstanceCount : 1;
+
+	Begin(pEngine);
+
+	m_Data.m_uiVertexCount = uiSavedVertices;
+	m_Data.m_uiInstanceCount = uiSavedInstances;
+}
+
 void VKRenderPass::Begin(PCommandEngine* pEngine)
 {
 	const bool bHasIndices = m_Data.m_uiIndexCount > 0;
@@ -299,6 +315,11 @@ void VKRenderPass::Begin(PCommandEngine* pEngine)
 		return;
 
 	if (m_Pipeline == VK_NULL_HANDLE)
+		return;
+
+	/* Never nest, including across passes: the flag lives on the engine
+	   because dynamic rendering is a command buffer property. */
+	if (pEngine->IsRenderingOpen())
 		return;
 
 	/* Move every attachment into its rendering layout before the pass opens. */
@@ -362,6 +383,7 @@ void VKRenderPass::Begin(PCommandEngine* pEngine)
 	vkCmdBeginRendering(pEngine->GetCommandBuffer(), &renderingInfo);
 
 	m_bIsRendering = true;
+	pEngine->SetRenderingOpen(true);
 }
 
 void VKRenderPass::WriteDescriptors(PCommandEngine* pEngine, VkDescriptorSet set)
@@ -574,11 +596,13 @@ void VKRenderPass::Draw(PCommandEngine* pEngine)
 
 void VKRenderPass::End(PCommandEngine* pEngine)
 {
-	if (!m_bIsRendering)
+	if (!m_bIsRendering || !pEngine->IsRenderingOpen())
 		return;
 
 	vkCmdEndRendering(pEngine->GetCommandBuffer());
+
 	m_bIsRendering = false;
+	pEngine->SetRenderingOpen(false);
 
 	/* Hand the targets back as shader resources so a later pass can sample
 	   them without knowing what this one did. */
@@ -593,11 +617,17 @@ void VKRenderPass::End(PCommandEngine* pEngine)
 
 void VKRenderPass::Clear(PCommandEngine* pEngine)
 {
-	/* Clearing happens through the attachment load op in Begin, so a separate
-	   clear only needs to run when the pass is skipped entirely. */
 	if (!m_Data.m_bClearPerFrame || m_bIsCleared)
 		return;
 
-	Begin(pEngine);
+	/* The attachment load op already clears, so when rendering is open there
+	   is nothing to do. Opening a second pass here is what produced
+	   "vkCmdBeginRendering inside an active render pass instance". */
+	if (pEngine->IsRenderingOpen())
+		return;
+
+	/* Skipped passes still need their targets cleared, which an empty
+	   begin/end pair does through the load op. */
+	ForceBegin(pEngine);
 	End(pEngine);
 }
