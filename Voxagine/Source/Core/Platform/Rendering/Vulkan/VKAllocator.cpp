@@ -27,7 +27,8 @@ uint32_t VKAllocator::FindMemoryType(uint32_t uiTypeFilter, VkMemoryPropertyFlag
 
 bool VKAllocator::Allocate(const VkMemoryRequirements& requirements,
                            VkMemoryPropertyFlags properties,
-                           Allocation& outAllocation) const
+                           Allocation& outAllocation,
+                           bool bDeviceAddress) const
 {
 	const uint32_t uiType = FindMemoryType(requirements.memoryTypeBits, properties);
 
@@ -38,10 +39,17 @@ bool VKAllocator::Allocate(const VkMemoryRequirements& requirements,
 		return false;
 	}
 
+	VkMemoryAllocateFlagsInfo flagsInfo{};
+	flagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
+	flagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+
 	VkMemoryAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = requirements.size;
 	allocInfo.memoryTypeIndex = uiType;
+
+	if (bDeviceAddress)
+		allocInfo.pNext = &flagsInfo;
 
 	if (vkAllocateMemory(m_pDevice->Get(), &allocInfo, nullptr, &outAllocation.m_Memory) != VK_SUCCESS)
 	{

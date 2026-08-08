@@ -13,6 +13,7 @@
  * Run headless with --frames N to make it usable from CI. */
 
 #include "Core/Platform/Rendering/Vulkan/VKAllocator.h"
+#include "Core/Platform/Rendering/Vulkan/VKDescriptorLayout.h"
 #include "Core/Platform/Rendering/Vulkan/VKDevice.h"
 #include "Core/Platform/Rendering/Vulkan/VKSwapchain.h"
 #include "Core/Platform/Rendering/Vulkan/VKUploadBuffer.h"
@@ -106,7 +107,68 @@ namespace
 
 		printf("[selftest] upload buffer: %s\n", bPassed ? "pass" : "FAIL");
 
-		return bPassed;
+		/* Descriptor layouts. With validation enabled this is a real check of
+		   the layout/pool/allocate path, which is where D3D12 root signatures
+		   have the least in common with Vulkan. */
+		bool bDescriptorsPassed = true;
+
+		{
+			VKDescriptorLayout layout;
+
+			/* Mirrors what a pass declares: a constant buffer, a couple of
+			   textures, a storage image and a sampler. The shifts keep b0 and
+			   u0 from colliding the way they would in raw HLSL registers. */
+			layout.AddConstantBuffer(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+			layout.AddTexture(0, VK_SHADER_STAGE_FRAGMENT_BIT);
+			layout.AddTexture(1, VK_SHADER_STAGE_FRAGMENT_BIT);
+			layout.AddStorageImage(0, VK_SHADER_STAGE_COMPUTE_BIT);
+			layout.AddSampler(0, VK_SHADER_STAGE_FRAGMENT_BIT);
+
+			if (!layout.Build(&device, VKSwapchain::m_uiFramesInFlight))
+			{
+				fprintf(stderr, "[selftest] descriptor layout build failed\n");
+				bDescriptorsPassed = false;
+			}
+			else
+			{
+				for (uint32_t i = 0; i < VKSwapchain::m_uiFramesInFlight; ++i)
+				{
+					if (layout.Allocate() == VK_NULL_HANDLE)
+					{
+						fprintf(stderr, "[selftest] descriptor set %u failed to allocate\n", i);
+						bDescriptorsPassed = false;
+					}
+				}
+
+				/* The pool is sized for exactly that many; recycling must make
+				   room again. */
+				layout.ResetPool();
+
+				if (layout.Allocate() == VK_NULL_HANDLE)
+				{
+					fprintf(stderr, "[selftest] allocation after ResetPool failed\n");
+					bDescriptorsPassed = false;
+				}
+			}
+		}
+
+		/* Bindless is separate: it must be the highest binding, so building it
+		   alongside a higher-numbered sampler would be rejected. */
+		{
+			VKDescriptorLayout bindless;
+			bindless.AddConstantBuffer(0, VK_SHADER_STAGE_FRAGMENT_BIT);
+			bindless.AddBindlessTextures(0, VK_SHADER_STAGE_FRAGMENT_BIT, 128);
+
+			if (!bindless.Build(&device, 1) || bindless.Allocate() == VK_NULL_HANDLE)
+			{
+				fprintf(stderr, "[selftest] bindless layout failed\n");
+				bDescriptorsPassed = false;
+			}
+		}
+
+		printf("[selftest] descriptor layouts: %s\n", bDescriptorsPassed ? "pass" : "FAIL");
+
+		return bPassed && bDescriptorsPassed;
 	}
 
 	Options ParseArgs(int argc, char** argv)

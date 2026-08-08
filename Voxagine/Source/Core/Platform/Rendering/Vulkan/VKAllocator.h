@@ -34,10 +34,16 @@ public:
 	void Initialize(VKDevice* pDevice);
 
 	/* properties is a mask of VkMemoryPropertyFlagBits: DEVICE_LOCAL for GPU
-	   resources, HOST_VISIBLE | HOST_COHERENT for anything a Mapper writes. */
+	   resources, HOST_VISIBLE | HOST_COHERENT for anything a Mapper writes.
+
+	   bDeviceAddress must be set for any memory backing a buffer created with
+	   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT. Omitting it is a spec
+	   violation that NVIDIA's driver happens to accept, so only validation
+	   catches it. */
 	bool Allocate(const VkMemoryRequirements& requirements,
 	              VkMemoryPropertyFlags properties,
-	              Allocation& outAllocation) const;
+	              Allocation& outAllocation,
+	              bool bDeviceAddress = false) const;
 
 	void Free(Allocation& allocation) const;
 

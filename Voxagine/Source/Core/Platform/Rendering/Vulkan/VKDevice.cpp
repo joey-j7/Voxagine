@@ -250,10 +250,21 @@ bool VKDevice::CreateDevice(VkSurfaceKHR surface)
 	bufferAddress.bufferDeviceAddress = VK_TRUE;
 	bufferAddress.pNext = &sync2;
 
+	/* Bindless arrays: RenderPass::Data::m_uiBindlessResourceCount declares a
+	   variable-sized texture array, which needs descriptor indexing. */
+	VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexing{};
+	descriptorIndexing.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+	descriptorIndexing.descriptorBindingVariableDescriptorCount = VK_TRUE;
+	descriptorIndexing.descriptorBindingPartiallyBound = VK_TRUE;
+	descriptorIndexing.runtimeDescriptorArray = VK_TRUE;
+	descriptorIndexing.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+	descriptorIndexing.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+	descriptorIndexing.pNext = &bufferAddress;
+
 	VkPhysicalDeviceDynamicRenderingFeatures dynamicRendering{};
 	dynamicRendering.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
 	dynamicRendering.dynamicRendering = VK_TRUE;
-	dynamicRendering.pNext = &bufferAddress;
+	dynamicRendering.pNext = &descriptorIndexing;
 
 	VkDeviceCreateInfo deviceInfo{};
 	deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

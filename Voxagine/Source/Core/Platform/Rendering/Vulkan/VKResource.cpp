@@ -95,7 +95,11 @@ bool VKResource::CreateBuffer(VKDevice* pDevice, const VKAllocator* pAllocator,
 	VkMemoryRequirements requirements{};
 	vkGetBufferMemoryRequirements(pDevice->Get(), m_Buffer, &requirements);
 
-	if (!pAllocator->Allocate(requirements, properties, m_Allocation))
+	/* Derived from usage rather than asked of the caller: forgetting it is a
+	   spec violation most drivers silently accept. */
+	const bool bDeviceAddress = (usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) != 0;
+
+	if (!pAllocator->Allocate(requirements, properties, m_Allocation, bDeviceAddress))
 	{
 		vkDestroyBuffer(pDevice->Get(), m_Buffer, nullptr);
 		m_Buffer = VK_NULL_HANDLE;
