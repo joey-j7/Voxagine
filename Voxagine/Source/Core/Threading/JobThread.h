@@ -3,6 +3,7 @@
 #include "Core/Threading/Job.h"
 
 #include <shared_mutex>
+#include <mutex>
 
 class JobThread
 {

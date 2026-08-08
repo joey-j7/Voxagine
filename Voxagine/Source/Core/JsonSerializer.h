@@ -12,6 +12,7 @@
 
 #include "Core/LoggingSystem/LoggingSystem.h"
 #include "Core/System/FileSystem.h"
+#include <mutex>
 
 using namespace rapidjson;
 

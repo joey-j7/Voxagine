@@ -1,5 +1,5 @@
 # CMake build output
-build/
+build*/
 compile_commands.json
 CMakeUserPresets.json
 

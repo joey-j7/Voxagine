@@ -128,6 +128,16 @@ if(VOXAGINE_BUILD_ENGINE)
 
     add_library(voxagine STATIC ${VOXAGINE_ENGINE_SOURCES})
 
+    # The vendored STB .c files open with #include "pch.h", so they are only
+    # valid as C++. The old build compiled every file in the project as C++
+    # with a forced PCH; CMake picks the language from the extension.
+    set_source_files_properties(
+        ${VOXAGINE_SOURCE_DIR}/External/STB/image_DXT.c
+        ${VOXAGINE_SOURCE_DIR}/External/STB/image_helper.c
+        ${VOXAGINE_SOURCE_DIR}/External/STB/stb_image_aug.c
+        PROPERTIES LANGUAGE CXX
+    )
+
     target_include_directories(voxagine PUBLIC ${VOXAGINE_SOURCE_DIR})
 
     target_link_libraries(voxagine
@@ -135,7 +145,14 @@ if(VOXAGINE_BUILD_ENGINE)
         PRIVATE voxagine_warnings
     )
 
-    target_precompile_headers(voxagine PRIVATE ${VOXAGINE_SOURCE_DIR}/pch.h)
+    # No target_precompile_headers here on purpose.
+    #
+    # Every engine TU already starts with #include "pch.h". CMake's PCH support
+    # force-includes its own cmake_pch.h on top of that, so headers reached
+    # both ways get pulled in twice and #pragma once does not save them -
+    # moodycamel's concurrentqueue.h then reports every declaration as a
+    # redefinition of itself. Adopting CMake's PCH means removing the explicit
+    # includes from all 147 TUs first; not worth doing mid-port.
 
     if(VOXAGINE_ENABLE_FMOD)
         target_compile_definitions(voxagine PUBLIC VOXAGINE_FMOD)

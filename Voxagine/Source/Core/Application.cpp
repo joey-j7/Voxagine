@@ -4,7 +4,7 @@
 #ifdef _ORBIS
 #include "Core/System/ORBIS/ORBFileSystem.h"
 #else
-#include "Core/System/Windows/WINFileSystem.h"
+#include "Core/System/Posix/PosixFileSystem.h"
 #endif
 
 #include "Core/System/FileSystem.h"
@@ -44,7 +44,7 @@ void Application::Run()
 	m_pFileSystem = new ORBFileSystem(this);
 	m_pFileSystem->Initialize();
 #else
-	m_pFileSystem = new WINFileSystem(this);
+	m_pFileSystem = new PosixFileSystem(this);
 	m_pFileSystem->Initialize();
 #endif
 

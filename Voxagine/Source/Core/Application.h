@@ -13,6 +13,7 @@ class Platform;
 
 #ifdef EDITOR
 #include "Editor/Editor.h"
+#include <mutex>
 #endif
 
 class FileSystem;

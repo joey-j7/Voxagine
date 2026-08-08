@@ -11,7 +11,7 @@ class EditorButton
 public:
 	friend class Editor;
 
-	EditorButton::EditorButton(
+	EditorButton(
 		Application* pContext,
 		const std::string& defaultButton,
 		const std::string& hoveredButton,

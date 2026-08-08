@@ -6,6 +6,7 @@
 
 set(VOXAGINE_ENGINE_SOURCES
     ${VOXAGINE_SOURCE_DIR}/Core/Application.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Input/SDL/SDLGamePad.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/ECS/Component.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/ECS/Components/AudioPlaylist.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/ECS/Components/AudioSource.cpp
@@ -152,7 +153,10 @@ set(VOXAGINE_ENGINE_SOURCES
     ${VOXAGINE_SOURCE_DIR}/pch.cpp
 
     # Vendored sources compiled into the engine.
-    ${VOXAGINE_SOURCE_DIR}/External/glm/detail/glm.cpp
+    #
+    # glm is header-only. External/glm/detail/glm.cpp is its optional static
+    # library TU and includes <glm/...> unqualified, which resolves to the
+    # system glm 1.x and collides with the vendored 0.9.x. Never add it back.
     ${VOXAGINE_SOURCE_DIR}/External/imgui/imgui.cpp
     ${VOXAGINE_SOURCE_DIR}/External/imgui/imgui_demo.cpp
     ${VOXAGINE_SOURCE_DIR}/External/imgui/imgui_draw.cpp
