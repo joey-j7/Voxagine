@@ -324,7 +324,9 @@ int main(int argc, char** argv)
 		{
 			iExit = 1;
 		}
-		else if (!swapchain.Create(&device, surface, 1280, 720))
+		/* No vsync: bring-up runs a fixed number of frames and exits, so it
+		   wants to finish rather than pace itself to the display. */
+		else if (!swapchain.Create(&device, surface, 1280, 720, false))
 		{
 			iExit = 1;
 		}
