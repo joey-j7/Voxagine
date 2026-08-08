@@ -64,6 +64,23 @@ namespace
 		return binding;
 	}
 
+	/* E_STORAGE_BUFFER is the one kind that does not name its register class:
+	   HLSL spells a read-only one StructuredBuffer (t) and a read-write one
+	   RWStructuredBuffer (u), and Vulkan calls both a storage buffer. Anything
+	   read-write has to go through here rather than MakeBinding, which can
+	   only guess - and it guesses t, so a missed call silently lands the
+	   descriptor on top of whichever texture holds that register. */
+	VKPassBinding MakeUnorderedStorageBuffer(uint32_t uiRegister, VkShaderStageFlags stages,
+	                                         const void* pSource, const std::string& name,
+	                                         VKPassBinding::Source source)
+	{
+		VKPassBinding binding = MakeBinding(VKPassBinding::E_STORAGE_BUFFER, uiRegister,
+		                                    stages, pSource, name, 1, source);
+		binding.m_uiBinding = VKBindings::Unordered(uiRegister);
+
+		return binding;
+	}
+
 	void AddBuffers(std::vector<VKPassBinding>& out, RegisterCounters& counters,
 	                const std::vector<Buffer*>& buffers, VkShaderStageFlags stages)
 	{
@@ -81,13 +98,8 @@ namespace
 			}
 			else if (info.m_GPUAccessType == E_READ_WRITE)
 			{
-				/* A read-write structured buffer is a UAV in HLSL but still a
-				   storage buffer in Vulkan; only the register class differs. */
-				VKPassBinding binding = MakeBinding(VKPassBinding::E_STORAGE_BUFFER,
-				                                    counters.m_uiUnordered++, stages, pBuffer, info.m_Name, 1, VKPassBinding::E_SOURCE_BUFFER);
-				binding.m_uiBinding = VKBindings::Unordered(binding.m_uiRegister);
-
-				out.push_back(binding);
+				out.push_back(MakeUnorderedStorageBuffer(counters.m_uiUnordered++, stages, pBuffer,
+				                                         info.m_Name, VKPassBinding::E_SOURCE_BUFFER));
 			}
 			else
 			{
@@ -114,9 +126,16 @@ namespace
 
 			if (info.m_GPUAccessType == E_READ_WRITE)
 			{
-				out.push_back(MakeBinding(bIsImage ? VKPassBinding::E_STORAGE_TEXEL_BUFFER
-				                                   : VKPassBinding::E_STORAGE_BUFFER,
-				                          counters.m_uiUnordered++, stages, pMapper, info.m_Name, 1, VKPassBinding::E_SOURCE_MAPPER));
+				if (bIsImage)
+				{
+					out.push_back(MakeBinding(VKPassBinding::E_STORAGE_TEXEL_BUFFER,
+					                          counters.m_uiUnordered++, stages, pMapper, info.m_Name, 1, VKPassBinding::E_SOURCE_MAPPER));
+				}
+				else
+				{
+					out.push_back(MakeUnorderedStorageBuffer(counters.m_uiUnordered++, stages, pMapper,
+					                                         info.m_Name, VKPassBinding::E_SOURCE_MAPPER));
+				}
 			}
 			else if (bIsImage)
 			{

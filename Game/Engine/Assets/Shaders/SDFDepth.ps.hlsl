@@ -2,6 +2,12 @@
 #include "CameraData.hlsl" // register(b0)
 
 VOXEL_RW_BUFFER voxelWorldData : register(u0);
+
+/* Required by SDFMarcher.hlsl below. This shader is loaded by nothing (see
+   RENDERING_PLAN.md, "Ground truth"), so the declaration only exists to keep
+   it compiling - no pass binds it. */
+RW_STRUCTURED_BUFFER(uint) voxelBrickData : register(u1);
+
 VOXEL_BUFFER voxelModelData[] : register(t1) {};
 
 struct PS_in

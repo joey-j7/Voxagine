@@ -32,6 +32,7 @@
 #include "Core/Resources/Formats/ShaderReference.h"
 
 #include "Core/Platform/Rendering/RenderAlignment.h"
+#include "Core/Platform/Rendering/VoxelBrickGrid.h"
 
 class Platform;
 class WindowContext;
@@ -215,10 +216,15 @@ public:
 		if (uiID >= GetVoxelDataSize())
 			return false;
 
-		uint32_t& uiOldColor = m_pVoxelData[uiID];
+		/* Read once into a local rather than through a reference: this is
+		   uncached host-visible memory and the reference form lets the
+		   compiler reload it for each comparison. */
+		uint32_t* pVoxel = &m_pVoxelData[uiID];
+		const uint32_t uiOldColor = *pVoxel;
 
 		if ((bOverwrite || uiOldColor == 0) && uiOldColor != uiColor) {
-			uiOldColor = uiColor;
+			*pVoxel = uiColor;
+			m_BrickGrid.SetVoxel(uiID, (uiOldColor >> 24) != 0, (uiColor >> 24) != 0);
 			m_bWorldUpdated = true;
 
 			return true;
@@ -232,7 +238,15 @@ public:
 		if (uiID >= GetVoxelDataSize())
 			return;
 
-		m_pVoxelData[uiID] = uiColor;
+		/* The read is new as of the brick grid: only a transition between
+		   empty and occupied moves a brick's count, and there is nowhere else
+		   to learn the old occupancy from. ModifyVoxel above already read the
+		   same word, so this costs what that path always cost. */
+		uint32_t* pVoxel = &m_pVoxelData[uiID];
+		const uint32_t uiOldColor = *pVoxel;
+
+		*pVoxel = uiColor;
+		m_BrickGrid.SetVoxel(uiID, (uiOldColor >> 24) != 0, (uiColor >> 24) != 0);
 		m_bWorldUpdated = true;
 	}
 
@@ -245,6 +259,17 @@ public:
 	const uint32_t* GetVoxelData() const { return m_pVoxelMapper->GetData(); }
 	Mapper* GetVoxelMapper() const { return m_pVoxelMapper; }
 	void ClearVoxels();
+
+	/* Coarse occupancy over the same window, for the marcher's outer walk.
+	   Kept current by ModifyVoxel/ModifyVoxelFast above and, in bulk, by
+	   ChunkSystem::RenderChunk. See VoxelBrickGrid. */
+	VoxelBrickGrid& GetBrickGrid() { return m_BrickGrid; }
+	Mapper* GetBrickMapper() const { return m_pBrickMapper; }
+
+	/* Recomputes the whole brick grid from the voxel buffer and logs anything
+	   that disagrees. On demand only - it reads the entire window back out of
+	   uncached memory. */
+	uint32_t ValidateBrickGrid();
 
 	/* Clear the screen */
 	virtual void Clear();
@@ -345,6 +370,9 @@ protected:
 
 	Mapper* m_pVoxelMapper = nullptr;
 	uint32_t* m_pVoxelData = nullptr;
+
+	Mapper* m_pBrickMapper = nullptr;
+	VoxelBrickGrid m_BrickGrid;
 
 	bool m_bFaderUpdated = false;
 
