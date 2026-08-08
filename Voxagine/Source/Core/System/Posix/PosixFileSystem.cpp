@@ -42,6 +42,8 @@ FH PosixFileSystem::OpenFile(const char* pFilePath, FSOpenFlags openFlags)
 	FILE* pFile = fopen(pFilePath, openMode.c_str());
 	if (pFile == nullptr)
 	{
+		/* Naming the file matters: most of these are optional .vox.cfg
+		   sidecars, and a bare errno reads like something is badly wrong. */
 		printf("Failed to open file '%s': %s\n", pFilePath, strerror(errno));
 		return INVALID_FH;
 	}

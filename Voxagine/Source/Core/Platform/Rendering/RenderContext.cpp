@@ -395,14 +395,22 @@ bool RenderContext::Present()
 
 			Vector4 v4LightDirection = glm::normalize(Vector4(-0.4f, -0.8f, 0.6f, 0.0f));
 
-			VoxelGrid* pGrid = pPhysics->GetVoxelGrid();
+			/* An editor build loads no world at startup, so there is no physics
+			   system to take the grid from until one is opened. A zero world
+			   size makes the marcher's bounds test fail immediately, which is
+			   what "no world" should look like. */
+			VoxelGrid* pGrid = pPhysics != nullptr ? pPhysics->GetVoxelGrid() : nullptr;
 
-			UVector3 uWorldSize;
-			pGrid->GetDimensions(
-				uWorldSize.x,
-				uWorldSize.y,
-				uWorldSize.z
-			);
+			UVector3 uWorldSize(0, 0, 0);
+
+			if (pGrid != nullptr)
+			{
+				pGrid->GetDimensions(
+					uWorldSize.x,
+					uWorldSize.y,
+					uWorldSize.z
+				);
+			}
 
 			pCameraBuffer->Clear();
 
@@ -423,7 +431,7 @@ bool RenderContext::Present()
 			pCameraBuffer->AddConstantData(settings.GetResolutionScale());
 			pCameraBuffer->AddConstantData(m_fFader);
 
-			pCameraBuffer->AddConstantData(pPhysics->m_uiActiveParticleCount);
+			pCameraBuffer->AddConstantData(m_uiParticleCount);
 			pCameraBuffer->AddConstantData(static_cast<uint32_t>(GetAABBList().size()));
 
 			pCameraBuffer->Allocate();

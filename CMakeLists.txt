@@ -185,6 +185,13 @@ if(VOXAGINE_BUILD_ENGINE)
     if(VOXAGINE_ENABLE_NFD)
         target_compile_definitions(voxagine PUBLIC VOXAGINE_NFD)
     endif()
+
+    # PUBLIC, and on the library: Editor.cpp and the #ifdef EDITOR branch of
+    # Application::Run are both library sources, so defining this only on the
+    # executable compiled the whole editor out.
+    if(VOXAGINE_BUILD_EDITOR)
+        target_compile_definitions(voxagine PUBLIC EDITOR)
+    endif()
 endif()
 
 # ---------------------------------------------------------------------------
@@ -201,9 +208,8 @@ if(VOXAGINE_BUILD_ENGINE)
     target_include_directories(BitBuster PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Game/Source)
     target_link_libraries(BitBuster PRIVATE voxagine voxagine_warnings)
 
-    if(VOXAGINE_BUILD_EDITOR)
-        target_compile_definitions(BitBuster PRIVATE EDITOR)
-    endif()
+    # EDITOR itself is defined on the voxagine library above, PUBLIC, so both
+    # the library and this executable see it.
 
     add_dependencies(BitBuster voxagine_shaders_game)
 endif()

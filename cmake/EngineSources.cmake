@@ -66,6 +66,13 @@ set(VOXAGINE_ENGINE_SOURCES
     ${VOXAGINE_SOURCE_DIR}/Core/ECS/World.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/ECS/WorldManager.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/FileBrowser.cpp
+
+    # Both of these shipped as a header plus a Windows .lib, so the editor had
+    # nothing to link against. TeenyPath is reimplemented on std::filesystem;
+    # the file dialogs shell out to zenity or kdialog rather than pulling GTK
+    # into an SDL/Vulkan application.
+    ${VOXAGINE_SOURCE_DIR}/External/teenypath/teenypath.cpp
+    ${VOXAGINE_SOURCE_DIR}/External/nativefiledialog/nfd_portal.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/JsonSerializer.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/LoggingSystem/LoggingSystem.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Memory/Allocators/BaseAlloc.cpp
