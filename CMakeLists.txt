@@ -74,7 +74,9 @@ target_compile_options(voxagine_warnings INTERFACE
 # of Core compiles on Linux.
 # ---------------------------------------------------------------------------
 add_library(voxagine_vulkan STATIC
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/VKAllocator.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/VKDevice.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/VKResource.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/VKSwapchain.cpp
 )
 
