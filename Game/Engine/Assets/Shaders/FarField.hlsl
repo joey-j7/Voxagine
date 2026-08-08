@@ -295,14 +295,14 @@ float4 ShadeFarField(FarFieldResult far) {
    geometry is never rasterized there at all. Post processing is the one pass
    that runs for every pixel.
 
-   Rays come from invMvp rather than Camera.hlsl's GetRay, which is what the sky
+   Rays come from sceneInvMvp rather than Camera.hlsl's GetRay, which is what the sky
    and ground used to use. GetRay rebuilds the ray from FOV and aspect via mv,
    and mv is only the inverse view matrix for a yaw-only camera - the sky could
    not tell, since it reads only rayDirection.y, but far-field geometry can: a
    ray that drifts from the one the voxel pass projected with puts the far field
    visibly out of register with the window at the seam. Under an orthographic
-   projection this reconstruction is as meaningless as GetRay was, for the same
-   reason SDFPrepass gives up there. */
+   projection this reconstruction is as meaningless as GetRay was: the ray
+   direction stops depending on the pixel. */
 float4 GetBackground(float2 v2PixelPosition)
 {
 	float2 v2NDC = float2(

@@ -279,45 +279,6 @@ MarchResult MarchBricks(float3 v3Origin, float3 v3Direction, int iMaxBrickSteps)
 	return result;
 }
 
-/* The outer level of MarchBricks on its own: the distance along the ray at
-   which it first enters a brick that holds something, or -1 if it leaves the
-   window without entering one. This is what the depth prepass writes - see
-   SDFPrepass.ps.hlsl - and it is a lower bound on where any voxel hit along
-   this ray can be, which is what makes it safe to skip to.
-
-   Kept beside MarchBricks rather than in the prepass shader because it is the
-   same walk with the fine descent removed; the two have to step identically or
-   the prepass stops bounding the march it is meant to bound. */
-float MarchBrickEntry(float3 v3Origin, float3 v3Direction, int iMaxBrickSteps) {
-	float3 v3InvDirection = 1.0 / v3Direction;
-	float3 v3SignedRayDirection = sign(v3Direction);
-
-	float3 v3BrickOrigin = v3Origin * BRICK_INV_SIZE;
-	int3 v3Brick = int3(floor(v3BrickOrigin));
-
-	float3 v3BrickDistance = (float3(v3Brick) - v3BrickOrigin + 0.5 + v3SignedRayDirection * 0.5) * v3InvDirection;
-
-	/* World-space parameter at which the ray entered v3Brick; zero for the
-	   brick it starts inside. */
-	float fBrickEntry = 0.0;
-
-	for (int b = 0; b < iMaxBrickSteps; b++) {
-		if (!IsBrickInWorld(v3Brick))
-			return -1.0;
-
-		if (IsBrickOccupied(v3Brick))
-			return fBrickEntry;
-
-		float3 v3BrickMask = step(v3BrickDistance.xyz, v3BrickDistance.yxy) * step(v3BrickDistance.xyz, v3BrickDistance.zzx);
-		fBrickEntry = min(v3BrickDistance.x, min(v3BrickDistance.y, v3BrickDistance.z)) * BRICK_SIZE_F;
-
-		v3BrickDistance += v3BrickMask * v3SignedRayDirection * v3InvDirection;
-		v3Brick += int3(v3BrickMask * v3SignedRayDirection);
-	}
-
-	return -1.0;
-}
-
 MarchResult MarchLight(float3 v3Origin, float3 v3Direction, int iMaxBrickSteps) {
 	return MarchBricks(v3Origin, v3Direction, iMaxBrickSteps);
 }
@@ -328,11 +289,9 @@ MarchResult MarchDiffuse(float3 v3Origin, float3 v3Direction, int iMaxBrickSteps
 	   still produces one. MarchBricks' own bounds tests cover the walk; this
 	   covers the origin voxel it starts from.
 
-	   Phase 3 added a second way to land outside: the depth prepass advances
-	   the origin along the ray before this is called, and a ray that grazes the
-	   window's edge can end up just past it. Entering the window and marching
-	   from there - rather than reporting a miss, as this did - is what keeps
-	   that from punching holes along the window's silhouette. */
+	   Entering the window and marching from there - rather than reporting a
+	   miss, as this did - is what keeps a grazing ray from punching holes
+	   along the window's silhouette. */
 	if (!IsInChunk(int3(floor(v3Origin)))) {
 		MarchResult miss;
 		miss.Color = float4(CLEAR_COLOR, 0.0);

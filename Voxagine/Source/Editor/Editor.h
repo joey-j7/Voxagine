@@ -209,9 +209,6 @@ private:
 	   time the menu is drawn rather than assumed here. */
 	bool m_bVSyncEnabled = false;
 
-	/* Mirrors RenderContext::IsDepthPrepassEnabled's default. */
-	bool m_bDepthPrepassEnabled = true;
-
 	/* Mirrors RenderContext::IsFarFieldEnabled's default. */
 	bool m_bFarFieldEnabled = true;
 	bool m_bInEditor = true;

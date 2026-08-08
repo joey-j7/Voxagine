@@ -1146,17 +1146,6 @@ void Editor::RenderMainMenuBar()
 				m_pRenderContext->SetVSyncEnabled(m_bVSyncEnabled);
 			}
 
-			/* A/B for the low-resolution depth prepass (RENDERING_PLAN.md
-			   phase 3). Live rather than a build flag because what it is worth
-			   depends entirely on the vantage - how much empty space the
-			   primary rays cross before they reach anything - and the only way
-			   to compare two vantages honestly is not to move between the two
-			   measurements. Watch [timing] Voxel in the log. */
-			if (ImGui::MenuItem("Depth Prepass", NULL, &m_bDepthPrepassEnabled))
-			{
-				m_pRenderContext->SetDepthPrepassEnabled(m_bDepthPrepassEnabled);
-			}
-
 			/* A/B for the far-field LOD volume (RENDERING_PLAN.md phase 4).
 			   Off, the horizon goes back to being the 3x3 chunk window's edge
 			   and post processing draws sky there instead - which is both the

@@ -109,7 +109,6 @@ set(VOXAGINE_ENGINE_SOURCES
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Managers/TextureManager.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Objects/Buffer.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Passes/DebugPass.cpp
-    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Passes/DepthPrepass.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Passes/ParticlePass.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Passes/PostProcessingPass.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Passes/UIPass.cpp
