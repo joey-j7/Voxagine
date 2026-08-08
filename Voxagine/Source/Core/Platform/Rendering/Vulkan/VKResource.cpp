@@ -65,6 +65,7 @@ bool VKResource::CreateImage(VKDevice* pDevice, const VKAllocator* pAllocator,
 	vkBindImageMemory(pDevice->Get(), m_Image, m_Allocation.m_Memory, 0);
 
 	m_Kind = E_KIND_IMAGE;
+	m_Extent = { uiWidth, uiHeight, uiDepth };
 	m_State = E_STATE_COMMON_RESOURCE;
 	m_bLayoutUndefined = true;
 

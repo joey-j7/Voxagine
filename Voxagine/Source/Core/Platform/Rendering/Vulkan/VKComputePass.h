@@ -15,6 +15,7 @@ class VKDevice;
 class VKComputePass : public ComputePass
 {
 public:
+	VKComputePass(PRenderContext* pContext);
 	VKComputePass(PRenderContext* pContext, const Data& data);
 	virtual ~VKComputePass();
 

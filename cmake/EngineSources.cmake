@@ -103,6 +103,9 @@ set(VOXAGINE_ENGINE_SOURCES
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Passes/VoxelBakePass.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Passes/VoxelPass.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/RenderContext.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/Managers/VKModelManager.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/Managers/VKTextureManager.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/VKRenderContext.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Time/Chrono/ChronoGameTimer.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Window/SDL/SDLWindowContext.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Window/WindowContext.cpp
@@ -138,6 +141,8 @@ set(VOXAGINE_ENGINE_SOURCES
     ${VOXAGINE_SOURCE_DIR}/Editor/EntityInspector/EntityInspector.cpp
     ${VOXAGINE_SOURCE_DIR}/Editor/EntityWizard/EntityWizard.cpp
     ${VOXAGINE_SOURCE_DIR}/Editor/imgui/ImguiSystem.cpp
+    ${VOXAGINE_SOURCE_DIR}/Editor/imgui/Contexts/VKImContext.cpp
+    ${VOXAGINE_SOURCE_DIR}/Editor/imgui/Platforms/SDLImPlatform.cpp
     ${VOXAGINE_SOURCE_DIR}/Editor/PropertyRenderer/PropertyRenderer.cpp
     ${VOXAGINE_SOURCE_DIR}/Editor/PropertyRenderer/TMap.cpp
     ${VOXAGINE_SOURCE_DIR}/Editor/SnappingTool/SnappingTool.cpp

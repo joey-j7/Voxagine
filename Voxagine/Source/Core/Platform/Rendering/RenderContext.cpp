@@ -1,4 +1,6 @@
 #include "pch.h"
+
+#include "External/imgui/imgui.h"
 #include "RenderContext.h"
 
 #include "Core/Application.h"
@@ -35,10 +37,8 @@
 #include "Core/ECS/Components/VoxRenderer.h"
 #include "External/optick/optick.h"
 
-#ifdef _WINDOWS
-#include <eventtoken.h>
-#include "Editor/imgui/Contexts/DXImContext.h"
-#endif
+#include "Editor/imgui/Contexts/ImContext.h"
+#include "Editor/imgui/Contexts/VKImContext.h"
 
 RenderContext::RenderContext(Platform* pPlatform)
 {
@@ -325,7 +325,7 @@ bool RenderContext::Present()
 
 	PCommandEngine* pDirectEngine = m_pCommandEngines["Direct"].get();
 
-	const bool bIsCompleted = pVDirectEngine->GetFence()->GetCompletedValue() >= pVDirectEngine->GetValue();
+	const bool bIsCompleted = pVDirectEngine->GetCompletedValue() >= pVDirectEngine->GetValue();
 
 	if (bIsCompleted && !m_bIsDrawTextureCopied)
 	{
@@ -343,42 +343,18 @@ bool RenderContext::Present()
 		pVoxelPass->ToggleBackBuffer();
 
 		// Transition
-		pDirectEngine->m_Barriers.push_back(
-			CD3DX12_RESOURCE_BARRIER::Transition(
-				pTarget->GetNative(),
-				static_cast<D3D12_RESOURCE_STATES>(E_STATE_PIXEL_SHADER_RESOURCE),
-				static_cast<D3D12_RESOURCE_STATES>(E_STATE_COPY_DEST)
-			)
-		);
+		pDirectEngine->QueueBarrier(pTarget->GetNative(), E_STATE_COPY_DEST);
 
-		pDirectEngine->m_Barriers.push_back(
-			CD3DX12_RESOURCE_BARRIER::Transition(
-				pSource->GetNative(),
-				static_cast<D3D12_RESOURCE_STATES>(E_STATE_PIXEL_SHADER_RESOURCE),
-				static_cast<D3D12_RESOURCE_STATES>(E_STATE_COPY_SOURCE)
-			)
-		);
+		pDirectEngine->QueueBarrier(pSource->GetNative(), E_STATE_COPY_SOURCE);
 
 		pDirectEngine->ApplyBarriers();
 
-		pDirectEngine->GetList()->CopyResource(pTarget->GetNative(), pSource->GetNative());
+		pDirectEngine->CopyResource(pTarget->GetNative(), pSource->GetNative());
 
 		// Transition
-		pDirectEngine->m_Barriers.push_back(
-			CD3DX12_RESOURCE_BARRIER::Transition(
-				pTarget->GetNative(),
-				static_cast<D3D12_RESOURCE_STATES>(E_STATE_COPY_DEST),
-				static_cast<D3D12_RESOURCE_STATES>(E_STATE_PIXEL_SHADER_RESOURCE)
-			)
-		);
+		pDirectEngine->QueueBarrier(pTarget->GetNative(), E_STATE_PIXEL_SHADER_RESOURCE);
 
-		pDirectEngine->m_Barriers.push_back(
-			CD3DX12_RESOURCE_BARRIER::Transition(
-				pSource->GetNative(),
-				static_cast<D3D12_RESOURCE_STATES>(E_STATE_COPY_SOURCE),
-				static_cast<D3D12_RESOURCE_STATES>(E_STATE_PIXEL_SHADER_RESOURCE)
-			)
-		);
+		pDirectEngine->QueueBarrier(pSource->GetNative(), E_STATE_PIXEL_SHADER_RESOURCE);
 
 		pDirectEngine->ApplyBarriers();
 
@@ -512,7 +488,7 @@ bool RenderContext::Present()
 	}
 #endif
 
-	if (pDirectEngine->GetFence()->GetCompletedValue() < pDirectEngine->GetValue())
+	if (pDirectEngine->GetCompletedValue() < pDirectEngine->GetValue())
 		return false;
 
 	// Reset command allocators
@@ -559,14 +535,10 @@ bool RenderContext::Present()
 
 		pDirectEngine->Draw(pPostProcessingPass);
 
-#ifndef _ORBIS
-		static_cast<DXImContext*>(
-			m_pPlatform->GetImguiSystem().GetContext()
-		)->Draw(
-			ImGui::GetDrawData(),
-			static_cast<DXCommandEngine*>(pDirectEngine)->GetList()
-		);
-#endif
+		/* ImContext::Draw takes only the draw data; the Vulkan context reads
+		   the command buffer off the engine it was constructed with, so the
+		   backend command list no longer has to be threaded through here. */
+		m_pPlatform->GetImguiSystem().GetContext()->Draw(ImGui::GetDrawData());
 
 		pDirectEngine->End(pPostProcessingPass);
 		pDirectEngine->ApplyBarriers();

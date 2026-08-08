@@ -253,3 +253,57 @@ void VKCommandEngine::WaitForGPU()
 
 	vkWaitSemaphores(m_pDevice->Get(), &waitInfo, UINT64_MAX);
 }
+
+uint64_t VKCommandEngine::GetCompletedValue() const
+{
+	uint64_t uiValue = 0;
+	vkGetSemaphoreCounterValue(m_pDevice->Get(), m_Timeline, &uiValue);
+
+	return uiValue;
+}
+
+void VKCommandEngine::CopyResource(VKResource* pDest, VKResource* pSource)
+{
+	if (pDest == nullptr || pSource == nullptr)
+		return;
+
+	if (!m_bIsStarted)
+		Start();
+
+	/* D3D12 required the caller to have transitioned both resources already.
+	   Doing it here means the copy cannot be issued against a wrong layout,
+	   and QueueBarrier is a no-op when the state already matches. */
+	QueueBarrier(pSource, E_STATE_COPY_SOURCE);
+	QueueBarrier(pDest, E_STATE_COPY_DEST);
+	ApplyBarriers();
+
+	VkCommandBuffer cmd = GetCommandBuffer();
+
+	if (pDest->GetKind() == VKResource::E_KIND_IMAGE &&
+		pSource->GetKind() == VKResource::E_KIND_IMAGE)
+	{
+		VkImageCopy region{};
+		region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.srcSubresource.layerCount = 1;
+		region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.dstSubresource.layerCount = 1;
+		region.extent = pSource->GetExtent();
+
+		vkCmdCopyImage(cmd,
+		               pSource->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		               pDest->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		               1, &region);
+	}
+	else if (pDest->GetKind() == VKResource::E_KIND_BUFFER &&
+	         pSource->GetKind() == VKResource::E_KIND_BUFFER)
+	{
+		VkBufferCopy region{};
+		region.size = pSource->GetSize() < pDest->GetSize() ? pSource->GetSize() : pDest->GetSize();
+
+		vkCmdCopyBuffer(cmd, pSource->GetBuffer(), pDest->GetBuffer(), 1, &region);
+	}
+	else
+	{
+		fprintf(stderr, "[vulkan] CopyResource between an image and a buffer needs an explicit region\n");
+	}
+}

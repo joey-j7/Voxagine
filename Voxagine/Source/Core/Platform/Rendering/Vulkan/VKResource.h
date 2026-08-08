@@ -62,6 +62,7 @@ public:
 	VkImage GetImage() const { return m_Image; }
 	VkBuffer GetBuffer() const { return m_Buffer; }
 	VkFormat GetFormat() const { return m_Format; }
+	VkExtent3D GetExtent() const { return m_Extent; }
 
 	VkDeviceSize GetSize() const { return m_Allocation.m_uiSize; }
 	PEResourceState GetState() const { return m_State; }
@@ -82,6 +83,7 @@ private:
 	VkImage m_Image = VK_NULL_HANDLE;
 	VkBuffer m_Buffer = VK_NULL_HANDLE;
 	VkFormat m_Format = VK_FORMAT_UNDEFINED;
+	VkExtent3D m_Extent = { 0, 0, 0 };
 
 	VKAllocator::Allocation m_Allocation;
 

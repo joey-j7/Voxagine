@@ -25,6 +25,10 @@ class VKAllocator;
  * its own previous submission. */
 class VKCommandEngine : public CommandEngine
 {
+	/* RenderContext drives frame advance directly; CommandEngine declares
+	   AdvanceFrame protected and friendship does not inherit. */
+	friend class RenderContext;
+
 public:
 	static const uint32_t m_uiFrameCount = 2;
 
@@ -54,6 +58,14 @@ public:
 	VkCommandBuffer GetCommandBuffer() const;
 
 	VkSemaphore GetTimeline() const { return m_Timeline; }
+
+	/* Timeline value the GPU has actually reached. Replaces
+	   ID3D12Fence::GetCompletedValue(). */
+	uint64_t GetCompletedValue() const;
+
+	/* Whole-resource copy, as ID3D12GraphicsCommandList::CopyResource was.
+	   Transitions both sides into the required layouts first. */
+	void CopyResource(VKResource* pDest, VKResource* pSource);
 
 	VKUploadBuffer* GetUploadBuffer() { return m_pUploadBuffer.get(); }
 

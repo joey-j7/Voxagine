@@ -21,6 +21,7 @@ class VKCommandEngine;
 class VKRenderPass : public RenderPass
 {
 public:
+	VKRenderPass(PRenderContext* pContext);
 	VKRenderPass(PRenderContext* pContext, const Data& data);
 	virtual ~VKRenderPass();
 
@@ -30,7 +31,7 @@ public:
 
 	virtual void Clear(PCommandEngine* pEngine) override;
 
-	virtual View* GetTargetView(uint32_t i) const override;
+	virtual View* GetTargetView(uint32_t i = 0) const override;
 	virtual View* GetDepthView() const override;
 
 	virtual void Resize(UVector2 uSize) override;

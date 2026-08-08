@@ -1,4 +1,6 @@
 #include "pch.h"
+
+#include <cmath>
 #include "PathfindingChunkGrid.h"
 
 #include <rttr/registration>
@@ -202,9 +204,9 @@ namespace pathfinding
 								if (agent != nullptr)
 								{
 									Vector2 velocity = agent->getVelocity();
-									//assert(!isnan(velocity.x));
-									//assert(!isnan(velocity.y));
-									if (!isnan(velocity.x) && !isnan(velocity.y))
+									//assert(!std::isnan(velocity.x));
+									//assert(!std::isnan(velocity.y));
+									if (!std::isnan(velocity.x) && !std::isnan(velocity.y))
 										splatEnity(agent->getPosition(), agent->getHalfBoxSize(), agent->getVelocity());
 								}
 							}

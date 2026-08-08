@@ -280,12 +280,12 @@ Entity* JsonSerializer::DeserializeEntityFromFile(const std::string& filePath, W
 {
 	// Check if filepath is valid wld file
 	if (filePath.substr(filePath.find_last_of(".") + 1) != m_Settings.GetPrefabFileExtension())
-		return false;
+		return nullptr;
 
 	FH handle = m_pFileSystem->OpenFile(filePath.c_str(), FSOpenFlags::FSOF_READ);
 	if (handle == INVALID_FH)
 	{
-		return false;
+		return nullptr;
 	}
 
 	FSize buffSize = m_pFileSystem->GetFileSize(handle);
