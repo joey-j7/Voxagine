@@ -187,8 +187,14 @@ set(VOXAGINE_ENGINE_SOURCES
     ${VOXAGINE_SOURCE_DIR}/External/imgui/imgui_demo.cpp
     ${VOXAGINE_SOURCE_DIR}/External/imgui/imgui_draw.cpp
     ${VOXAGINE_SOURCE_DIR}/External/imgui/imgui_dropdown.cpp
+    # imgui_stl.cpp is the same upstream file under its older name and defines
+    # the same two symbols, so building both is a duplicate definition. It went
+    # unnoticed because the linker simply dropped whichever object nothing
+    # referenced; forcing the archive in whole (see the root CMakeLists) turns
+    # it into the link error it always was. The stale header is still included
+    # in three editor files and still works - it declares what imgui_stdlib.cpp
+    # defines - so only the source is dropped here.
     ${VOXAGINE_SOURCE_DIR}/External/imgui/imgui_stdlib.cpp
-    ${VOXAGINE_SOURCE_DIR}/External/imgui/imgui_stl.cpp
     ${VOXAGINE_SOURCE_DIR}/External/imgui/imgui_widgets.cpp
     ${VOXAGINE_SOURCE_DIR}/External/imguizmo/ImGuizmo.cpp
     ${VOXAGINE_SOURCE_DIR}/External/imguizmo/ImSequencer.cpp

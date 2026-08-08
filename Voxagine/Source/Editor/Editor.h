@@ -204,6 +204,11 @@ private:
 	   different would show the menu lying about the state. */
 	bool m_bRenderDebugLines = false;
 
+	/* Unlike the two below this has no fixed default - it comes from
+	   Settings::EnableVSync - so it is read back from the render context each
+	   time the menu is drawn rather than assumed here. */
+	bool m_bVSyncEnabled = false;
+
 	/* Mirrors RenderContext::IsDepthPrepassEnabled's default. */
 	bool m_bDepthPrepassEnabled = true;
 

@@ -55,7 +55,10 @@ bool VKRenderContext::InitializeBackend()
 
 	const UVector2 size = pWindow->GetSize();
 
-	if (!m_Swapchain.Create(&m_Device, m_Surface, size.x, size.y))
+	/* EnableVSync used to be stored and read by nothing; the swapchain took
+	   mailbox unconditionally. See the present-mode choice in VKSwapchain. */
+	if (!m_Swapchain.Create(&m_Device, m_Surface, size.x, size.y,
+	                        m_pPlatform->GetApplication()->GetSettings().IsVSyncEnabled()))
 		return false;
 
 	/* The editor shows this; it used to come from the DXGI adapter. */
@@ -65,9 +68,10 @@ bool VKRenderContext::InitializeBackend()
 
 	m_v2ScreenResolution = UVector2(m_Swapchain.GetExtent().width, m_Swapchain.GetExtent().height);
 
-	printf("[vulkan] %s, %ux%u, %u swapchain images\n", name.c_str(),
+	printf("[vulkan] %s, %ux%u, %u swapchain images, %s\n", name.c_str(),
 	       m_Swapchain.GetExtent().width, m_Swapchain.GetExtent().height,
-	       m_Swapchain.GetImageCount());
+	       m_Swapchain.GetImageCount(),
+	       m_Swapchain.IsVSyncEnabled() ? "FIFO (vsync)" : "mailbox where offered");
 
 	return true;
 }
@@ -214,6 +218,21 @@ bool VKRenderContext::Present()
 	m_bWorldUpdated = false;
 
 	return true;
+}
+
+void VKRenderContext::SetVSyncEnabled(bool bEnabled)
+{
+	if (!m_bBackendReady || bEnabled == m_Swapchain.IsVSyncEnabled())
+		return;
+
+	/* Kept on Settings as well as on the swapchain: the swapchain is the only
+	   thing that acts on it, but Settings is what is serialized and what the
+	   next run reads. Letting the two disagree is what made this a dead
+	   setting in the first place. */
+	m_pPlatform->GetApplication()->GetSettings().SetVSync(bEnabled);
+
+	if (!m_Swapchain.SetVSync(bEnabled))
+		fprintf(stderr, "[vulkan] swapchain rebuild for vsync=%d failed\n", static_cast<int>(bEnabled));
 }
 
 bool VKRenderContext::OnResize(uint32_t uiWidth, uint32_t uiHeight)

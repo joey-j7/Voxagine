@@ -27,7 +27,15 @@ public:
 	VKSwapchain(const VKSwapchain&) = delete;
 	VKSwapchain& operator=(const VKSwapchain&) = delete;
 
-	bool Create(VKDevice* pDevice, VkSurfaceKHR surface, uint32_t uiWidth, uint32_t uiHeight);
+	bool Create(VKDevice* pDevice, VkSurfaceKHR surface, uint32_t uiWidth, uint32_t uiHeight, bool bVSync);
+
+	/* FIFO when true, mailbox where offered when false. Takes effect on the
+	   next (re)creation, so changing it rebuilds the swapchain - the present
+	   mode is baked into VkSwapchainCreateInfoKHR and cannot be changed on a
+	   live one. Returns false if that rebuild failed. */
+	bool SetVSync(bool bVSync);
+
+	bool IsVSyncEnabled() const { return m_bVSync; }
 
 	/* Tears down and rebuilds the swapchain for a new window size. */
 	bool Recreate(uint32_t uiWidth, uint32_t uiHeight);
@@ -68,6 +76,8 @@ private:
 
 	VKDevice* m_pDevice = nullptr;
 	VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
+
+	bool m_bVSync = false;
 
 	VkSwapchainKHR m_Swapchain = VK_NULL_HANDLE;
 	VkFormat m_Format = VK_FORMAT_UNDEFINED;

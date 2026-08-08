@@ -6,7 +6,7 @@
         "EngineAssetsPath": "Engine/Assets",
         "FontPath": "Engine/Assets/Fonts/PressStart.spritefont",
         "PlatformType": "PT_WINDOWS",
-        "RenderApiType": "RA_DIRECTX12",
+        "RenderApiType": "RA_VULKAN",
         "AudioApiType": "AA_FMOD",
         "FixedTimeStep": 0.016666666666666668,
         "FrameLimit": 0.0,

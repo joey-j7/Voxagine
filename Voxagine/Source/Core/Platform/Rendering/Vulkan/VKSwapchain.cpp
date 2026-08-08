@@ -11,10 +11,11 @@ VKSwapchain::~VKSwapchain()
 	Destroy();
 }
 
-bool VKSwapchain::Create(VKDevice* pDevice, VkSurfaceKHR surface, uint32_t uiWidth, uint32_t uiHeight)
+bool VKSwapchain::Create(VKDevice* pDevice, VkSurfaceKHR surface, uint32_t uiWidth, uint32_t uiHeight, bool bVSync)
 {
 	m_pDevice = pDevice;
 	m_Surface = surface;
+	m_bVSync = bVSync;
 
 	if (!CreateSwapchain(uiWidth, uiHeight))
 		return false;
@@ -99,14 +100,31 @@ bool VKSwapchain::CreateSwapchain(uint32_t uiWidth, uint32_t uiHeight)
 	std::vector<VkPresentModeKHR> presentModes(uiPresentModeCount);
 	vkGetPhysicalDeviceSurfacePresentModesKHR(physical, m_Surface, &uiPresentModeCount, presentModes.data());
 
-	/* FIFO is the only mode guaranteed present; prefer mailbox for latency. */
+	/* FIFO is the only mode guaranteed present.
+	 *
+	 * Mailbox is the lower-latency choice and used to be taken unconditionally,
+	 * which made Settings::EnableVSync a setting that was serialized, stored
+	 * and read by nothing. It is not a free win: mailbox presents every frame
+	 * the engine finishes and the display shows whichever is newest at its
+	 * vblank, so at 200 fps on a 60 Hz panel the displayed frames advance the
+	 * world by 15 ms, then 20, then 15 - a beat, because 200/60 is not an
+	 * integer. Every frame is delivered on time and the motion still reads as
+	 * skipping. FIFO paces the engine to the display instead, so each shown
+	 * frame carries an equal slice of world time.
+	 *
+	 * Which of latency and smoothness matters more is a judgement, so it is a
+	 * setting rather than a constant - and it now behaves like one. */
 	VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
-	for (VkPresentModeKHR mode : presentModes)
+
+	if (!m_bVSync)
 	{
-		if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
+		for (VkPresentModeKHR mode : presentModes)
 		{
-			presentMode = mode;
-			break;
+			if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
+			{
+				presentMode = mode;
+				break;
+			}
 		}
 	}
 
@@ -574,6 +592,17 @@ bool VKSwapchain::BlitAndPresent(VKResource* pSource, VkSemaphore waitTimeline, 
 	m_uiFrameIndex = (m_uiFrameIndex + 1) % m_uiFramesInFlight;
 
 	return present != VK_ERROR_OUT_OF_DATE_KHR && present != VK_SUBOPTIMAL_KHR;
+}
+
+bool VKSwapchain::SetVSync(bool bVSync)
+{
+	if (bVSync == m_bVSync)
+		return true;
+
+	m_bVSync = bVSync;
+
+	/* Same rebuild a resize does, at the same extent. */
+	return Recreate(m_Extent.width, m_Extent.height);
 }
 
 bool VKSwapchain::Recreate(uint32_t uiWidth, uint32_t uiHeight)

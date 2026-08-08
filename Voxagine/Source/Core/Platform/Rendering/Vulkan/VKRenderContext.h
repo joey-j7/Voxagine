@@ -25,6 +25,9 @@ public:
 
 	virtual bool OnResize(uint32_t uiWidth, uint32_t uiHeight) override;
 
+	virtual bool IsVSyncEnabled() const override { return m_Swapchain.IsVSyncEnabled(); }
+	virtual void SetVSyncEnabled(bool bEnabled) override;
+
 	VKDevice* GetDevice() { return &m_Device; }
 	const VKAllocator* GetAllocator() const { return &m_Allocator; }
 

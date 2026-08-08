@@ -1133,6 +1133,19 @@ void Editor::RenderMainMenuBar()
 				m_pRenderContext->ValidateBrickGrid();
 			}
 
+			/* Present pacing. Mailbox shows whichever frame is newest at the
+			   display's vblank, so at 200 fps on a 60 Hz panel the shown
+			   frames advance the world 15 ms, then 20, then 15 - motion that
+			   reads as skipping while every frame is delivered on time. FIFO
+			   paces the engine to the display and costs latency instead.
+			   Rebuilds the swapchain, which is a visible hitch. */
+			m_bVSyncEnabled = m_pRenderContext->IsVSyncEnabled();
+
+			if (ImGui::MenuItem("V-Sync", NULL, &m_bVSyncEnabled))
+			{
+				m_pRenderContext->SetVSyncEnabled(m_bVSyncEnabled);
+			}
+
 			/* A/B for the low-resolution depth prepass (RENDERING_PLAN.md
 			   phase 3). Live rather than a build flag because what it is worth
 			   depends entirely on the vantage - how much empty space the

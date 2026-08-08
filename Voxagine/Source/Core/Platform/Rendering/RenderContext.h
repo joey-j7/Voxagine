@@ -217,21 +217,30 @@ public:
 		if (uiID >= GetVoxelDataSize())
 			return false;
 
-		/* Read once into a local rather than through a reference: this is
-		   uncached host-visible memory and the reference form lets the
-		   compiler reload it for each comparison. */
-		uint32_t* pVoxel = &m_pVoxelData[uiID];
-		const uint32_t uiOldColor = *pVoxel;
+		/* The old *occupancy* comes from the brick grid's CPU-side bitmap, not
+		   from the mapping. The mapping prefers ReBAR, so reading a voxel back
+		   is a PCIe read of VRAM, and the bake path performs millions of them:
+		   this read alone was 5.3 seconds of a world load and 74 ms of a chunk
+		   load, measured. See VoxelBrickGrid.
 
-		if ((bOverwrite || uiOldColor == 0) && uiOldColor != uiColor) {
-			*pVoxel = uiColor;
-			m_BrickGrid.SetVoxel(uiID, (uiOldColor >> 24) != 0, (uiColor >> 24) != 0);
-			m_bWorldUpdated = true;
+		   That drops the old redundant-write guard (uiOldColor != uiColor),
+		   which needed the colour rather than the occupancy. Writing the same
+		   value twice is a streaming store into write-combined memory and
+		   costs less than learning it was unnecessary would. */
+		const bool bWasOccupied = m_BrickGrid.IsOccupied(uiID);
 
-			return true;
-		}
+		/* "Do not overwrite" means do not overwrite anything solid. The old
+		   form tested the whole word against zero; occupancy is alpha > 0
+		   (rule 3), and nothing writes a colour with a zero alpha byte, so the
+		   two agree on every value the engine produces. */
+		if (!bOverwrite && bWasOccupied)
+			return false;
 
-		return false;
+		m_pVoxelData[uiID] = uiColor;
+		m_BrickGrid.SetVoxel(uiID, (uiColor >> 24) != 0);
+		m_bWorldUpdated = true;
+
+		return true;
 	}
 
 	inline void ModifyVoxelFast(uint32_t uiID, uint32_t uiColor)
@@ -239,15 +248,11 @@ public:
 		if (uiID >= GetVoxelDataSize())
 			return;
 
-		/* The read is new as of the brick grid: only a transition between
-		   empty and occupied moves a brick's count, and there is nowhere else
-		   to learn the old occupancy from. ModifyVoxel above already read the
-		   same word, so this costs what that path always cost. */
-		uint32_t* pVoxel = &m_pVoxelData[uiID];
-		const uint32_t uiOldColor = *pVoxel;
-
-		*pVoxel = uiColor;
-		m_BrickGrid.SetVoxel(uiID, (uiOldColor >> 24) != 0, (uiColor >> 24) != 0);
+		/* Write-only with respect to the mapping, as the name promises: the
+		   old occupancy the brick count needs comes from the bitmap, in
+		   ordinary cached memory. See ModifyVoxel above. */
+		m_pVoxelData[uiID] = uiColor;
+		m_BrickGrid.SetVoxel(uiID, (uiColor >> 24) != 0);
 		m_bWorldUpdated = true;
 	}
 
@@ -306,6 +311,18 @@ public:
 	   is only meaningful without moving the camera between measurements. */
 	bool IsFarFieldEnabled() const { return m_bFarFieldEnabled; }
 	void SetFarFieldEnabled(bool bEnabled) { m_bFarFieldEnabled = bEnabled; ForceCameraDataUpdate(); }
+
+	/* Present pacing, serialized as Settings::EnableVSync.
+	 *
+	 * On when the displayed frames should each carry an equal slice of world
+	 * time, off for the lowest latency. Neither is free: mailbox at 200 fps on
+	 * a 60 Hz display advances the world 15 ms, then 20, then 15 between shown
+	 * frames, which reads as skipping even though every frame is on time.
+	 * Runtime-toggleable for the same reason the far field is - which of the
+	 * two is worse is a judgement, and judging it means switching without
+	 * anything else changing. */
+	virtual bool IsVSyncEnabled() const { return false; }
+	virtual void SetVSyncEnabled(bool bEnabled) { (void)bEnabled; }
 
 	/* Clear the screen */
 	virtual void Clear();
