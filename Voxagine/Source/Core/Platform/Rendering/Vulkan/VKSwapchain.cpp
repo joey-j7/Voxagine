@@ -44,16 +44,53 @@ bool VKSwapchain::CreateSwapchain(uint32_t uiWidth, uint32_t uiHeight)
 	std::vector<VkSurfaceFormatKHR> formats(uiFormatCount);
 	vkGetPhysicalDeviceSurfaceFormatsKHR(physical, m_Surface, &uiFormatCount, formats.data());
 
-	/* R_DEF_RESOURCE_FORMAT is E_R8G8B8A8_UNORM_SRGB; match it when offered. */
+	/* Must be UNORM, not SRGB, and this is not a preference - it is the one
+	   thing standing between the engine's colours and a second gamma encode.
+	 *
+	 * Everything upstream renders into R_DEF_RESOURCE_FORMAT targets, which is
+	 * E_R8G8B8A8_UNORM, and every shader writes values that are *already*
+	 * gamma encoded: the art is authored in sRGB, lighting is applied to it
+	 * directly, and AmbientOcclusion.hlsl hand-applies a pow(x, 2.2) precisely
+	 * because the pipeline is in gamma space. Present is a vkCmdBlitImage from
+	 * that target into the swapchain image, and a blit converts formats: an
+	 * sRGB destination takes the source value as linear and encodes it. So an
+	 * sRGB swapchain encodes a second time - 0.5 presents as 0.86 - which
+	 * washes out and desaturates the entire frame, ImGui and the editor chrome
+	 * along with the voxels, since they all composite into the same target
+	 * before the blit.
+	 *
+	 * The comment that used to be here claimed R_DEF_RESOURCE_FORMAT was
+	 * E_R8G8B8A8_UNORM_SRGB and picked the swapchain to match. It is not, and
+	 * never was; that mistake is the whole bug, and it arrived with the port -
+	 * D3D12 presented from a UNORM back buffer.
+	 *
+	 * Doing this properly means moving lighting to linear and encoding once,
+	 * deliberately, on the way out - RENDERING_PLAN.md phase 6.4. Until then
+	 * the correct present is a straight copy of bytes the shaders already
+	 * encoded. */
 	VkSurfaceFormatKHR chosen = formats[0];
+	bool bFoundUnorm = false;
+
 	for (const VkSurfaceFormatKHR& format : formats)
 	{
-		if (format.format == VK_FORMAT_B8G8R8A8_SRGB &&
+		if ((format.format == VK_FORMAT_B8G8R8A8_UNORM || format.format == VK_FORMAT_R8G8B8A8_UNORM) &&
 			format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 		{
 			chosen = format;
+			bFoundUnorm = true;
 			break;
 		}
+	}
+
+	if (!bFoundUnorm)
+	{
+		/* Every desktop driver offers one, so this is close to unreachable -
+		   but if it ever is reached the frame will be visibly washed out, and
+		   that is worth naming rather than leaving to be rediscovered from a
+		   screenshot. */
+		fprintf(stderr, "[vulkan] surface offers no 8-bit UNORM format; presenting through %d, "
+		                "which will gamma-encode the frame a second time\n",
+		        static_cast<int>(chosen.format));
 	}
 
 	uint32_t uiPresentModeCount = 0;
