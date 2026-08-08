@@ -225,6 +225,14 @@ void VKCommandEngine::Execute()
 	submitInfo.signalSemaphoreInfoCount = 1;
 	submitInfo.pSignalSemaphoreInfos = &signalInfo;
 
+	{
+		static int s_i = 0;
+		if (s_i++ < 6)
+			fprintf(stderr, "[exec] '%s' slot=%u cmd=%p signal=%llu\n",
+			        m_Info.m_Name.c_str(), m_uiFrameIndex, (void*)cmd,
+			        (unsigned long long)m_uiFenceValue);
+	}
+
 	if (vkQueueSubmit2(m_Queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
 		fprintf(stderr, "[vulkan] vkQueueSubmit2 failed for '%s'\n", m_Info.m_Name.c_str());
 
@@ -233,7 +241,11 @@ void VKCommandEngine::Execute()
 	m_WaitSemaphores.clear();
 	m_bIsStarted = false;
 
-	AdvanceFrame();
+	/* No AdvanceFrame here. DXCommandEngine::Execute did not advance either,
+	   and RenderContext::Present calls AdvanceFrame itself; doing both rotated
+	   twice per frame. With two slots that lands back on the same one every
+	   frame, so Reset always waited on the immediately preceding submission
+	   and CPU and GPU ran fully serialised. */
 }
 
 void VKCommandEngine::AdvanceFrame()

@@ -662,7 +662,12 @@ void VKRenderPass::Draw(PCommandEngine* pEngine)
 
 	if (!bHasInstances || (!bHasVertices && !bHasIndices))
 	{
-		if (m_bIsDrawn)
+		/* Also clear when the pass has never drawn. A pass skipped from the
+		   very first frame - the UI pass with nothing to render - otherwise
+		   never initialises its target, and a later pass samples undefined
+		   memory. Post processing reads the UI target's alpha and returns
+		   black when it is 1, so undefined contents there black out the frame. */
+		if (m_bIsDrawn || !m_bIsCleared)
 		{
 			Clear(pEngine);
 
