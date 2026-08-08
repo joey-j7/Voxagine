@@ -14,7 +14,7 @@
 VoxelPass::VoxelPass(
 	PRenderContext* pContext, Shader* pVertex, Shader* pPixel, Sampler* pSampler,
 	Mapper* pVoxelMapper, Mapper* pBrickMapper, Buffer* pCameraBuffer, Buffer* pAABBBuffer,
-	View* pParticleTexture, View* pParticleDepthTexture
+	View* pParticleTexture, View* pParticleDepthTexture, View* pPrepassTexture
 ) : PRenderPass(pContext)
 {
 	// Creates a screen render target (for each buffer, m_uiFrameCount)
@@ -45,8 +45,13 @@ VoxelPass::VoxelPass(
 	RenderPassData.m_Buffers.push_back(pCameraBuffer);
 	RenderPassData.m_Buffers.push_back(pAABBBuffer);
 
+	/* Same contract on the t side: textures take t registers in push order, so
+	   particles are t1/t2 and the depth prepass t3 - which is why the shadowless
+	   variant, which reads neither particle depth nor anything at t2, still has
+	   to name the prepass t3. */
 	RenderPassData.m_Textures.push_back(pParticleTexture);
 	RenderPassData.m_Textures.push_back(pParticleDepthTexture);
+	RenderPassData.m_Textures.push_back(pPrepassTexture);
 
 	RenderPassData.m_uiBindlessResourceCount = 1;
 	RenderPassData.m_BindlessSource = RenderPass::E_BINDLESS_SOURCE_MODELS;

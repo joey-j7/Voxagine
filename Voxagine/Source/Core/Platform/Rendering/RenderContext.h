@@ -271,6 +271,16 @@ public:
 	   uncached memory. */
 	uint32_t ValidateBrickGrid();
 
+	/* Low-resolution depth prepass (RENDERING_PLAN.md phase 3). Toggleable at
+	   runtime because what it saves depends on how much empty space the primary
+	   rays cross before they reach geometry, which is a property of where the
+	   camera is standing - so the comparison is only meaningful without moving
+	   between the two measurements. Disabled, the pass stops drawing and its
+	   target keeps the miss value it clears to, which the marcher reads as "no
+	   information" and skips nothing. */
+	bool IsDepthPrepassEnabled() const { return m_bDepthPrepassEnabled; }
+	void SetDepthPrepassEnabled(bool bEnabled) { m_bDepthPrepassEnabled = bEnabled; }
+
 	/* Clear the screen */
 	virtual void Clear();
 	virtual void FixedClear();
@@ -396,8 +406,19 @@ protected:
 	float m_fFrameTimer = 0.f;
 
 	bool m_bIsFullscreen = false;
-	bool m_bDebugEnabled = true;
-	bool m_bDebugCleared = true;
+	/* Off by default: physics colliders and the like are a development aid, not
+	   something the game or a freshly opened editor should draw. The editor's
+	   View menu still toggles it - Editor::m_bRenderDebugLines starts matched
+	   to this.
+
+	   m_bDebugCleared starts false so the first frame still runs the debug
+	   pass's clear path once. Post processing samples that target
+	   unconditionally, so a pass that never drew and never cleared leaves it
+	   undefined. */
+	bool m_bDebugEnabled = false;
+	bool m_bDebugCleared = false;
+
+	bool m_bDepthPrepassEnabled = true;
 
 	CameraRenderData m_CameraData;
 

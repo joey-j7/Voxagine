@@ -199,7 +199,13 @@ private:
 	bool m_bRenderEntityHierarchy = true;
 	bool m_bRenderConsoleLog = true;
 
-	bool m_bRenderDebugLines = true;
+	/* Matches RenderContext::m_bDebugEnabled, which is off by default - the
+	   View menu item reads this to draw its tick, so the two starting out
+	   different would show the menu lying about the state. */
+	bool m_bRenderDebugLines = false;
+
+	/* Mirrors RenderContext::IsDepthPrepassEnabled's default. */
+	bool m_bDepthPrepassEnabled = true;
 	bool m_bInEditor = true;
 
 	ImGuizmo::OPERATION m_bCurrentGizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
