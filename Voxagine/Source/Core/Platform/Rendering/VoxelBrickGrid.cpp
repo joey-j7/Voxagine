@@ -29,6 +29,8 @@ void VoxelBrickGrid::Resize(const UVector3& v3WorldSize)
 	);
 
 	const uint32_t uiBrickCount = m_v3GridSize.x * m_v3GridSize.y * m_v3GridSize.z;
+	const uint32_t uiVoxelCount = v3WorldSize.x * v3WorldSize.y * v3WorldSize.z;
+	const uint32_t uiWordCount = CeilDiv(uiVoxelCount, 64);
 
 	if (uiBrickCount != m_uiBrickCount)
 	{
@@ -43,6 +45,26 @@ void VoxelBrickGrid::Resize(const UVector3& v3WorldSize)
 	{
 		ZeroCounts();
 	}
+
+	/* Sized off the voxel count rather than the brick count: a window can keep
+	   the same number of bricks while holding a different number of voxels
+	   only if it is not brick-aligned, but the two are separate allocations
+	   either way and the bitmap is by far the larger of them. */
+	if (uiWordCount != m_uiWordCount)
+	{
+		m_uiWordCount = uiWordCount;
+
+		for (uint32_t i = 0; i < 2; ++i)
+			m_pOccupancy[i] = uiWordCount > 0
+				? std::unique_ptr<std::atomic<uint64_t>[]>(new std::atomic<uint64_t>[uiWordCount]())
+				: nullptr;
+	}
+	else
+	{
+		ZeroOccupancy();
+	}
+
+	m_uiVoxelCount = uiVoxelCount;
 
 	m_pGPU[0] = nullptr;
 	m_pGPU[1] = nullptr;
@@ -71,6 +93,77 @@ void VoxelBrickGrid::ZeroCounts()
 	}
 }
 
+void VoxelBrickGrid::ZeroOccupancy()
+{
+	for (uint32_t i = 0; i < 2; ++i)
+	{
+		if (m_pOccupancy[i] == nullptr)
+			continue;
+
+		for (uint32_t uiWord = 0; uiWord < m_uiWordCount; ++uiWord)
+			m_pOccupancy[i][uiWord].store(0, std::memory_order_relaxed);
+	}
+}
+
+bool VoxelBrickGrid::IsOccupied(bool bBack, uint32_t uiVoxelID) const
+{
+	const uint32_t uiIndex = Index(bBack);
+
+	if (uiVoxelID >= m_uiVoxelCount || m_pOccupancy[uiIndex] == nullptr)
+		return false;
+
+	const uint64_t uiWord = m_pOccupancy[uiIndex][uiVoxelID >> k_uiWordShift].load(std::memory_order_relaxed);
+
+	return ((uiWord >> (uiVoxelID & k_uiWordMask)) & 1ull) != 0ull;
+}
+
+void VoxelBrickGrid::ClearOccupancyRegion(uint32_t uiBuffer, const UVector3& v3Min, const UVector3& v3Size)
+{
+	std::atomic<uint64_t>* pWords = m_pOccupancy[uiBuffer].get();
+
+	if (pWords == nullptr || m_uiVoxelCount == 0)
+		return;
+
+	const uint32_t uiLastX = std::min(v3Min.x + v3Size.x, m_v3WorldSize.x);
+	const uint32_t uiLastY = std::min(v3Min.y + v3Size.y, m_v3WorldSize.y);
+	const uint32_t uiLastZ = std::min(v3Min.z + v3Size.z, m_v3WorldSize.z);
+
+	if (v3Min.x >= uiLastX)
+		return;
+
+	for (uint32_t uiZ = v3Min.z; uiZ < uiLastZ; ++uiZ)
+	{
+		for (uint32_t uiY = v3Min.y; uiY < uiLastY; ++uiY)
+		{
+			/* A row of the region is contiguous in the bitmap, so this clears
+			   whole words wherever it can and masks only the two ends. */
+			const uint32_t uiFirstBit = VoxelID(v3Min.x, uiY, uiZ);
+			const uint32_t uiLastBit = uiFirstBit + (uiLastX - v3Min.x);
+
+			uint32_t uiBit = uiFirstBit;
+
+			while (uiBit < uiLastBit)
+			{
+				const uint32_t uiWord = uiBit >> k_uiWordShift;
+				const uint32_t uiOffset = uiBit & k_uiWordMask;
+				const uint32_t uiRun = std::min(64u - uiOffset, uiLastBit - uiBit);
+
+				if (uiRun == 64)
+				{
+					pWords[uiWord].store(0, std::memory_order_relaxed);
+				}
+				else
+				{
+					const uint64_t uiMask = ((1ull << uiRun) - 1ull) << uiOffset;
+					pWords[uiWord].fetch_and(~uiMask, std::memory_order_relaxed);
+				}
+
+				uiBit += uiRun;
+			}
+		}
+	}
+}
+
 void VoxelBrickGrid::Flush()
 {
 	for (uint32_t i = 0; i < 2; ++i)
@@ -86,6 +179,7 @@ void VoxelBrickGrid::Flush()
 void VoxelBrickGrid::ClearAll()
 {
 	ZeroCounts();
+	ZeroOccupancy();
 
 	for (uint32_t i = 0; i < 2; ++i)
 	{
@@ -96,6 +190,11 @@ void VoxelBrickGrid::ClearAll()
 
 void VoxelBrickGrid::BeginRegion(bool bBack, const UVector3& v3Min, const UVector3& v3Size)
 {
+	/* Before the early-out below: the bitmap is per voxel and does not depend
+	   on there being any bricks, and the caller is about to overwrite this
+	   region either way. */
+	ClearOccupancyRegion(Index(bBack), v3Min, v3Size);
+
 	if (m_uiBrickCount == 0)
 		return;
 
@@ -214,6 +313,9 @@ uint32_t VoxelBrickGrid::Validate(bool bBack, const uint32_t* pVoxelData) const
 
 	std::vector<uint16_t> expected(m_uiBrickCount, 0);
 
+	uint32_t uiBitMismatches = 0;
+	uint32_t uiFirstBadBit = UINT32_MAX;
+
 	for (uint32_t uiZ = 0; uiZ < m_v3WorldSize.z; ++uiZ)
 	{
 		for (uint32_t uiY = 0; uiY < m_v3WorldSize.y; ++uiY)
@@ -225,10 +327,30 @@ uint32_t VoxelBrickGrid::Validate(bool bBack, const uint32_t* pVoxelData) const
 
 			for (uint32_t uiX = 0; uiX < m_v3WorldSize.x; ++uiX)
 			{
-				if ((pVoxelData[uiRowBase + uiX] >> 24) != 0)
+				const bool bOccupied = (pVoxelData[uiRowBase + uiX] >> 24) != 0;
+
+				if (bOccupied)
 					++expected[uiBrickRowBase + (uiX >> k_uiBrickShift)];
+
+				/* The bitmap is what every write path now believes about this
+				   voxel, so it is worth as much as the counts are - a wrong
+				   bit produces a wrong count on the *next* write to it, which
+				   is much harder to trace back here from. */
+				if (IsOccupied(bBack, uiRowBase + uiX) != bOccupied)
+				{
+					if (uiFirstBadBit == UINT32_MAX)
+						uiFirstBadBit = uiRowBase + uiX;
+
+					++uiBitMismatches;
+				}
 			}
 		}
+	}
+
+	if (uiBitMismatches > 0)
+	{
+		fprintf(stderr, "[bricks] occupancy bitmap disagrees with the voxel buffer for %u voxels, first at %u\n",
+		        uiBitMismatches, uiFirstBadBit);
 	}
 
 	uint32_t uiMismatches = 0;
@@ -256,10 +378,12 @@ uint32_t VoxelBrickGrid::Validate(bool bBack, const uint32_t* pVoxelData) const
 		}
 	}
 
-	fprintf(stderr, "[bricks] validated %u bricks over %u voxels: %u disagree, %u of them would lose geometry\n",
-	        m_uiBrickCount, m_v3WorldSize.x * m_v3WorldSize.y * m_v3WorldSize.z, uiMismatches, uiLost);
+	fprintf(stderr, "[bricks] validated %u bricks over %u voxels: %u disagree, %u of them would lose geometry; "
+	                "%u occupancy bits disagree\n",
+	        m_uiBrickCount, m_v3WorldSize.x * m_v3WorldSize.y * m_v3WorldSize.z, uiMismatches, uiLost,
+	        uiBitMismatches);
 
-	return uiMismatches;
+	return uiMismatches + uiBitMismatches;
 }
 
 void VoxelBrickGrid::ReportUnderflow(uint32_t uiBrickID)

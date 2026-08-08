@@ -31,6 +31,12 @@ private:
 	struct Accumulator
 	{
 		double fTotalMs = 0.0;
+
+		/* The one-off costs are the interesting ones - a bake or a chunk load
+		   happens on a single frame of a second and the average over 200 of
+		   them buries it. Reported alongside the average, reset with it. */
+		double fPeakMs = 0.0;
+
 		uint32_t uiSamples = 0;
 	};
 
