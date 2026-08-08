@@ -2,7 +2,7 @@
 #include <functional>
 #include <unordered_map>
 
-#include <External/rttr/type>
+#include <rttr/type>
 
 #include <External/rapidjson/document.h>
 #include <External/rapidjson/writer.h>
@@ -12,6 +12,7 @@
 
 #include "Core/LoggingSystem/LoggingSystem.h"
 #include "Core/System/FileSystem.h"
+#include <mutex>
 
 using namespace rapidjson;
 

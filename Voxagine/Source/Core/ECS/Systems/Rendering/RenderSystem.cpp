@@ -1,4 +1,6 @@
 #include "pch.h"
+
+#include <cmath>
 #include "RenderSystem.h"
 
 #include <algorithm>
@@ -603,10 +605,12 @@ void RenderSystem::CheckRendererChange(VoxRenderer* pRenderer)
 	Vector3 position = pTransform->GetPosition();
 	//Vector3 position = m_pPhysicsSystem->m_VoxelGrid.WorldToGrid(pTransform->GetPosition());
 
+	/* glm::distance is for vectors; on scalars this is just the absolute
+	   difference. floor() also returned a double here, widening the compare. */
 	if (
-		glm::distance(pRenderer->m_BakeData.LastLocation.x, floor(position.x)) >= 1.0f ||
-		glm::distance(pRenderer->m_BakeData.LastLocation.y, floor(position.y)) >= 1.0f ||
-		glm::distance(pRenderer->m_BakeData.LastLocation.z, floor(position.z)) >= 1.0f
+		std::fabs(pRenderer->m_BakeData.LastLocation.x - std::floor(position.x)) >= 1.0f ||
+		std::fabs(pRenderer->m_BakeData.LastLocation.y - std::floor(position.y)) >= 1.0f ||
+		std::fabs(pRenderer->m_BakeData.LastLocation.z - std::floor(position.z)) >= 1.0f
 	)
 	{
 		pRenderer->m_BakeData.Updated = true;

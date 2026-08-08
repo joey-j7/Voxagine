@@ -3,7 +3,7 @@
 
 #include "General/Managers/GameManager.h"
 
-#include <External/rttr/registration>
+#include <rttr/registration>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
 RTTR_REGISTRATION

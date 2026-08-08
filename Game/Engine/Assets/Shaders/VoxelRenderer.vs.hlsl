@@ -56,7 +56,7 @@ struct VS_out
 VS_out main(uint IDvert : VERT_ID, uint IDinst : INST_ID)
 {
     VS_out OUT;
-	
+
     // Get relevant AABB data
     AABB tAABB = AABBs[IDinst];
 

@@ -1,6 +1,6 @@
 #pragma once
 #include "FSMState.h"
-#include "../../Humanoids/Monster.h"
+#include "Humanoids/Enemies/Monster.h"
 
 /*!
  * @brief - This patrol state is made for monster enemies

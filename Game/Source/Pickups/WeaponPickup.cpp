@@ -12,7 +12,7 @@
 #include "Core/ECS/Components/VoxRenderer.h"
 
 #include <Core/MetaData/PropertyTypeMetaData.h>
-#include <External/rttr/registration.h>
+#include <rttr/registration.h>
 #include "General/Managers/WeaponManager.h"
 
 RTTR_REGISTRATION

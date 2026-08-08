@@ -4,7 +4,7 @@
 
 #include "Core/Math.h"
 
-#include <External/rttr/type>
+#include <rttr/type>
 
 enum CollisionLayer
 {

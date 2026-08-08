@@ -2,6 +2,8 @@
 
 #include "pch.h"
 
+#include <ctime>
+
 class DateTime
 {
 public:
@@ -37,7 +39,7 @@ public:
 	std::string ToUTC() const
 	{
 		char buff[70];
-		strftime(buff, sizeof(buff), "%A %c", m_UTCTime);
+		strftime(buff, sizeof(buff), "%A %c", &m_UTCTime);
 		return std::string(buff);
 	}
 
@@ -54,15 +56,15 @@ public:
 		// convert now to tm struct for UTC
 		m_UTCTime = dateTime.m_UTCTime;
 
-		seconds	= dateTime.m_UTCTime->tm_sec;
-		minutes	= dateTime.m_UTCTime->tm_min;
-		hours	= dateTime.m_UTCTime->tm_hour;
-		day		= dateTime.m_UTCTime->tm_mday;
-		month	= dateTime.m_UTCTime->tm_mon;
-		year	= dateTime.m_UTCTime->tm_year;
-		weekday	= dateTime.m_UTCTime->tm_wday;
-		yearday	= dateTime.m_UTCTime->tm_yday;
-		isdst	= dateTime.m_UTCTime->tm_isdst;
+		seconds	= dateTime.m_UTCTime.tm_sec;
+		minutes	= dateTime.m_UTCTime.tm_min;
+		hours	= dateTime.m_UTCTime.tm_hour;
+		day		= dateTime.m_UTCTime.tm_mday;
+		month	= dateTime.m_UTCTime.tm_mon;
+		year	= dateTime.m_UTCTime.tm_year;
+		weekday	= dateTime.m_UTCTime.tm_wday;
+		yearday	= dateTime.m_UTCTime.tm_yday;
+		isdst	= dateTime.m_UTCTime.tm_isdst;
 
 		return *this;
 	}
@@ -81,22 +83,24 @@ private:
 	void Initialize()
 	{
 		// convert now to tm struct for UTC
-		_gmtime64_s(m_UTCTime, &m_CurrentTime);
+		/* Was _gmtime64_s into a tm* that was never allocated, so it
+		   filled nothing and every read below dereferenced null. */
+		gmtime_r(&m_CurrentTime, &m_UTCTime);
 
-		seconds = m_UTCTime->tm_sec;
-		minutes = m_UTCTime->tm_min;
-		hours = m_UTCTime->tm_hour;
-		day = m_UTCTime->tm_mday;
-		month = m_UTCTime->tm_mon;
-		year = m_UTCTime->tm_year;
-		weekday = m_UTCTime->tm_wday;
-		yearday = m_UTCTime->tm_yday;
-		isdst = m_UTCTime->tm_isdst;
+		seconds = m_UTCTime.tm_sec;
+		minutes = m_UTCTime.tm_min;
+		hours = m_UTCTime.tm_hour;
+		day = m_UTCTime.tm_mday;
+		month = m_UTCTime.tm_mon;
+		year = m_UTCTime.tm_year;
+		weekday = m_UTCTime.tm_wday;
+		yearday = m_UTCTime.tm_yday;
+		isdst = m_UTCTime.tm_isdst;
 	}
 
 	// Current date/time based on current system
 	time_t m_CurrentTime = std::time(nullptr);
 
 	// Current UTC time
-	tm* m_UTCTime = nullptr;
+	tm m_UTCTime{};
 };

@@ -1,6 +1,6 @@
 #pragma once
 #include "Core/ECS/Systems/Pathfinding/Navigation/PathfinderGroup.h"
-#include "Core/ECS/SYstems/Pathfinding/Grid/PathfindingNode.h"
+#include "Core/ECS/Systems/Pathfinding/Grid/PathfindingNode.h"
 
 namespace pathfinding
 {

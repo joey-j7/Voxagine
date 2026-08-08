@@ -16,7 +16,7 @@
 
 // Below the includes can be seen which are a must
 #include <gtest/gtest.h>
-#include <External/rttr/type>
+#include <rttr/type>
 #include "DeepCopyTest.h"
 #include "Core/ECS/Entity.h"
 

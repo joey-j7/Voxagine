@@ -1,10 +1,10 @@
 #include "pch.h"
-#include "Application.h"
+#include "Core/Application.h"
 
 #ifdef _ORBIS
 #include "Core/System/ORBIS/ORBFileSystem.h"
 #else
-#include "Core/System/Windows/WINFileSystem.h"
+#include "Core/System/Posix/PosixFileSystem.h"
 #endif
 
 #include "Core/System/FileSystem.h"
@@ -17,7 +17,7 @@
 #include "ECS/Entities/Camera.h"
 
 #include <iostream>
-#include "GameTimer.h"
+#include "Core/GameTimer.h"
 #include "ECS/WorldManager.h"
 #include "ECS/Systems/Physics/PhysicsSystem.h"
 
@@ -44,7 +44,7 @@ void Application::Run()
 	m_pFileSystem = new ORBFileSystem(this);
 	m_pFileSystem->Initialize();
 #else
-	m_pFileSystem = new WINFileSystem(this);
+	m_pFileSystem = new PosixFileSystem(this);
 	m_pFileSystem->Initialize();
 #endif
 
@@ -52,6 +52,12 @@ void Application::Run()
 	m_Serializer.Initialize(m_pFileSystem);
 
 	LoadSettings();
+
+#ifdef EDITOR
+	/* The lock is a game presentation choice; the editor wants the whole
+	   window. Play mode still uses the camera's own aspect ratio. */
+	m_Settings.SetLockedAspectRatio(0.f);
+#endif
 
 	m_JobManager.Initialize();
 	m_Platform.Initialize();
@@ -65,8 +71,10 @@ void Application::Run()
 	m_Platform.m_pGameTimer->ResetElapsedTime();
 	m_Platform.m_pFixedGameTimer->ResetElapsedTime();
 
+
 	while (!m_bExit)
 	{
+
 		m_Platform.m_pGameTimer->Update([this]()
 		{
 			OPTICK_FRAME("MainThread");
@@ -125,6 +133,11 @@ void Application::Run()
 				pCamera = activeWorld->GetMainCamera();
 			}
 
+			/* pCamera is null-checked into existence above and was then
+			   dereferenced unconditionally. A world with no main camera - or
+			   no world at all, before a level finishes loading - crashed here. */
+			if (pCamera != nullptr)
+			{
 			m_Platform.GetRenderContext()->SetCameraData(
 				CameraRenderData(
 					pCamera->GetMVP(),
@@ -143,6 +156,7 @@ void Application::Run()
 			);
 
 			pCamera->SetRecalculated(false);
+			}
 
 			if (activeWorld)
 			{
@@ -186,6 +200,10 @@ void Application::Run()
 				pCamera = activeWorld->GetMainCamera();
 			}
 
+			/* Same block as the fixed-step path above: pCamera is null-checked
+			   into existence and was then dereferenced regardless. */
+			if (pCamera != nullptr)
+			{
 			m_Platform.GetRenderContext()->SetCameraData(
 				CameraRenderData(
 					pCamera->GetMVP(),
@@ -204,6 +222,7 @@ void Application::Run()
 			);
 
 			pCamera->SetRecalculated(false);
+			}
 
 			if (activeWorld)
 			{

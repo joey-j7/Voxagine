@@ -1,16 +1,21 @@
 # Voxagine + Bit Buster
 
-[![Build & Test](https://github.com/joey-j7/Voxagine/actions/workflows/build.yml/badge.svg)](https://github.com/joey-j7/Voxagine/actions/workflows/build.yml)
+[![Build](https://github.com/joey-j7/Voxagine/actions/workflows/build.yml/badge.svg)](https://github.com/joey-j7/Voxagine/actions/workflows/build.yml)
 
 Voxagine is a custom C++ game engine built as a second-year project at
 [IGAD](https://www.igad.nl/) (Breda University of Applied Sciences). It ships
 with an ImGui-based level/entity editor and a couch co-op game, **Bit
 Buster**, built on top of it.
 
+It was originally a Windows/DirectX 12 engine. It now targets **Linux and
+Windows** on a single Vulkan renderer; see [Port status](#port-status) for what
+currently builds and what does not.
+
 ## Engine features
 
 - **ECS** — entity/component/system architecture (`Voxagine/Source/Core/ECS`)
-- **DirectX 12 renderer** (`Voxagine/Source/Core/Platform/Rendering`)
+- **Vulkan renderer** (`Voxagine/Source/Core/Platform/Rendering`) — dynamic
+  rendering, bindless textures, HLSL shaders compiled to SPIR-V with DXC
 - **FMOD audio** (`Voxagine/Source/Core/Platform/Audio`)
 - **Custom memory allocators** — pool/free-list allocators (`Voxagine/Source/Core/Memory`)
 - **RTTR-based reflection & JSON serialization** for save/load and the editor's
@@ -21,17 +26,73 @@ Buster**, built on top of it.
 
 ## Requirements
 
-- Windows 10/11
-- Visual Studio 2017 or newer (v141 toolset)
-- One or two Xbox controllers to play Bit Buster
+- A C++17 compiler, CMake 3.21+ and Ninja
+- Vulkan 1.3 headers, loader and drivers
+- SDL3
+- DXC, to compile the HLSL shaders to SPIR-V
+- One or two gamepads to play Bit Buster
+
+On Arch: `pacman -S cmake ninja vulkan-devel sdl3 directx-shader-compiler`.
+Add `vulkan-validation-layers` for validation output.
+
+On Windows: the Vulkan SDK supplies the loader, headers, validation layers and
+DXC; SDL3 comes from vcpkg or a binary release. MSVC 2022 is the expected
+compiler. The editor's file dialogs use Win32 `GetOpenFileName` there and
+zenity or kdialog on Linux.
 
 ## Building & running
 
-1. Open `Voxagine.sln` in Visual Studio.
-2. Set the startup project to **Game**.
-3. Pick a build configuration — `*Editor` configs launch into the level
-   editor, `*Game` configs launch straight into Bit Buster.
-4. Build and run.
+Builds go through `CMakePresets.json`, which any recent CMake, CLion or Rider
+reads directly. Five presets - `game`, `game-release`, `editor`,
+`editor-release`, `bringup` - each writing to `Build/<preset>/`.
+
+```bash
+cmake --preset game && cmake --build --preset game
+cd Game && ../Build/game/bin/BitBuster    # run from Game/, asset paths are relative
+```
+
+The editor is the same executable with the editor compiled in; swap `game` for
+`editor`. Add `-release` for an optimised build - that also drops the Vulkan
+validation layers, which are tied to Debug.
+
+There is also `voxagine_bringup`, a standalone SDL3 + Vulkan target that clears
+the screen without any of the engine. It needs no assets and pulls in no RTTR,
+which makes it the quickest check that a toolchain is set up:
+
+```bash
+cmake --preset bringup && cmake --build --preset bringup
+./Build/bringup/bin/voxagine_bringup --frames 120
+```
+
+## Port status
+
+**The game runs on Linux.** Bit Buster boots, renders the voxel world, sprites
+and text, plays at ~200 fps, resizes, switches levels and exits cleanly, with
+zero Vulkan validation errors.
+
+**The editor builds and starts but hangs part-way through loading assets.**
+
+**Windows is a supported target but is currently unverified.** DirectX 12 is
+gone and the renderer is Vulkan-only, which runs on both platforms; SDL3 covers
+the window, input and gamepads; the filesystem layer is plain C stdio; and the
+one genuinely per-platform piece, the editor's file dialogs, has a Win32
+implementation selected by CMake. What is missing is that nobody has actually
+built it on Windows since the port began, so expect small breakages rather than
+none. The MSBuild files are deleted for good — CMake is the only build system.
+
+Off by default, and unchanged by the port:
+
+| Dependency | State |
+|------------|-------|
+| FMOD | Proprietary; needs the SDK downloaded by hand. Off behind `VOXAGINE_ENABLE_FMOD`, and audio runs silent without it. |
+| Optick | Vendored headers reference a Windows-only `OptickCore.lib`. Off behind `VOXAGINE_ENABLE_OPTICK`. |
+
+RTTR was a third: it was vendored as 126 headers with no sources and only a
+Windows `rttr_core.lib`. That copy is gone; CMake uses an installed RTTR if
+there is one and otherwise fetches upstream v0.9.6, so the default build still
+needs no network. `nativefiledialog` and `teenypath` were a fourth and fifth —
+both shipped as a header plus a Windows `.lib` — and are now implemented in
+this repository, on `std::filesystem` and the platform dialog APIs.
 
 ## Repository layout
 
@@ -41,10 +102,14 @@ Buster**, built on top of it.
 | `Game/`                  | Bit Buster, built on Voxagine                         |
 | `SplodyMcSplodeFace/`    | An earlier game built on an earlier version of the engine |
 | `UnitTesting/`           | Unit tests (allocators, reflection, physics, pathfinding, lighting) |
-| `BuildScripts/`          | Windows build/packaging scripts                      |
-| `PS4/`                   | PS4 dev-kit project stub (content stripped for NDA reasons, inert) |
+| `cmake/`                 | Build helper scripts                                  |
 
 ## Status
 
-This was completed as coursework and is no longer under active development.
-It's kept here as a portfolio piece.
+This was completed as coursework and is no longer under active development,
+apart from the port to Vulkan and Linux. It's kept here as a portfolio piece.
+
+Contributions should stay portable: the engine targets Linux and Windows from
+one source tree, so platform-specific code belongs behind `_WIN32` or a CMake
+`if(WIN32)`, not in the shared path. `_WINDOWS` is not defined by this build —
+it came from the deleted `.vcxproj` files.

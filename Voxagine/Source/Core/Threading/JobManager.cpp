@@ -128,21 +128,42 @@ void JobManager::ThreadLoop(JobThread* pThread)
 	{
 		Job* newJob = nullptr;
 		bool jobFound = false;
-		std::shared_lock<std::shared_timed_mutex> lock(m_JobMutex);
-		for (auto& jobQueueIter : m_JobQueues)
+
+		/* The lock covers the queue scan only.
+		 *
+		 * It used to span the whole loop body, so every worker held a read
+		 * lock while running a job AND while sleeping for 10ms. With several
+		 * workers doing that the mutex was almost never free, and any writer -
+		 * CreateJobQueue, DiscardJobQueue - had to wait for a moment when no
+		 * reader held it at all.
+		 *
+		 * Windows' SRW locks are writer-preferring, so a waiting writer blocks
+		 * new readers and eventually gets through. glibc's shared_timed_mutex
+		 * is not, so the writer starved forever and World::Initialize hung on
+		 * the first CreateJobQueue call. */
 		{
-			if (jobQueueIter.second->m_JobQueue[pThread->GetJobType()].try_dequeue(newJob))
+			std::shared_lock<std::shared_timed_mutex> lock(m_JobMutex);
+
+			for (auto& jobQueueIter : m_JobQueues)
 			{
-				jobFound = true;
-				pThread->SetRunningJob(newJob);
-				newJob->SetWaiting(false);
-				newJob->Run();
-				pThread->SetRunningJob(nullptr);
-				m_FinishedJobQueue.enqueue(newJob);
-				break;
+				if (jobQueueIter.second->m_JobQueue[pThread->GetJobType()].try_dequeue(newJob))
+				{
+					jobFound = true;
+					break;
+				}
 			}
 		}
-		if (!jobFound)
+
+		if (jobFound)
+		{
+			/* Outside the lock: a long job must not block queue creation. */
+			pThread->SetRunningJob(newJob);
+			newJob->SetWaiting(false);
+			newJob->Run();
+			pThread->SetRunningJob(nullptr);
+			m_FinishedJobQueue.enqueue(newJob);
+		}
+		else
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(m_uiThreadSleepTime));
 		}

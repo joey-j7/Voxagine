@@ -9,7 +9,7 @@
 #include "Core/Platform/Window/WindowContext.h"
 #include <Core/Platform/Platform.h>
 #include "Core/ECS/Systems/Physics/VoxelGrid.h"
-#include <External/rttr/registration>
+#include <rttr/registration>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
 RTTR_REGISTRATION
@@ -121,10 +121,13 @@ Vector2 Camera::WorldToScreenPoint(const Vector3& worldPos)
 
 Vector3 Camera::ScreenToWorld(const Vector2& screenCoord)
 {
-	const UVector2& windowsize = GetWorld()->GetApplication()->GetPlatform().GetWindowContext()->GetSize();
+	/* Against the render target, not the window: a locked aspect ratio
+	   letterboxes the image, so window coordinates aim at the wrong pixel. */
+	const Vector2 normalized = GetWorld()->GetApplication()->GetPlatform()
+		.GetRenderContext()->WindowToRenderNormalized(screenCoord);
 
-	float devicecoordx = (2.f * screenCoord.x) / windowsize.x - 1;
-	float devicecoordy = (2.f * screenCoord.y) / windowsize.y - 1;
+	float devicecoordx = 2.f * normalized.x - 1.f;
+	float devicecoordy = 2.f * normalized.y - 1.f;
 
 	Vector4 clipCoords = Vector4(devicecoordx, -devicecoordy, -1.f, 1.f);
 
@@ -165,4 +168,9 @@ void Camera::CalculateProjection(uint32_t fWindowSizeX, uint32_t fWindowSizeY, I
 	}
 
 	m_bIsRecalculated = true;
+
+	/* Fold the new projection into the MVP now. Outside the editor nothing
+	   calls Recalculate per frame, so a camera that never moves kept shipping
+	   the pre-resize matrix and the world rendered at the old aspect ratio. */
+	Recalculate();
 }

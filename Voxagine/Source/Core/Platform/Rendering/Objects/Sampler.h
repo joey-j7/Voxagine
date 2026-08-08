@@ -12,7 +12,8 @@ public:
 	};
 
 	Sampler(PRenderContext* pContext, const Info& info);
-	virtual ~Sampler() { delete m_pNativeSampler; }
+	/* Defined by the backend; deleting a void* here was undefined. */
+	virtual ~Sampler();
 
 	const Info& GetInfo() const { return m_Info; }
 	void*& GetNative() { return m_pNativeSampler; }

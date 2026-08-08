@@ -2,7 +2,7 @@
 
 #include "Editor/UndoRedo/BaseCommand.h"
 
-#include "External/rttr/type"
+#include "rttr/type"
 
 class World;
 class Component;

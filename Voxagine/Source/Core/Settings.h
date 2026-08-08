@@ -3,18 +3,14 @@
 #include <string>
 #include "Core/Math.h"
 
-#include "Event.h"
+#include "Core/Event.h"
 
-#include <External/rttr/type>
-#include <External/rttr/registration_friend> 
+#include <rttr/type>
+#include <rttr/registration_friend> 
 
 enum RenderingAPI
 {
-	RA_DIRECTX12,
-	RA_OPENGL,
-	RA_OPENGLES,
-	RA_VULKAN,
-	RA_ORBIS
+	RA_VULKAN
 };
 
 enum AudioAPI
@@ -25,9 +21,9 @@ enum AudioAPI
 
 enum PlatformType
 {
+	PT_LINUX,
 	PT_WINDOWS,
 	PT_SWITCH,
-	PT_ORBIS,
 	PT_ANDROID
 };
 
@@ -62,6 +58,13 @@ public:
 	float GetResolutionScale() const { return m_fResolutionScale; }
 	void SetResolutionScale(float fResolutionScale) { m_fResolutionScale = std::max(0.1f, fResolutionScale); }
 
+	/* The aspect ratio the game renders at regardless of window shape; the
+	   result is letterboxed on present. Zero renders at the window's own
+	   ratio, which is what a window manager that ignores size hints will
+	   otherwise hand us. */
+	float GetLockedAspectRatio() const { return m_fLockedAspectRatio; }
+	void SetLockedAspectRatio(float fAspectRatio) { m_fLockedAspectRatio = std::max(0.f, fAspectRatio); }
+
 	void SetFullscreen(bool bFullscreen);
 	bool IsFullscreen() const { return m_bFullscreen; }
 
@@ -91,13 +94,14 @@ private:
 	std::string m_EngineAssetsPath = "Engine/Assets";
 	std::string m_FontPath = "Engine/Assets/Fonts/PressStart.spritefont";
 
-#ifdef _ORBIS
-	PlatformType m_PlatformType = PT_ORBIS;
-	RenderingAPI m_RenderApiType = RA_ORBIS;
-#else
+	/* _WIN32, not _WINDOWS: the latter came from the old .vcxproj and nothing
+	   defines it under CMake. Every Windows compiler defines _WIN32. */
+#ifdef _WIN32
 	PlatformType m_PlatformType = PT_WINDOWS;
-	RenderingAPI m_RenderApiType = RA_DIRECTX12;
+#else
+	PlatformType m_PlatformType = PT_LINUX;
 #endif
+	RenderingAPI m_RenderApiType = RA_VULKAN;
 
 	AudioAPI m_AudioApiType = AA_FMOD;
 
@@ -111,6 +115,8 @@ private:
 
 	bool m_bShadowsEnabled = true;
 	float m_fResolutionScale = 1.f;
+
+	float m_fLockedAspectRatio = 16.f / 9.f;
 
 	bool m_bFullscreen = false;
 

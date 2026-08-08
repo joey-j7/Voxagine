@@ -18,9 +18,5 @@ VoxelBakePass::VoxelBakePass(
 
 	ComputePassData.m_uiBindlessResourceCount = 1;
 
-#ifdef _WINDOWS
-	SetHeapManager(m_pContext->GetModelManager()->GetHeapManager());
-#endif
-
 	Init(ComputePassData);
 }

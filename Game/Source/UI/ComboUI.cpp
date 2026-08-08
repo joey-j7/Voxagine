@@ -1,7 +1,7 @@
 #include "ComboUI.h"
 #include "Core/ECS/World.h"
-#include <External/rttr/registration>
-#include <External/rttr/policy.h>
+#include <rttr/registration>
+#include <rttr/policy.h>
 #include <Core/ECS/Components/SpriteRenderer.h>
 #include "Core/ECS/Components/TextRenderer.h"
 #include "Core/MetaData/PropertyTypeMetaData.h"
@@ -36,7 +36,7 @@ void ComboUI::AddComponents()
 	m_pTextRenderer->SetText("Combo: 0");
 	m_pTextRenderer->SetAlignment(RA_CENTERED);
 	m_pTextRenderer->SetScreenAlignment(RA_CENTERED);
-	m_pTextRenderer->SetScaleWithScreen(TRUE);
+	m_pTextRenderer->SetScaleWithScreen(true);
 	
 }
 

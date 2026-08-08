@@ -2,8 +2,8 @@
 #include "Editor/EntityInspector/EntityInspector.h"
 
 #include "External/imgui/imgui.h"
-#include "External/rttr/type"
-#include "External/rttr/filter_item.h"
+#include "rttr/type"
+#include "rttr/filter_item.h"
 
 #include "Editor/Editor.h"
 #include "Editor/PropertyRenderer/PropertyRenderer.h"

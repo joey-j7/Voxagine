@@ -170,7 +170,8 @@ private:
 
 	FileBrowser m_FileBrowser;
 	PropertyRenderer m_PropertyRenderer;
-	Entity* m_pSelectedEntity;
+	/* HasSelectedEntity() is a null test. */
+	Entity* m_pSelectedEntity = nullptr;
 
 	bool m_bHasCopiedEntity = false;
 	Document m_EntityCopyDocument;
@@ -205,7 +206,7 @@ private:
 	ImGuizmo::MODE m_bCurrentGizmoMode = ImGuizmo::MODE::WORLD;
 	SnappingTool m_SnappingTool;
 
-	bool m_bSelectedEntityTransforming;
+	bool m_bSelectedEntityTransforming = false;
 	Matrix4 m_SelectedEntityTransformStart;
 
 	std::string m_sWorldFilePath = "";

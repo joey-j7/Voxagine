@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <atomic>
 #include <shared_mutex>
+#include <mutex>
 
 typedef uint32_t QueueHandle;
 
@@ -19,7 +20,7 @@ class JobManager
 public:
 	friend class Application;
 	friend class PhysicsSystem;
-	friend class WINFileSystem;
+	friend class PosixFileSystem;
 	friend class ORBFileSystem;
 	friend class JobQueue;
 	friend class Job;

@@ -36,6 +36,16 @@ public:
 	virtual void* GetBGMChannel() = 0;
 	virtual SoundReference* GetBGMReference() const { return m_pBGMReference; };
 
+	/* Called by a SoundReference as it is destroyed. The context holds raw
+	   pointers to references it is playing, and a world swap frees the old
+	   world's sounds out from under it - after which AudioSystem::PostTick
+	   reads GetBGMReference()->GetRefPath() straight into freed memory. */
+	virtual void OnReferenceDestroyed(SoundReference* pReference)
+	{
+		if (pReference != nullptr && m_pBGMReference == pReference)
+			StopBGM();
+	}
+
 	virtual bool IsPlaying(void* pChannel) { return false; };
 
 	virtual float GetLength(const SoundReference* pSoundReference) = 0;

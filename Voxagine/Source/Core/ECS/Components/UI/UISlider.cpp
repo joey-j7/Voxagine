@@ -13,7 +13,7 @@
 
 #include <External/glm/glm.hpp>
 
-#include <External/rttr/registration.h>
+#include <rttr/registration.h>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
 RTTR_REGISTRATION

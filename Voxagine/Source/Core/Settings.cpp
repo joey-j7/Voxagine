@@ -1,16 +1,16 @@
 #include "pch.h"
 #include "Core/Settings.h"
 
-#include <External/rttr/registration>
-#include <External/rttr/policy.h>
+#include <rttr/registration>
+#include <rttr/policy.h>
 
 RTTR_REGISTRATION
 {
 	rttr::registration::enumeration<PlatformType>("E_PlatformType")
 	(
+		rttr::value("PT_LINUX", PlatformType::PT_LINUX),
 		rttr::value("PT_WINDOWS", PlatformType::PT_WINDOWS),
 		rttr::value("PT_SWITCH", PlatformType::PT_SWITCH),
-		rttr::value("PT_ORBIS", PlatformType::PT_ORBIS),
 		rttr::value("PT_ANDROID", PlatformType::PT_ANDROID)
 	);
 
@@ -22,11 +22,7 @@ RTTR_REGISTRATION
 
 	rttr::registration::enumeration<RenderingAPI>("E_RenderingAPI")
 	(
-		rttr::value("RA_DIRECTX12", RenderingAPI::RA_DIRECTX12),
-		rttr::value("RA_OPENGL", RenderingAPI::RA_OPENGL),
-		rttr::value("RA_OPENGLES", RenderingAPI::RA_OPENGLES),
-		rttr::value("RA_VULKAN", RenderingAPI::RA_VULKAN),
-		rttr::value("RA_ORBIS", RenderingAPI::RA_ORBIS)
+		rttr::value("RA_VULKAN", RenderingAPI::RA_VULKAN)
 	);
 
 	rttr::registration::class_<Settings>("Settings")
@@ -44,6 +40,7 @@ RTTR_REGISTRATION
 		.property("FXAAEnabled", &Settings::IsFXAAEnabled, &Settings::SetFXAA)
 		.property("ShadowsEnabled", &Settings::IsShadowEnabled, &Settings::SetShadowEnabled)
 		.property("ResolutionScale", &Settings::GetResolutionScale, &Settings::SetResolutionScale)
+		.property("LockedAspectRatio", &Settings::GetLockedAspectRatio, &Settings::SetLockedAspectRatio)
 		.property("Fullscreen", &Settings::IsFullscreen, &Settings::SetFullscreen)
 		.property("InitialWindowSize", &Settings::m_v2InitialWindowSize);
 }

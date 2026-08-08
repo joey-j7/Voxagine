@@ -1,0 +1,104 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 21,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/Build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "engine",
+            "hidden": true,
+            "inherits": "base",
+            "cacheVariables": {
+                "VOXAGINE_BUILD_ENGINE": "ON",
+                "VOXAGINE_BUILD_BRINGUP": "OFF"
+            }
+        },
+        {
+            "name": "game",
+            "displayName": "Game (Debug)",
+            "description": "BitBuster without the editor. Run it from Game/ - assets are relative.",
+            "inherits": "engine",
+            "cacheVariables": {
+                "VOXAGINE_BUILD_EDITOR": "OFF",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "game-release",
+            "displayName": "Game (Release)",
+            "description": "As above, optimised and without the Vulkan validation layers.",
+            "inherits": "game",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "editor",
+            "displayName": "Editor (Debug)",
+            "description": "BitBuster with the editor. EDITOR is defined on the library, not just the executable.",
+            "inherits": "engine",
+            "cacheVariables": {
+                "VOXAGINE_BUILD_EDITOR": "ON",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "editor-release",
+            "displayName": "Editor (Release)",
+            "description": "As above, optimised and without the Vulkan validation layers.",
+            "inherits": "editor",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "bringup",
+            "displayName": "Bring-up (Debug)",
+            "description": "Vulkan bring-up target only. No engine, so no RTTR fetch - this is the offline-capable build.",
+            "inherits": "base",
+            "cacheVariables": {
+                "VOXAGINE_BUILD_ENGINE": "OFF",
+                "VOXAGINE_BUILD_BRINGUP": "ON",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "game",
+            "displayName": "Game (Debug)",
+            "configurePreset": "game"
+        },
+        {
+            "name": "game-release",
+            "displayName": "Game (Release)",
+            "configurePreset": "game-release"
+        },
+        {
+            "name": "editor",
+            "displayName": "Editor (Debug)",
+            "configurePreset": "editor"
+        },
+        {
+            "name": "editor-release",
+            "displayName": "Editor (Release)",
+            "configurePreset": "editor-release"
+        },
+        {
+            "name": "bringup",
+            "displayName": "Bring-up (Debug)",
+            "configurePreset": "bringup"
+        }
+    ]
+}

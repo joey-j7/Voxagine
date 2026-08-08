@@ -11,8 +11,8 @@
 #include "Core/ECS/Components/Particles/Emitters/BoxEmitter.h"
 #include "Core/ECS/Components/Particles/Modules/BasicTimerModule.h"
 
-#include <External/rttr/registration>
-#include "External/rttr/policy.h"
+#include <rttr/registration>
+#include "rttr/policy.h"
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
 RTTR_REGISTRATION

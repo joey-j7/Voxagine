@@ -12,7 +12,7 @@
 
 #include "Core/PlayerPrefs/PlayerPrefs.h"
 
-#include <External/rttr/registration>
+#include <rttr/registration>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 #include "Core/ECS/Systems/Rendering/RenderSystem.h"
 #include "Core/Platform/Audio/AudioContext.h"

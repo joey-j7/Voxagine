@@ -3,7 +3,7 @@
 #include "Core/ECS/Entity.h"
 #include "Core/Math.h"
 
-#include <External/rttr/type>
+#include <rttr/type>
 
 #include <vector>
 

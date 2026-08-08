@@ -4,7 +4,7 @@
 #include "Core/ECS/World.h"
 #include "Core/ECS/Components/SpriteRenderer.h"
 
-#include "External/rttr/registration.h"
+#include "rttr/registration.h"
 
 RTTR_REGISTRATION
 {

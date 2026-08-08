@@ -1,4 +1,5 @@
 #pragma once
+#include <cfloat>
 #include <emmintrin.h>
 
 // GLM
@@ -78,4 +79,19 @@ struct VColor
 inline int ftoi_sse1(float f)
 {
 	return _mm_cvtt_ss2si(_mm_load_ss(&f));     // SSE1 instructions for float->int
+}
+/* glm::normalize divides by the length, so normalizing a zero-length vector
+   produces NaN rather than failing. That NaN then spreads through whatever it
+   feeds - a transform, a knockback, a facing direction - and the entity
+   silently stops rendering, which is a long way from where the mistake was.
+   Zero-length inputs are ordinary here: a monster standing still has zero
+   velocity, and a collision can report a zero impact normal. */
+inline Vector3 SafeNormalize(const Vector3& v, const Vector3& fallback = Vector3(0.f, 0.f, 0.f))
+{
+	const float fLengthSquared = glm::dot(v, v);
+
+	if (fLengthSquared <= FLT_MIN)
+		return fallback;
+
+	return v * glm::inversesqrt(fLengthSquared);
 }

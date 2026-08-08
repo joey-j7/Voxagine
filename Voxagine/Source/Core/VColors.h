@@ -1,6 +1,8 @@
 #pragma once
 
-#define GLOBALCONST extern const __declspec(selectany)
+/* MSVC's __declspec(selectany) let this header define constants in every TU and
+   have the linker fold them. C++17 inline variables do the same thing portably. */
+#define GLOBALCONST inline const
 
 #include "Core/Math.h"
 

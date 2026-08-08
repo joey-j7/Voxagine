@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Humanoid.h"
 
-#include "External/rttr/registration.h"
+#include "rttr/registration.h"
 
 #include "Core/ECS/Entity.h"
 #include <Core/ECS/Components/Transform.h>
@@ -127,7 +127,7 @@ bool Humanoid::Damage(float damage, Vector3 impactNormal, float launchStrength)
 	m_DamageOffset = impactNormal;
 	
 	// TODO: see why this should be 1 
-	m_DamageOffset = glm::normalize(impactNormal);
+	m_DamageOffset = SafeNormalize(impactNormal);
 	m_DamageOffset.y = 1.f;
 	m_DamageOffset *= launchStrength;
 

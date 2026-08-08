@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "Core/ECS/Component.h"
 
-#include <External/rttr/registration>
-#include <External/rttr/policy.h>
+#include <rttr/registration>
+#include <rttr/policy.h>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
 RTTR_REGISTRATION

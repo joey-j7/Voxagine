@@ -9,7 +9,7 @@
 #include "Core/ECS/Components/Particles/Modules/AttractorModule.h"
 #include "Core/ECS/Components/Particles/Modules/BasicTimerModule.h"
 
-#include "External/rttr/registration.h"
+#include "rttr/registration.h"
 #include <Core/MetaData/PropertyTypeMetaData.h>
 
 RTTR_REGISTRATION

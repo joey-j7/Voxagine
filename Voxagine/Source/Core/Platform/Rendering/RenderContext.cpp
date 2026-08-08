@@ -1,4 +1,6 @@
 #include "pch.h"
+
+#include "External/imgui/imgui.h"
 #include "RenderContext.h"
 
 #include "Core/Application.h"
@@ -35,10 +37,8 @@
 #include "Core/ECS/Components/VoxRenderer.h"
 #include "External/optick/optick.h"
 
-#ifdef _WINDOWS
-#include <eventtoken.h>
-#include "Editor/imgui/Contexts/DXImContext.h"
-#endif
+#include "Editor/imgui/Contexts/ImContext.h"
+#include "Editor/imgui/Contexts/VKImContext.h"
 
 RenderContext::RenderContext(Platform* pPlatform)
 {
@@ -61,7 +61,12 @@ void RenderContext::Initialize()
 	settings.FullscreenChanged += Event<bool>::Subscriber(std::bind(&RenderContext::OnFullscreenChanged, this, std::placeholders::_1), this);
 
 	m_bIsFullscreen = settings.IsFullscreen();
-	m_v2RenderResolution = m_bIsFullscreen ? m_v2ScreenResolution : UVector2(m_pPlatform->GetWindowContext()->GetSize().x, m_pPlatform->GetWindowContext()->GetSize().y);
+
+	const UVector2 initialSize = m_bIsFullscreen
+		? m_v2ScreenResolution
+		: UVector2(m_pPlatform->GetWindowContext()->GetSize().x, m_pPlatform->GetWindowContext()->GetSize().y);
+
+	m_v2RenderResolution = ConstrainToAspectRatio(initialSize.x, initialSize.y);
 
 	m_pSettings = &m_pPlatform->GetApplication()->GetSettings();
 
@@ -291,6 +296,7 @@ bool RenderContext::Present()
 
 		m_uiFPS = m_uiDrawnFrames;
 		m_uiDrawnFrames = 0;
+		fprintf(stderr, "[fps] %u\n", m_uiFPS);
 	}
 	
 #if defined(_DEBUG) || defined(EDITOR)
@@ -325,7 +331,7 @@ bool RenderContext::Present()
 
 	PCommandEngine* pDirectEngine = m_pCommandEngines["Direct"].get();
 
-	const bool bIsCompleted = pVDirectEngine->GetFence()->GetCompletedValue() >= pVDirectEngine->GetValue();
+	const bool bIsCompleted = pVDirectEngine->GetCompletedValue() >= pVDirectEngine->GetValue();
 
 	if (bIsCompleted && !m_bIsDrawTextureCopied)
 	{
@@ -343,42 +349,18 @@ bool RenderContext::Present()
 		pVoxelPass->ToggleBackBuffer();
 
 		// Transition
-		pDirectEngine->m_Barriers.push_back(
-			CD3DX12_RESOURCE_BARRIER::Transition(
-				pTarget->GetNative(),
-				static_cast<D3D12_RESOURCE_STATES>(E_STATE_PIXEL_SHADER_RESOURCE),
-				static_cast<D3D12_RESOURCE_STATES>(E_STATE_COPY_DEST)
-			)
-		);
+		pDirectEngine->QueueBarrier(pTarget->GetNative(), E_STATE_COPY_DEST);
 
-		pDirectEngine->m_Barriers.push_back(
-			CD3DX12_RESOURCE_BARRIER::Transition(
-				pSource->GetNative(),
-				static_cast<D3D12_RESOURCE_STATES>(E_STATE_PIXEL_SHADER_RESOURCE),
-				static_cast<D3D12_RESOURCE_STATES>(E_STATE_COPY_SOURCE)
-			)
-		);
+		pDirectEngine->QueueBarrier(pSource->GetNative(), E_STATE_COPY_SOURCE);
 
 		pDirectEngine->ApplyBarriers();
 
-		pDirectEngine->GetList()->CopyResource(pTarget->GetNative(), pSource->GetNative());
+		pDirectEngine->CopyResource(pTarget->GetNative(), pSource->GetNative());
 
 		// Transition
-		pDirectEngine->m_Barriers.push_back(
-			CD3DX12_RESOURCE_BARRIER::Transition(
-				pTarget->GetNative(),
-				static_cast<D3D12_RESOURCE_STATES>(E_STATE_COPY_DEST),
-				static_cast<D3D12_RESOURCE_STATES>(E_STATE_PIXEL_SHADER_RESOURCE)
-			)
-		);
+		pDirectEngine->QueueBarrier(pTarget->GetNative(), E_STATE_PIXEL_SHADER_RESOURCE);
 
-		pDirectEngine->m_Barriers.push_back(
-			CD3DX12_RESOURCE_BARRIER::Transition(
-				pSource->GetNative(),
-				static_cast<D3D12_RESOURCE_STATES>(E_STATE_COPY_SOURCE),
-				static_cast<D3D12_RESOURCE_STATES>(E_STATE_PIXEL_SHADER_RESOURCE)
-			)
-		);
+		pDirectEngine->QueueBarrier(pSource->GetNative(), E_STATE_PIXEL_SHADER_RESOURCE);
 
 		pDirectEngine->ApplyBarriers();
 
@@ -397,9 +379,13 @@ bool RenderContext::Present()
 
 		Application* pApplication = m_pPlatform->GetApplication();
 		World* pWorld = pApplication->GetWorldManager().GetTopWorld();
-		PhysicsSystem* pPhysics = pWorld->GetSystem<PhysicsSystem>();
 
-		m_uiParticleCount = pPhysics->m_uiActiveParticleCount;
+		/* An editor build loads no world at startup - VoxApp only does that
+		   under !EDITOR - so there is nothing to read particles from until one
+		   is opened. This was an unconditional dereference. */
+		PhysicsSystem* pPhysics = pWorld != nullptr ? pWorld->GetSystem<PhysicsSystem>() : nullptr;
+
+		m_uiParticleCount = pPhysics != nullptr ? pPhysics->m_uiActiveParticleCount : 0;
 
 		// Camera buffer
 		{
@@ -409,14 +395,22 @@ bool RenderContext::Present()
 
 			Vector4 v4LightDirection = glm::normalize(Vector4(-0.4f, -0.8f, 0.6f, 0.0f));
 
-			VoxelGrid* pGrid = pPhysics->GetVoxelGrid();
+			/* An editor build loads no world at startup, so there is no physics
+			   system to take the grid from until one is opened. A zero world
+			   size makes the marcher's bounds test fail immediately, which is
+			   what "no world" should look like. */
+			VoxelGrid* pGrid = pPhysics != nullptr ? pPhysics->GetVoxelGrid() : nullptr;
 
-			UVector3 uWorldSize;
-			pGrid->GetDimensions(
-				uWorldSize.x,
-				uWorldSize.y,
-				uWorldSize.z
-			);
+			UVector3 uWorldSize(0, 0, 0);
+
+			if (pGrid != nullptr)
+			{
+				pGrid->GetDimensions(
+					uWorldSize.x,
+					uWorldSize.y,
+					uWorldSize.z
+				);
+			}
 
 			pCameraBuffer->Clear();
 
@@ -437,7 +431,7 @@ bool RenderContext::Present()
 			pCameraBuffer->AddConstantData(settings.GetResolutionScale());
 			pCameraBuffer->AddConstantData(m_fFader);
 
-			pCameraBuffer->AddConstantData(pPhysics->m_uiActiveParticleCount);
+			pCameraBuffer->AddConstantData(m_uiParticleCount);
 			pCameraBuffer->AddConstantData(static_cast<uint32_t>(GetAABBList().size()));
 
 			pCameraBuffer->Allocate();
@@ -447,10 +441,10 @@ bool RenderContext::Present()
 			m_bFaderUpdated = false;
 		}
 
-		// AABB buffer
-#ifndef _ORBIS
-		if (m_bWorldUpdated)
-#endif
+		// AABB buffer. Uploaded every frame: the list is rebuilt each frame and
+		// entity AABBs move without necessarily setting m_bWorldUpdated, so
+		// gating the upload on it rendered from a stale list. It is ~32 bytes
+		// per drawn model, so the upload is not worth guarding.
 		{
 			pAABBBuffer->Clear();
 			pAABBBuffer->AddStructuredData(
@@ -470,18 +464,15 @@ bool RenderContext::Present()
 		pVDirectEngine->Reset();
 		pVDirectEngine->Start();
 
-		/* Barrier towards render target state */
+		/* One render pass instance per pass: dynamic rendering cannot nest
+		   them, so the DX12-style interleaved Begin order would silently skip
+		   every pass after the first. The voxel pass samples the particle
+		   targets, so particles draw first. */
 		pVDirectEngine->Begin(pParticlePass);
-		pVDirectEngine->Begin(pVoxelPass);
-
-		pVDirectEngine->ApplyBarriers();
-
 		pVDirectEngine->Draw(pParticlePass);
-
 		pVDirectEngine->End(pParticlePass);
 
-		pVDirectEngine->ApplyBarriers();
-
+		pVDirectEngine->Begin(pVoxelPass);
 		pVDirectEngine->Draw(pVoxelPass);
 		pVDirectEngine->End(pVoxelPass);
 
@@ -512,8 +503,32 @@ bool RenderContext::Present()
 	}
 #endif
 
-	if (pDirectEngine->GetFence()->GetCompletedValue() < pDirectEngine->GetValue())
+	if (pDirectEngine->GetCompletedValue() < pDirectEngine->GetValue())
+	{
+		/* The GPU has not retired the frame we submitted, so there is nothing
+		   to do but come back next tick. Sustained, that is indistinguishable
+		   from a freeze: the window stops updating while the main loop keeps
+		   spinning, and no validation error is produced because nothing
+		   illegal happened. Report it once with the numbers that say whether
+		   the work is merely enormous or genuinely stuck. */
+		++m_uiStalledFrames;
+
+		if (m_uiStalledFrames == 600)
+		{
+			fprintf(stderr, "[stall] GPU has not completed for 600 frames: "
+			                "direct %llu/%llu, vdirect %llu/%llu, voxel instances %u, aabbs %zu\n",
+			        static_cast<unsigned long long>(pDirectEngine->GetCompletedValue()),
+			        static_cast<unsigned long long>(pDirectEngine->GetValue()),
+			        static_cast<unsigned long long>(pVDirectEngine->GetCompletedValue()),
+			        static_cast<unsigned long long>(pVDirectEngine->GetValue()),
+			        pVoxelPass != nullptr ? pVoxelPass->GetData().m_uiInstanceCount : 0,
+			        m_AABBList.size());
+		}
+
 		return false;
+	}
+
+	m_uiStalledFrames = 0;
 
 	// Reset command allocators
 	if (pDirectEngine->GetValue() > 0)
@@ -526,47 +541,30 @@ bool RenderContext::Present()
 		// pDirectEngine->Wait(pCopyEngine, 1);
 		pDirectEngine->Start();
 
-		pDirectEngine->Begin(pPostProcessingPass);
+		/* One render pass instance per pass (see the VDirect block above).
+		   Post processing samples the UI and debug targets, so both close
+		   before it begins. */
 		pDirectEngine->Begin(pUIPass);
+		pDirectEngine->Draw(pUIPass);
+		pDirectEngine->End(pUIPass);
 
 #if defined(_DEBUG) || defined(EDITOR)
 		if (m_bDebugEnabled || !m_bDebugCleared)
 		{
 			pDirectEngine->Begin(pDebugPass);
-		}
-#endif
-
-		pDirectEngine->ApplyBarriers();
-
-		pDirectEngine->Draw(pUIPass);
-
-#if defined(_DEBUG) || defined(EDITOR)
-		if (m_bDebugEnabled || !m_bDebugCleared)
-		{
 			pDirectEngine->Draw(pDebugPass);
-		}
-#endif
-
-#if defined(_DEBUG) || defined(EDITOR)
-		if (m_bDebugEnabled || !m_bDebugCleared)
-		{
 			pDirectEngine->End(pDebugPass);
 		}
 #endif
 
-		pDirectEngine->End(pUIPass);
-		pDirectEngine->ApplyBarriers();
-
+		pDirectEngine->Begin(pPostProcessingPass);
 		pDirectEngine->Draw(pPostProcessingPass);
 
-#ifndef _ORBIS
-		static_cast<DXImContext*>(
-			m_pPlatform->GetImguiSystem().GetContext()
-		)->Draw(
-			ImGui::GetDrawData(),
-			static_cast<DXCommandEngine*>(pDirectEngine)->GetList()
-		);
-#endif
+		/* ImContext::Draw takes only the draw data; the Vulkan context reads
+		   the command buffer off the engine it was constructed with, so the
+		   backend command list no longer has to be threaded through here.
+		   It records into the post processing pass's instance. */
+		m_pPlatform->GetImguiSystem().GetContext()->Draw(ImGui::GetDrawData());
 
 		pDirectEngine->End(pPostProcessingPass);
 		pDirectEngine->ApplyBarriers();
@@ -862,19 +860,56 @@ void RenderContext::OnFullscreenChanged(bool bFullscreen)
 	}
 	else
 	{
-#ifdef _WINDOWS
-		RECT Rect;
-		GetClientRect(*(HWND*)m_pPlatform->GetWindowContext()->GetHandle(), &Rect);
-
-		OnResize(Rect.right - Rect.left, Rect.bottom - Rect.top);
-#else
+		/* SDL owns the window on every desktop platform now, so there is no
+		   Win32 branch here any more: GetHandle() is an SDL_Window*, and the
+		   old code cast it to an HWND for GetClientRect. */
 		OnResize(m_v2RenderResolution.x, m_v2RenderResolution.y);
-#endif
 	}
+}
+
+UVector2 RenderContext::ConstrainToAspectRatio(uint32_t uiWidth, uint32_t uiHeight) const
+{
+	const float fLocked =
+		m_pPlatform->GetApplication()->GetSettings().GetLockedAspectRatio();
+
+	if (fLocked <= 0.f || uiWidth == 0 || uiHeight == 0)
+		return UVector2(uiWidth, uiHeight);
+
+	/* Largest box of the locked ratio that fits the window; the leftover is
+	   the letterbox the swapchain blit leaves black. */
+	const float fWindow = static_cast<float>(uiWidth) / static_cast<float>(uiHeight);
+
+	if (fWindow > fLocked)
+		uiWidth = static_cast<uint32_t>(uiHeight * fLocked);
+	else
+		uiHeight = static_cast<uint32_t>(uiWidth / fLocked);
+
+	return UVector2(std::max(uiWidth, 1u), std::max(uiHeight, 1u));
+}
+
+Vector2 RenderContext::WindowToRenderNormalized(const Vector2& v2WindowPoint) const
+{
+	const UVector2 windowSize = m_pPlatform->GetWindowContext()->GetSize();
+
+	/* m_v2RenderResolution is the constrained size in window pixels; the
+	   present blit centres it. */
+	const float fBarX = (static_cast<float>(windowSize.x) - static_cast<float>(m_v2RenderResolution.x)) * 0.5f;
+	const float fBarY = (static_cast<float>(windowSize.y) - static_cast<float>(m_v2RenderResolution.y)) * 0.5f;
+
+	if (m_v2RenderResolution.x == 0 || m_v2RenderResolution.y == 0)
+		return Vector2(0.f);
+
+	return Vector2(
+		(v2WindowPoint.x - fBarX) / static_cast<float>(m_v2RenderResolution.x),
+		(v2WindowPoint.y - fBarY) / static_cast<float>(m_v2RenderResolution.y));
 }
 
 bool RenderContext::OnResize(uint32_t uiWidth, uint32_t uiHeight)
 {
+	const UVector2 constrained = ConstrainToAspectRatio(uiWidth, uiHeight);
+	uiWidth = constrained.x;
+	uiHeight = constrained.y;
+
 	if (m_v2RenderResolution.x == uiWidth && m_v2RenderResolution.y == uiHeight)
 		return false;
 

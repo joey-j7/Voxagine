@@ -14,8 +14,8 @@
 #include "Prefabs/RecallPrefab.h"
 #include "Weapons/Bullet.h"
 
-#include <External/rttr/registration.h>
-#include <External/rttr/policy.h>
+#include <rttr/registration.h>
+#include <rttr/policy.h>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
 #include <Core/GameTimer.h>
@@ -466,7 +466,7 @@ void Player::FixedTick(const GameTimer& gameTimer)
 
 		/* Don't float in air */
 		m_Direction.y = 0.f;
-		m_Direction = glm::normalize(m_Direction);
+		m_Direction = SafeNormalize(m_Direction, m_Direction);
 
 		//std::cout << m_Velocity.x << " " << m_Velocity.y << " " << m_Velocity.z << std::endl;
 
@@ -485,7 +485,7 @@ void Player::FixedTick(const GameTimer& gameTimer)
 
 		/* Don't float in air */
 		m_Direction.y = 0.f;
-		m_Direction = glm::normalize(m_Direction);
+		m_Direction = SafeNormalize(m_Direction, m_Direction);
 	}
 
 	if(m_bRumble)
@@ -574,7 +574,7 @@ bool Player::Damage(float damage, Vector3 impactNormal, float fLaunchStrength /*
 	m_DamageOffset = impactNormal;
 
 	// TODO: see why this should be 1 
-	m_DamageOffset = glm::normalize(impactNormal);
+	m_DamageOffset = SafeNormalize(impactNormal);
 	m_DamageOffset.y = 1.f;
 	m_DamageOffset *= fLaunchStrength;
 

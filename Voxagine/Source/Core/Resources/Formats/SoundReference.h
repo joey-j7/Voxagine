@@ -1,8 +1,8 @@
 #pragma once
 
+#include "Core/Platform/Audio/AudioContext.h"
 #include "Core/Resources/ReferenceObject.h"
 
-class AudioContext;
 class SoundReference : public ReferenceObject
 {
 	friend class ResourceManager;
@@ -10,7 +10,13 @@ class SoundReference : public ReferenceObject
 
 public:
 	SoundReference(const std::string& filePath) : ReferenceObject(filePath) {}
-	virtual ~SoundReference() {}
+
+	virtual ~SoundReference()
+	{
+		/* The context may still be pointing at this as the playing BGM. */
+		if (m_pAudioContext != nullptr)
+			m_pAudioContext->OnReferenceDestroyed(this);
+	}
 
 	void SetContext(AudioContext* pContext) { m_pAudioContext = pContext; }
 

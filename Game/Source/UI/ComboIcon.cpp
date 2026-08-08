@@ -1,7 +1,7 @@
 #include "ComboIcon.h"
 #include "Core/ECS/World.h"
-#include <External/rttr/registration>
-#include <External/rttr/policy.h>
+#include <rttr/registration>
+#include <rttr/policy.h>
 #include <Core/ECS/Components/SpriteRenderer.h>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
@@ -38,8 +38,8 @@ void ComboIcon::AddComponents()
 
 	m_pSpriteRenderer->SetAlignment(RA_CENTERED);
 	m_pSpriteRenderer->SetScreenAlignment(RA_CENTERED);
-	m_pSpriteRenderer->SetToScreenSpace(TRUE);
-	m_pSpriteRenderer->SetScaleWithScreen(TRUE);
+	m_pSpriteRenderer->SetToScreenSpace(true);
+	m_pSpriteRenderer->SetScaleWithScreen(true);
 }
 
 void ComboIcon::SetComboIconImage(int currentComboThreshold)

@@ -2,7 +2,7 @@
 #include "Core/ECS/Components/Collider.h"
 
 #include "Core/Math.h"
-#include <External/rttr/type>
+#include <rttr/type>
 
 struct VoxFrame;
 

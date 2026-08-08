@@ -28,7 +28,7 @@ void main(uint3 dispatchID : SV_DispatchThreadID)
 {
     uint uiDispatchID = dispatchID.x + dispatchID.y * 65534;
 
-    VOXEL_BUFFER model = modelData[MapperID];
+    VOXEL_BUFFER_LOCAL model = modelData[MapperID];
 
     // Translation
     VOXEL_FORMAT voxelPosition = model[uiDispatchID] * 255.0;

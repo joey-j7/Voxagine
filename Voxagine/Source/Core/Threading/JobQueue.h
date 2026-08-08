@@ -11,7 +11,7 @@ class JobQueue
 public:
 	friend class JobManager;
 	friend class PhysicsSystem;
-	friend class WINFileSystem;
+	friend class PosixFileSystem;
 	friend class ORBFileSystem;
 
 	JobQueue(JobManager* pJobManager, uint32_t handle);

@@ -52,10 +52,3 @@ bool Box::Intersects(const Box& boxB, Manifold& manifold)
 	}
 	return false;
 }
-
-inline bool Box::Intersects(const Box& boxB)
-{
-	return (Max.x > boxB.Min.x && Min.x < boxB.Max.x &&
-		Max.y > boxB.Min.y && Min.y < boxB.Max.y &&
-		Max.z > boxB.Min.z && Min.z < boxB.Max.z);
-}

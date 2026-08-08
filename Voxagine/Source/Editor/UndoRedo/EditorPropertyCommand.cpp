@@ -58,7 +58,10 @@ void EditorPropertyCommand::SetValue(rttr::variant & valueToSet)
 	}
 	else if (m_TargetType.is_derived_from<Component>())
 	{
-		rttr::instance PropertyHolderInstance = pTargetEntity->GetComponent(m_TargetType);
+		/* rttr::instance takes a non-const reference, so the returned
+		   pointer has to be a named lvalue. MSVC bound the rvalue. */
+		Component* pTargetComponent = pTargetEntity->GetComponent(m_TargetType);
+		rttr::instance PropertyHolderInstance = pTargetComponent;
 		m_Property.set_value(PropertyHolderInstance, valueToSet);
 	}
 	else

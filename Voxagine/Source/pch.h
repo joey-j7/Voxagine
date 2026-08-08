@@ -13,10 +13,6 @@
 #include <unordered_set>
 #include <assert.h>
 
-#ifdef _WINDOWS
-#include <d3d12.h>
-#include "External/DirectX12/d3dx12.h"
-#endif
 
 #include "Core/Utils/Utils.h"
 #include "Core/Math.h"

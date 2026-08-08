@@ -1,7 +1,7 @@
 #include "ComboSliderUI.h"
 #include "Core/ECS/World.h"
-#include <External/rttr/registration>
-#include <External/rttr/policy.h>
+#include <rttr/registration>
+#include <rttr/policy.h>
 #include "Core/ECS/Components/UI/UISlider.h"
 #include "Core/MetaData/PropertyTypeMetaData.h"
 

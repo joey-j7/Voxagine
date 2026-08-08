@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "AudioPlaylist.h"
 
-#include <External/rttr/registration>
-#include <External/rttr/policy.h>
+#include <rttr/registration>
+#include <rttr/policy.h>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
 #include "AudioSource.h"

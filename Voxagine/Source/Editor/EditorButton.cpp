@@ -30,7 +30,11 @@ EditorButton::~EditorButton()
 
 void EditorButton::OnClick(std::function<void(void)> function)
 {
-	if (ImGui::ImageButton(*(ImTextureID*)m_pCurrentReference->Descriptor, m_ButtonSize, ImVec2(0, 0), ImVec2(1, 1), 0) || m_bIsUp)
+	/* ImGui draws nothing for a null texture, but the hover and click logic
+	   below still has to run. */
+	View* pTexture = m_pCurrentReference != nullptr ? m_pCurrentReference->TextureView : nullptr;
+
+	if (ImGui::ImageButton(static_cast<ImTextureID>(pTexture), m_ButtonSize, ImVec2(0, 0), ImVec2(1, 1), 0) || m_bIsUp)
 	{
 		function();
 		m_bIsUp = false;

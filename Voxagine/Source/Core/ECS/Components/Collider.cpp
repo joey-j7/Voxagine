@@ -5,8 +5,8 @@
 #include "Core/ECS/Systems/Physics/VoxelGrid.h"
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
-#include <External/rttr/registration>
-#include "External/rttr/policy.h"
+#include <rttr/registration>
+#include "rttr/policy.h"
 
 RTTR_REGISTRATION
 {

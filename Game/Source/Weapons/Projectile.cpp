@@ -12,7 +12,7 @@
 
 #include "Humanoids/Players/Player.h"
 
-#include <External/rttr/registration.h>
+#include <rttr/registration.h>
 
 RTTR_REGISTRATION
 {

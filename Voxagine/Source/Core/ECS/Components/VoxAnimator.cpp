@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "VoxAnimator.h"
 
-#include <External/rttr/registration>
-#include <External/rttr/policy.h>
+#include <rttr/registration>
+#include <rttr/policy.h>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
 #include "Core/Resources/Formats/VoxModel.h"

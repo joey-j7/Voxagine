@@ -1,4 +1,16 @@
-# Visual Studio / MSVC build output
+# Compiled shaders (see cmake/Shaders.cmake)
+*.spv
+
+# CMake build output. Everything lands in Build/<preset>/ - see CMakePresets.json.
+Build/
+compile_commands.json
+CMakeUserPresets.json
+
+# IDE-generated CMake directories. Rider defaults to cmake-build-<profile>/ when
+# it is not pointed at a preset; the presets exist so it does not have to.
+cmake-build*/
+
+# Legacy Visual Studio / MSVC build output
 [Dd]ebug/
 [Dd]ebugEditor/
 [Dd]ebugGame/
@@ -19,6 +31,29 @@ x86/
 *.opensdf
 *.suo
 .vs/
+
+# Editors / IDEs
+#
+# JetBrains: ignore the per-user state, track the rest, so run configurations are
+# shared. workspace.xml is where the CMake profiles live, and it also holds the
+# window layout and open tabs - per-user by JetBrains' own definition. The build
+# configurations travel in CMakePresets.json instead, which every IDE and a plain
+# `cmake --preset` read alike. Rider nests these under .idea/.idea.<name>/.idea/
+# and writes its own .gitignore there covering most of it; these are the same
+# rules for anyone whose IDE does not.
+**/.idea/workspace.xml
+**/.idea/tasks.xml
+**/.idea/usage.statistics.xml
+**/.idea/contentModel.xml
+**/.idea/projectSettingsUpdater.xml
+**/.idea/indexLayout.xml
+**/.idea/dictionaries/
+**/.idea/shelf/
+**/.idea/httpRequests/
+**/.idea/*.iml
+
+.cache/
+*.swp
 
 # OAuth/credential files — never commit real tokens
 **/token_v2.json

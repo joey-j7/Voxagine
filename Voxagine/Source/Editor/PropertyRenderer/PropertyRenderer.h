@@ -1,6 +1,6 @@
 #pragma once
 
-#include "External/rttr/type"
+#include "rttr/type"
 
 #include <unordered_map>
 #include <functional>

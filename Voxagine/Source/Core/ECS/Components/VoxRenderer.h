@@ -4,7 +4,7 @@
 
 #include "Core/Math.h"
 
-#include <External/rttr/type>
+#include <rttr/type>
 
 #include "Core/ECS/Systems/Physics/VoxelGrid.h"
 #include "Core/ECS/Systems/Physics/Box.h"

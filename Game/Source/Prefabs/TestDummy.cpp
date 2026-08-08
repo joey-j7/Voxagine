@@ -5,7 +5,7 @@
 
 #include "Core/ECS/World.h"
 
-#include "External/rttr/registration.h"
+#include "rttr/registration.h"
 #include "Core/ECS/Components/Particles/Modules/CollisionModule.h"
 #include "Core/ECS/Components/Particles/Modules/AttractorModule.h"
 

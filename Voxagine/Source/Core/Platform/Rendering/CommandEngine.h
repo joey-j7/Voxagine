@@ -15,11 +15,7 @@ class View;
 class CommandEngine
 {
 	friend class RenderContext;
-
-	// TODO: remove these
-	friend class DX12RenderContext;
-	friend class ORBRenderContext;
-	friend class GLRenderContext;
+	friend class VKRenderContext;
 
 public:
 	enum Type

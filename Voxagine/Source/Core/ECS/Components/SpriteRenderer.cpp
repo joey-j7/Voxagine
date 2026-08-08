@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "Core/ECS/Components/SpriteRenderer.h"
 
-#include <External/rttr/registration>
-#include <External/rttr/policy.h>
+#include <rttr/registration>
+#include <rttr/policy.h>
 #include "Core/ECS/Systems/Rendering/RenderSystem.h"
 #include "Core/Application.h"
 

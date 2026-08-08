@@ -4,14 +4,14 @@
 
 #include "Core/ECS/Components/SpriteRenderer.h"
 
-#include <External\glm\gtx\compatibility.hpp>
+#include <External/glm/gtx/compatibility.hpp>
 
 #include "Core/ECS/World.h"
 #include "Core/Application.h"
 #include "Core/Platform/Platform.h"
 #include "Core/Platform/Input/Temp/InputContextNew.h"
 
-#include <External/rttr/registration>
+#include <rttr/registration>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
 RTTR_REGISTRATION

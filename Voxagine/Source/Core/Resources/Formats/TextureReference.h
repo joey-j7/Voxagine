@@ -10,6 +10,7 @@ class RenderContext;
 class TextureReference : public ReferenceObject {
 	friend class DXTextureManager;
 	friend class ORBTextureManager;
+	friend class VKTextureManager;
 
 public:
 	friend class TextureManager;
@@ -23,8 +24,9 @@ public:
 	void SetContext(RenderContext* pContext) { m_pContext = pContext; };
 	uint32_t GetID() const { return m_uiID; }
 
+	/* Also the editor's ImTextureID: VKImContext resolves a draw command's
+	   texture back to this View. */
 	View* TextureView = nullptr;
-	void* Descriptor = nullptr;
 
 private:
 	RenderContext* m_pContext = nullptr;

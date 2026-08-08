@@ -11,7 +11,7 @@
 
 #include "Humanoids/Enemies/Monster.h"
 
-#include <External/rttr/registration.h>
+#include <rttr/registration.h>
 
 RTTR_REGISTRATION
 {

@@ -196,9 +196,25 @@ public:
 
 	void EnableDebugLines(bool bEnabled);
 
+	/* Window size reduced to the locked aspect ratio from Settings; equal to
+	   the input when nothing is locked. */
+	UVector2 ConstrainToAspectRatio(uint32_t uiWidth, uint32_t uiHeight) const;
+
+	/* Window pixel to 0..1 across the presented image. A locked aspect ratio
+	   centres a smaller render target in the window, so the two spaces differ
+	   by the black bar; identity when nothing is locked. */
+	Vector2 WindowToRenderNormalized(const Vector2& v2WindowPoint) const;
+
 	bool ResizeWorldBuffer();
 	inline bool ModifyVoxel(uint32_t uiID, uint32_t uiColor, bool bOverwrite = true)
 	{
+		/* The callers derive this ID from float world positions, so a bad
+		   transform reaches here as an index rather than as a crash at the
+		   source. Writing outside the mapped voxel buffer corrupts whatever
+		   the allocator put next to it. */
+		if (uiID >= GetVoxelDataSize())
+			return false;
+
 		uint32_t& uiOldColor = m_pVoxelData[uiID];
 
 		if ((bOverwrite || uiOldColor == 0) && uiOldColor != uiColor) {
@@ -213,6 +229,9 @@ public:
 
 	inline void ModifyVoxelFast(uint32_t uiID, uint32_t uiColor)
 	{
+		if (uiID >= GetVoxelDataSize())
+			return;
+
 		m_pVoxelData[uiID] = uiColor;
 		m_bWorldUpdated = true;
 	}
@@ -254,6 +273,12 @@ public:
 	void ResetFrameCount() { m_uiDrawnFrames = 0; }
 
 	PCommandEngine* GetEngine(const std::string& sName) { return m_pCommandEngines[sName].get(); }
+
+	PRenderPass* GetRenderPass(const std::string& sName)
+	{
+		auto found = m_pRenderPasses.find(sName);
+		return found != m_pRenderPasses.end() ? found->second.get() : nullptr;
+	}
 
 	PTextureManager* GetTextureManager() const { return m_pTextureManager.get(); }
 	PModelManager* GetModelManager() const { return m_pModelManager.get(); }
@@ -347,6 +372,9 @@ protected:
 	bool m_bDebugCleared = true;
 
 	CameraRenderData m_CameraData;
+
+	/* Consecutive Present calls that found the GPU still busy. */
+	uint32_t m_uiStalledFrames = 0;
 
 	UVector2 m_v2RenderResolution = UVector2(1, 1);
 	UVector2 m_v2ScreenResolution = UVector2(1, 1);

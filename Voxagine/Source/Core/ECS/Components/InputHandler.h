@@ -6,7 +6,7 @@
 #include "Core/Platform/Input/Temp/MouseControllerInterface.h"
 #include "Core/Platform/Input/Temp/KeyboardControllerInterface.h"
 
-#include <External/rttr/type>
+#include <rttr/type>
 
 class InputContextNew;
 class PlayerController;

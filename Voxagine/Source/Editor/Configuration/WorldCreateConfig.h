@@ -1,6 +1,6 @@
 #pragma once
-#include <External/rttr/type>
-#include <External/rttr/registration_friend> 
+#include <rttr/type>
+#include <rttr/registration_friend> 
 
 class WorldCreateConfig
 {

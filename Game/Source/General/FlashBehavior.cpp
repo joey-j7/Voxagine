@@ -3,7 +3,7 @@
 
 #include "Core/MetaData/PropertyTypeMetaData.h"
 
-#include <External/rttr/registration>
+#include <rttr/registration>
 
 RTTR_REGISTRATION
 {

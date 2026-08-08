@@ -167,8 +167,7 @@ void Chunk::EncodeVoxels()
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 	auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 	std::string message = "Chunk encode (ms): " + std::to_string(execTime.count()) + "\n";
-	std::wstring wMessage(message.begin(), message.end());
-	OutputDebugStringW(wMessage.c_str());
+	fprintf(stderr, "%s", message.c_str());
 }
 
 void Chunk::DecodeVoxels()
@@ -210,8 +209,7 @@ void Chunk::DecodeVoxels()
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 	auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 	std::string message = "Chunk decode (ms): " + std::to_string(execTime.count()) + "\n";
-	std::wstring wMessage(message.begin(), message.end());
-	OutputDebugStringW(wMessage.c_str());
+	fprintf(stderr, "%s", message.c_str());
 }
 
 inline bool Chunk::VoxelEqual(Voxel& a, Voxel& b)

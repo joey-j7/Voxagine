@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "AutoMoveMonster.h"
 
-#include <External/rttr/registration.h>
+#include <rttr/registration.h>
 #include <Core/Application.h>
 #include <Core/ECS/World.h>
 #include <Core/ECS/Components/PhysicsBody.h>

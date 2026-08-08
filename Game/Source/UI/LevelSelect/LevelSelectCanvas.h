@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Core\ECS\Entities\UI\Canvas.h"
+#include "Core/ECS/Entities/UI/Canvas.h"
 
 #include "Core/Math.h"
 
 #include "Core/Objects/VClass.h"
 
-#include <External/rttr/type>
+#include <rttr/type>
 
 class World;
 class SpriteRenderer;

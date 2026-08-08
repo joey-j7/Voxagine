@@ -29,14 +29,7 @@ public:
 
 	const PShaderCache& GetCache() const { return m_Cache; }
 
-#ifdef _ORBIS
-	PPShader* GetNativePS() const;
-	PVShader* GetNativeVS() const;
-
-	void* GetData() const { return m_pData; }
-#else
 	PShader* GetNative() const;
-#endif
 
 protected:
 	PRenderContext* m_pContext = nullptr;
@@ -44,13 +37,7 @@ protected:
 
 	uint32_t m_uiHandle = UINT_MAX;
 
-#ifdef _ORBIS
-	PVShader* m_pNativeVShader = nullptr;
-	PPShader* m_pNativePShader = nullptr;
-	void* m_pData = nullptr;
-#else
 	R_PTR_TYPE(PShader) m_pNativeShader = nullptr;
-#endif
 
 	PShaderCache m_Cache;
 };

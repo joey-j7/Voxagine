@@ -1,6 +1,6 @@
 #include "Monster.h"
 
-#include <External/rttr/registration.h>
+#include <rttr/registration.h>
 #include <Core/MetaData/PropertyTypeMetaData.h>
 #include <Core/Application.h>
 #include <Core/ECS/World.h>
@@ -213,7 +213,9 @@ void Monster::FixedTick(const GameTimer& gameTimer)
 	{
 		m_Velocity = physicsBody->GetVelocity();
 		m_Direction = m_Velocity;
-		m_Direction = glm::normalize(m_Direction);
+		/* A monster standing still - which is what happens the moment it
+		   reaches the player - has exactly zero velocity. */
+		m_Direction = SafeNormalize(m_Direction, m_Direction);
 	}
 }
 

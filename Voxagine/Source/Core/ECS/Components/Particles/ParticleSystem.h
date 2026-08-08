@@ -2,7 +2,7 @@
 #include "Core/ECS/Component.h"
 #include "Core/ECS/Components/Particles/ParticlePool.h"
 
-#include <External/rttr/type>
+#include <rttr/type>
 
 struct VoxFrame;
 class ParticleModule;

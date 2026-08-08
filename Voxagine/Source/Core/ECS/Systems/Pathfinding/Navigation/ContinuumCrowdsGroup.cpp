@@ -2,7 +2,7 @@
 #include "Core/ECS/Systems/Pathfinding/Navigation/ContinuumCrowdsGroup.h"
 
 #include <limits>
-#include <External/rttr/registration>
+#include <rttr/registration>
 #include "Core/MetaData/PropertyTypeMetaData.h"
 #include "Core/Application.h"
 #include "Core/ECS/World.h"
@@ -13,6 +13,7 @@
 #include "Core/ECS/Systems/Pathfinding/Navigation/Pathfinder.h"
 #include "Core/ECS/Systems/Pathfinding/Navigation/PathfinderGoal.h"
 #include "External/optick/optick.h"
+#include <cmath>
 
 RTTR_REGISTRATION
 {
@@ -138,7 +139,7 @@ namespace pathfinding
 			{
 				Vector4 potentialGradient = calculatePotentialGradient(node);
 				Vector2 velocity = calculateTotVelocity(node, potentialGradient);
-				assert(!isnan(velocity.x) && !isnan(velocity.y));
+				assert(!std::isnan(velocity.x) && !std::isnan(velocity.y));
 				
 				node.m_groupProperties[getId()].reset(true);
 				node.m_groupProperties.at(getId()).m_totVelocityX.store(velocity.x);
@@ -418,7 +419,7 @@ namespace pathfinding
 		else
 			speed = topoSpeed + ((density - minDensity) / (maxDensity - minDensity)) * (flowSpeed - topoSpeed);
 
-		assert(!isnan(speed));
+		assert(!std::isnan(speed));
 		return speed;
 	}
 

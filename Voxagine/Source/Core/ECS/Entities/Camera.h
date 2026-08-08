@@ -53,10 +53,16 @@ private:
 	float m_fProjectionValue;
 	Vector3 m_cameraOffset;
 
-	Matrix4 m_Projection;
-	Matrix4 m_ModelView;
-	Matrix4 m_ViewMatrix;
-	Matrix4 m_MVP;
+	/* glm stopped default-initialising in 0.9.9, so these held whatever was
+	   in memory. Recalculate only writes m_MVP when the camera considers
+	   itself updated, so a camera that never moved handed the renderer a
+	   garbage projection - which is a black screen, not an obvious error.
+	   GLM_FORCE_CTOR_INIT would fix it globally but makes Particle's union
+	   non-trivially constructible. */
+	Matrix4 m_Projection = Matrix4(1.f);
+	Matrix4 m_ModelView = Matrix4(1.f);
+	Matrix4 m_ViewMatrix = Matrix4(1.f);
+	Matrix4 m_MVP = Matrix4(1.f);
 
 	/* Checks if one of the camera's matrices have been updated this frame */
 	bool m_bIsRecalculated = false;
