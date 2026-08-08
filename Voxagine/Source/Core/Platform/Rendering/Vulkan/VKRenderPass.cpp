@@ -181,7 +181,11 @@ bool VKRenderPass::CreatePipeline()
 	raster.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	raster.polygonMode = VK_POLYGON_MODE_FILL;
 	raster.cullMode = VKCullMode(m_Data.m_CullType);
-	raster.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	/* Draw uses a negative-height viewport to keep D3D clip space, so the
+	   winding a D3D pipeline saw is preserved and D3D's default front face
+	   (clockwise) carries over with it. CCW here plus front-culling threw
+	   away every face of the voxel pass's boxes. */
+	raster.frontFace = VK_FRONT_FACE_CLOCKWISE;
 	raster.lineWidth = 1.f;
 
 	VkPipelineMultisampleStateCreateInfo multisample{};
@@ -685,9 +689,12 @@ void VKRenderPass::Draw(PCommandEngine* pEngine)
 
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 
+	/* Negative height flips Vulkan's Y-down clip space back to D3D's Y-up,
+	   so the unmodified HLSL shaders render upright (core since 1.1). */
 	VkViewport viewport{};
+	viewport.y = static_cast<float>(m_TargetSize.y);
 	viewport.width = static_cast<float>(m_TargetSize.x);
-	viewport.height = static_cast<float>(m_TargetSize.y);
+	viewport.height = -static_cast<float>(m_TargetSize.y);
 	viewport.maxDepth = 1.f;
 
 	VkRect2D scissor{};

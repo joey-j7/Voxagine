@@ -25,4 +25,8 @@ private:
 
 	uint64_t m_uiSecondCounter = 0;
 	uint64_t m_uiMaxDelta = 0;
+
+	/* Sub-tick residue from converting clock units to canonical ticks, carried
+	   into the next Update so no real time is lost to truncation. */
+	uint64_t m_uiConversionRemainder = 0;
 };

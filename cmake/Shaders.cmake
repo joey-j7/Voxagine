@@ -17,6 +17,11 @@ set(VOXAGINE_DXC_SHIFTS
     -fvk-t-shift 100 0
     -fvk-u-shift 200 0
     -fvk-s-shift 300 0
+    # DX buffer layout, not std430: the engine memcpys tightly-packed C++
+    # structs into structured buffers (StructuredVoxelBuffer is 32 bytes;
+    # std430 pads its float3s to a 48-byte stride, which silently shifts
+    # every element after [0]).
+    -fvk-use-dx-layout
 )
 
 # voxagine_add_shaders(<target> SOURCE_DIR <dir> OUTPUT_DIR <dir>)

@@ -291,6 +291,7 @@ bool RenderContext::Present()
 
 		m_uiFPS = m_uiDrawnFrames;
 		m_uiDrawnFrames = 0;
+		fprintf(stderr, "[fps] %u\n", m_uiFPS);
 	}
 	
 #if defined(_DEBUG) || defined(EDITOR)
@@ -427,10 +428,10 @@ bool RenderContext::Present()
 			m_bFaderUpdated = false;
 		}
 
-		// AABB buffer
-#ifndef _ORBIS
-		if (m_bWorldUpdated)
-#endif
+		// AABB buffer. Uploaded every frame: the list is rebuilt each frame and
+		// entity AABBs move without necessarily setting m_bWorldUpdated, so
+		// gating the upload on it rendered from a stale list. It is ~32 bytes
+		// per drawn model, so the upload is not worth guarding.
 		{
 			pAABBBuffer->Clear();
 			pAABBBuffer->AddStructuredData(
@@ -450,18 +451,15 @@ bool RenderContext::Present()
 		pVDirectEngine->Reset();
 		pVDirectEngine->Start();
 
-		/* Barrier towards render target state */
+		/* One render pass instance per pass: dynamic rendering cannot nest
+		   them, so the DX12-style interleaved Begin order would silently skip
+		   every pass after the first. The voxel pass samples the particle
+		   targets, so particles draw first. */
 		pVDirectEngine->Begin(pParticlePass);
-		pVDirectEngine->Begin(pVoxelPass);
-
-		pVDirectEngine->ApplyBarriers();
-
 		pVDirectEngine->Draw(pParticlePass);
-
 		pVDirectEngine->End(pParticlePass);
 
-		pVDirectEngine->ApplyBarriers();
-
+		pVDirectEngine->Begin(pVoxelPass);
 		pVDirectEngine->Draw(pVoxelPass);
 		pVDirectEngine->End(pVoxelPass);
 
@@ -506,42 +504,29 @@ bool RenderContext::Present()
 		// pDirectEngine->Wait(pCopyEngine, 1);
 		pDirectEngine->Start();
 
-		pDirectEngine->Begin(pPostProcessingPass);
+		/* One render pass instance per pass (see the VDirect block above).
+		   Post processing samples the UI and debug targets, so both close
+		   before it begins. */
 		pDirectEngine->Begin(pUIPass);
+		pDirectEngine->Draw(pUIPass);
+		pDirectEngine->End(pUIPass);
 
 #if defined(_DEBUG) || defined(EDITOR)
 		if (m_bDebugEnabled || !m_bDebugCleared)
 		{
 			pDirectEngine->Begin(pDebugPass);
-		}
-#endif
-
-		pDirectEngine->ApplyBarriers();
-
-		pDirectEngine->Draw(pUIPass);
-
-#if defined(_DEBUG) || defined(EDITOR)
-		if (m_bDebugEnabled || !m_bDebugCleared)
-		{
 			pDirectEngine->Draw(pDebugPass);
-		}
-#endif
-
-#if defined(_DEBUG) || defined(EDITOR)
-		if (m_bDebugEnabled || !m_bDebugCleared)
-		{
 			pDirectEngine->End(pDebugPass);
 		}
 #endif
 
-		pDirectEngine->End(pUIPass);
-		pDirectEngine->ApplyBarriers();
-
+		pDirectEngine->Begin(pPostProcessingPass);
 		pDirectEngine->Draw(pPostProcessingPass);
 
 		/* ImContext::Draw takes only the draw data; the Vulkan context reads
 		   the command buffer off the engine it was constructed with, so the
-		   backend command list no longer has to be threaded through here. */
+		   backend command list no longer has to be threaded through here.
+		   It records into the post processing pass's instance. */
 		m_pPlatform->GetImguiSystem().GetContext()->Draw(ImGui::GetDrawData());
 
 		pDirectEngine->End(pPostProcessingPass);

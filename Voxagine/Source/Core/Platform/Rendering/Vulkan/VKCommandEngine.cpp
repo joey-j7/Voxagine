@@ -225,14 +225,6 @@ void VKCommandEngine::Execute()
 	submitInfo.signalSemaphoreInfoCount = 1;
 	submitInfo.pSignalSemaphoreInfos = &signalInfo;
 
-	{
-		static int s_i = 0;
-		if (s_i++ < 6)
-			fprintf(stderr, "[exec] '%s' slot=%u cmd=%p signal=%llu\n",
-			        m_Info.m_Name.c_str(), m_uiFrameIndex, (void*)cmd,
-			        (unsigned long long)m_uiFenceValue);
-	}
-
 	if (vkQueueSubmit2(m_Queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
 		fprintf(stderr, "[vulkan] vkQueueSubmit2 failed for '%s'\n", m_Info.m_Name.c_str());
 

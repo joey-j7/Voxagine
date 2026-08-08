@@ -238,9 +238,18 @@ bool VKDevice::CreateDevice(VkSurfaceKHR surface)
 
 	/* Synchronization2 gives us the split access/stage masks that VKTranslate.h
 	   expands engine resource states into. */
+	/* Shaders are compiled with -fvk-use-dx-layout so structured buffers match
+	   the tightly packed C++ structs the engine memcpys in (D3D's rules).
+	   float3 members then straddle 16-byte boundaries, which Vulkan only
+	   permits with scalarBlockLayout. */
+	VkPhysicalDeviceScalarBlockLayoutFeatures scalarLayout{};
+	scalarLayout.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES;
+	scalarLayout.scalarBlockLayout = VK_TRUE;
+
 	VkPhysicalDeviceSynchronization2Features sync2{};
 	sync2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
 	sync2.synchronization2 = VK_TRUE;
+	sync2.pNext = &scalarLayout;
 
 	/* CommandEngine exposes a monotonically increasing fence value that other
 	   engines wait on - an ID3D12Fence. Timeline semaphores are the direct

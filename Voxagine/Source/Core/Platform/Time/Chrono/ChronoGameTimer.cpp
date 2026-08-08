@@ -64,7 +64,13 @@ void ChronoGameTimer::Update(const std::function<void()>& Update)
 	}
 
 	// Convert clock units into a canonical tick format. This cannot overflow due to the previous clamp.
+	// The division truncates, and m_LastTime has already advanced past the
+	// truncated part - without carrying the remainder, a call rate faster than
+	// one canonical tick (100ns) throws away nearly all real time and the main
+	// loop's frame limiter only fires on the rare slow iteration.
 	TimeDelta *= GetTicksPerSecond();
+	TimeDelta += m_uiConversionRemainder;
+	m_uiConversionRemainder = TimeDelta % s_uiClockFrequency;
 	TimeDelta /= s_uiClockFrequency;
 
 	uint32_t uiLastFrameCount = m_uiFrameCount;
