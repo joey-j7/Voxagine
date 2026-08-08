@@ -21,6 +21,10 @@ bool FMODSoundReference::Load(const std::string& filePath)
 
 	Sound = nullptr;
 
+	/* Callers branch on IsLoaded(), which reads m_bIsLoaded rather than this
+	   return value. */
+	m_bIsLoaded = true;
+
 	return true;
 }
 

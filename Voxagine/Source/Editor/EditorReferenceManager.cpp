@@ -79,9 +79,11 @@ void EditorReferenceManager::ImportFiles(const std::vector<std::string>& filePat
 			{
 				FileResourceInfo->ResourceList->push_back(RefResource);
 			}
-			else
+			else if (RefResource != nullptr)
 			{
-				delete RefResource;
+				/* Release, never delete: the load functions return an object
+				   the ReferenceManager owns and still has under its path. */
+				RefResource->Release();
 			}
 		}
 	}
