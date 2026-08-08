@@ -51,12 +51,9 @@ float4 main(PS_in IN) : TAR_OUT
     float difference = clamp(dot(marchDiffuse.Normal, -lightDirection.xyz), 0.0, 1.0);
     float shadowMultiplier = difference * (1.0-AMBIENT_VALUE) + AMBIENT_VALUE;
 
-    /* Fake specular "shine line" on lit voxel edges - see VoxelRenderer.ps.hlsl. */
-    float3 shineTestPos = marchDiffuse.Position;
-    if (marchDiffuse.Normal.z < -0.5 && marchDiffuse.UV.y >= 0.9 && !IsVoxel(shineTestPos + float3(0.0, 1.0, 0.0)))
-        shadowMultiplier *= 1.02 * (1.0 + max(0.0, marchDiffuse.UV.y - 0.9) * 4.0);
-    else if (marchDiffuse.Normal.y > 0.5 && marchDiffuse.UV.y <= 0.1 && !IsVoxel(shineTestPos + float3(0.0, 0.0, -1.0)))
-        shadowMultiplier *= 1.02 * (1.0 + max(0.0, 0.1 - marchDiffuse.UV.y) * 4.0);
+    /* Fake specular "shine line" on lit voxel edges - see GetShineLine in
+       AmbientOcclusion.hlsl. */
+    shadowMultiplier *= GetShineLine(marchDiffuse.Position, marchDiffuse.Normal, marchDiffuse.UV, lightDirection.xyz, difference);
 
     /* Ambient occlusion - hit-time only, zero added per-step cost */
     float4 ambient = GetAmbientOcclusion(marchDiffuse.Position, marchDiffuse.Mask, marchDiffuse.SRDirection, marchDiffuse.Normal, marchDiffuse.UV);

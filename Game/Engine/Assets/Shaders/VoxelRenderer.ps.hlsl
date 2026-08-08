@@ -76,17 +76,11 @@ float4 main(PS_in IN) : TAR_OUT
 		}
     }
 
-    /* Fake specular "shine line" on lit voxel edges - not real specular, just
-       a brightness kick near the top/front UV edge of a face that has no
-       neighbour occluding it. Pulled forward from RENDERING_PLAN.md phase 5
+    /* Fake specular "shine line" on lit voxel edges - see GetShineLine in
+       AmbientOcclusion.hlsl. Pulled forward from RENDERING_PLAN.md phase 5
        step 6 since it only needs res.UV/res.Normal, which this phase's AO
-       work already populates. Ported from Splody
-       VoxelRendererForward.ps.hlsl:300-303. */
-    float3 shineTestPos = marchDiffuse.Position;
-    if (marchDiffuse.Normal.z < -0.5 && marchDiffuse.UV.y >= 0.9 && !IsVoxel(shineTestPos + float3(0.0, 1.0, 0.0)))
-        shadowMultiplier *= 1.02 * (1.0 + max(0.0, marchDiffuse.UV.y - 0.9) * 4.0);
-    else if (marchDiffuse.Normal.y > 0.5 && marchDiffuse.UV.y <= 0.1 && !IsVoxel(shineTestPos + float3(0.0, 0.0, -1.0)))
-        shadowMultiplier *= 1.02 * (1.0 + max(0.0, 0.1 - marchDiffuse.UV.y) * 4.0);
+       work already populates. */
+    shadowMultiplier *= GetShineLine(marchDiffuse.Position, marchDiffuse.Normal, marchDiffuse.UV, lightDirection.xyz, difference);
 
     /* Ambient occlusion - hit-time only, zero added per-step cost */
     float4 ambient = GetAmbientOcclusion(marchDiffuse.Position, marchDiffuse.Mask, marchDiffuse.SRDirection, marchDiffuse.Normal, marchDiffuse.UV);
