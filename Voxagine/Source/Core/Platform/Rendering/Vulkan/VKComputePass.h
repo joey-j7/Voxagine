@@ -3,6 +3,7 @@
 #include "Core/Platform/Rendering/ComputePass.h"
 
 #include "Core/Platform/Rendering/Vulkan/VKDescriptorLayout.h"
+#include "Core/Platform/Rendering/Vulkan/VKPassBindings.h"
 
 #include <vulkan/vulkan.h>
 
@@ -26,6 +27,7 @@ protected:
 
 private:
 	bool CreatePipeline();
+	void WriteDescriptors(VkDescriptorSet set);
 
 	VKDevice* m_pDevice = nullptr;
 
@@ -33,4 +35,5 @@ private:
 	VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
 
 	VKDescriptorLayout m_DescriptorLayout;
+	std::vector<VKPassBinding> m_Bindings;
 };

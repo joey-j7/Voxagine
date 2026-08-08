@@ -214,12 +214,45 @@ void VKResource::Transition(VkCommandBuffer cmd, PEResourceState newState)
 	m_State = newState;
 }
 
+VkImageView VKResource::GetOrCreateImageView(VkImageViewType type)
+{
+	if (m_ImageView != VK_NULL_HANDLE)
+		return m_ImageView;
+
+	if (m_Kind != E_KIND_IMAGE)
+		return VK_NULL_HANDLE;
+
+	VkImageViewCreateInfo viewInfo{};
+	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	viewInfo.image = m_Image;
+	viewInfo.viewType = type;
+	viewInfo.format = m_Format;
+	viewInfo.subresourceRange.aspectMask =
+		m_bIsDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.layerCount = 1;
+
+	if (vkCreateImageView(m_pDevice->Get(), &viewInfo, nullptr, &m_ImageView) != VK_SUCCESS)
+	{
+		fprintf(stderr, "[vulkan] vkCreateImageView failed for '%s'\n", m_Name.c_str());
+		m_ImageView = VK_NULL_HANDLE;
+	}
+
+	return m_ImageView;
+}
+
 void VKResource::Destroy()
 {
 	if (m_pDevice == nullptr)
 		return;
 
 	Unmap();
+
+	if (m_ImageView != VK_NULL_HANDLE)
+	{
+		vkDestroyImageView(m_pDevice->Get(), m_ImageView, nullptr);
+		m_ImageView = VK_NULL_HANDLE;
+	}
 
 	if (m_Image != VK_NULL_HANDLE)
 	{

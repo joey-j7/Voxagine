@@ -3,6 +3,7 @@
 #include "Core/Platform/Rendering/RenderPass.h"
 
 #include "Core/Platform/Rendering/Vulkan/VKDescriptorLayout.h"
+#include "Core/Platform/Rendering/Vulkan/VKPassBindings.h"
 
 #include <vulkan/vulkan.h>
 
@@ -45,12 +46,19 @@ private:
 	bool CreatePipeline();
 	bool CreateAttachments();
 
+	/* Fills a freshly allocated set from m_Bindings. */
+	void WriteDescriptors(PCommandEngine* pEngine, VkDescriptorSet set);
+
 	VKDevice* m_pDevice = nullptr;
 
 	VkPipeline m_Pipeline = VK_NULL_HANDLE;
 	VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
 
 	VKDescriptorLayout m_DescriptorLayout;
+	std::vector<VKPassBinding> m_Bindings;
 
 	UVector2 m_TargetSize = UVector2(0, 0);
+
+	/* True between vkCmdBeginRendering and vkCmdEndRendering. */
+	bool m_bIsRendering = false;
 };

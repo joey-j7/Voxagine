@@ -50,6 +50,13 @@ public:
 
 	uint32_t GetInstanceCount() const { return m_uiInstanceCount; }
 
+	/* Backend buffer handle and byte offset of the current allocation.
+	   Opaque here so this header does not need vulkan.h; the Vulkan backend
+	   stores a VkBuffer in the handle. D3D12 needed only the GPU address,
+	   but a Vulkan descriptor binds a buffer plus an offset. */
+	uint64_t GetNativeHandle() const { return m_uiNativeHandle; }
+	uint64_t GetNativeOffset() const { return m_uiNativeOffset; }
+
 protected:
 	PRenderContext* m_pContext = nullptr;
 	Info m_Info;
@@ -68,6 +75,9 @@ protected:
 
 	uint8_t* m_pCPUAddress = nullptr;
 	uint64_t m_uiGPUAddress = 0;
+
+	uint64_t m_uiNativeHandle = 0;
+	uint64_t m_uiNativeOffset = 0;
 
 	std::unique_ptr<PUploadBuffer> m_pNative;
 };

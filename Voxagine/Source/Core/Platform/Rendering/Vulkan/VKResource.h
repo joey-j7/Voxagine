@@ -64,6 +64,10 @@ public:
 	VkFormat GetFormat() const { return m_Format; }
 	VkExtent3D GetExtent() const { return m_Extent; }
 
+	/* Lazily created and cached. Vulkan needs a VkImageView wherever D3D12
+	   would have taken the resource directly. */
+	VkImageView GetOrCreateImageView(VkImageViewType type);
+
 	VkDeviceSize GetSize() const { return m_Allocation.m_uiSize; }
 	PEResourceState GetState() const { return m_State; }
 
@@ -84,6 +88,7 @@ private:
 	VkBuffer m_Buffer = VK_NULL_HANDLE;
 	VkFormat m_Format = VK_FORMAT_UNDEFINED;
 	VkExtent3D m_Extent = { 0, 0, 0 };
+	VkImageView m_ImageView = VK_NULL_HANDLE;
 
 	VKAllocator::Allocation m_Allocation;
 

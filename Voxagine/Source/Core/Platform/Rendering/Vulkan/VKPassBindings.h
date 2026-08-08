@@ -42,6 +42,20 @@ struct VKPassBinding
 
 	Kind m_Kind = E_CONSTANT_BUFFER;
 
+	/* What m_pSource points at. Both Buffer and Mapper can produce a storage
+	   buffer binding but they are read differently, so the descriptor writer
+	   cannot infer this from m_Kind. */
+	enum Source
+	{
+		E_SOURCE_NONE,
+		E_SOURCE_BUFFER,
+		E_SOURCE_MAPPER,
+		E_SOURCE_VIEW,
+		E_SOURCE_SAMPLER
+	};
+
+	Source m_Source = E_SOURCE_NONE;
+
 	/* HLSL register number within its class, before the VKBindings shift. */
 	uint32_t m_uiRegister = 0;
 

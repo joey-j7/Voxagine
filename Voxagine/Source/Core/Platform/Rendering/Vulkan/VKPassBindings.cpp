@@ -26,10 +26,12 @@ namespace
 
 	VKPassBinding MakeBinding(VKPassBinding::Kind kind, uint32_t uiRegister,
 	                          VkShaderStageFlags stages, const void* pSource,
-	                          const std::string& name, uint32_t uiCount = 1)
+	                          const std::string& name, uint32_t uiCount = 1,
+	                          VKPassBinding::Source source = VKPassBinding::E_SOURCE_NONE)
 	{
 		VKPassBinding binding;
 		binding.m_Kind = kind;
+		binding.m_Source = source;
 		binding.m_uiRegister = uiRegister;
 		binding.m_uiCount = uiCount;
 		binding.m_Stages = stages;
@@ -73,14 +75,14 @@ namespace
 			if (info.m_Type == Buffer::E_CONSTANT)
 			{
 				out.push_back(MakeBinding(VKPassBinding::E_CONSTANT_BUFFER,
-				                          counters.m_uiConstant++, stages, pBuffer, info.m_Name));
+				                          counters.m_uiConstant++, stages, pBuffer, info.m_Name, 1, VKPassBinding::E_SOURCE_BUFFER));
 			}
 			else if (info.m_GPUAccessType == E_READ_WRITE)
 			{
 				/* A read-write structured buffer is a UAV in HLSL but still a
 				   storage buffer in Vulkan; only the register class differs. */
 				VKPassBinding binding = MakeBinding(VKPassBinding::E_STORAGE_BUFFER,
-				                                    counters.m_uiUnordered++, stages, pBuffer, info.m_Name);
+				                                    counters.m_uiUnordered++, stages, pBuffer, info.m_Name, 1, VKPassBinding::E_SOURCE_BUFFER);
 				binding.m_uiBinding = VKBindings::Unordered(binding.m_uiRegister);
 
 				out.push_back(binding);
@@ -88,7 +90,7 @@ namespace
 			else
 			{
 				out.push_back(MakeBinding(VKPassBinding::E_STORAGE_BUFFER,
-				                          counters.m_uiTexture++, stages, pBuffer, info.m_Name));
+				                          counters.m_uiTexture++, stages, pBuffer, info.m_Name, 1, VKPassBinding::E_SOURCE_BUFFER));
 			}
 		}
 	}
@@ -112,17 +114,17 @@ namespace
 			{
 				out.push_back(MakeBinding(bIsImage ? VKPassBinding::E_STORAGE_IMAGE
 				                                   : VKPassBinding::E_STORAGE_BUFFER,
-				                          counters.m_uiUnordered++, stages, pMapper, info.m_Name));
+				                          counters.m_uiUnordered++, stages, pMapper, info.m_Name, 1, VKPassBinding::E_SOURCE_MAPPER));
 			}
 			else if (bIsImage)
 			{
 				out.push_back(MakeBinding(VKPassBinding::E_SAMPLED_IMAGE,
-				                          counters.m_uiTexture++, stages, pMapper, info.m_Name));
+				                          counters.m_uiTexture++, stages, pMapper, info.m_Name, 1, VKPassBinding::E_SOURCE_MAPPER));
 			}
 			else
 			{
 				out.push_back(MakeBinding(VKPassBinding::E_STORAGE_BUFFER,
-				                          counters.m_uiTexture++, stages, pMapper, info.m_Name));
+				                          counters.m_uiTexture++, stages, pMapper, info.m_Name, 1, VKPassBinding::E_SOURCE_MAPPER));
 			}
 		}
 	}
@@ -137,7 +139,7 @@ namespace
 
 			out.push_back(MakeBinding(VKPassBinding::E_SAMPLER, counters.m_uiSampler++,
 			                          stages, pSampler,
-			                          "Sampler " + std::to_string(counters.m_uiSampler - 1)));
+			                          "Sampler " + std::to_string(counters.m_uiSampler - 1), 1, VKPassBinding::E_SOURCE_SAMPLER));
 		}
 	}
 }
@@ -178,7 +180,7 @@ std::vector<VKPassBinding> VKBuildRenderPassBindings(const RenderPass::Data& dat
 
 		bindings.push_back(MakeBinding(VKPassBinding::E_SAMPLED_IMAGE,
 		                               counters.m_uiTexture++, pixelStage, pTexture,
-		                               pTexture->GetInfo().m_Name));
+		                               pTexture->GetInfo().m_Name, 1, VKPassBinding::E_SOURCE_VIEW));
 	}
 
 	/* Must be last: Vulkan only permits a variable descriptor count on the
@@ -215,7 +217,7 @@ std::vector<VKPassBinding> VKBuildComputePassBindings(const ComputePass::Data& d
 
 		bindings.push_back(MakeBinding(VKPassBinding::E_SAMPLED_IMAGE,
 		                               counters.m_uiTexture++, stage, pTexture,
-		                               pTexture->GetInfo().m_Name));
+		                               pTexture->GetInfo().m_Name, 1, VKPassBinding::E_SOURCE_VIEW));
 	}
 
 	if (data.m_uiBindlessResourceCount > 0)

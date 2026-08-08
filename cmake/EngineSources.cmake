@@ -106,6 +106,13 @@ set(VOXAGINE_ENGINE_SOURCES
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/Managers/VKModelManager.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/Managers/VKTextureManager.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/VKRenderContext.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/VKComputePass.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/VKRenderPass.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/Objects/VKBuffer.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/Objects/VKMapper.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/Objects/VKSampler.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/Objects/VKShader.cpp
+    ${VOXAGINE_SOURCE_DIR}/Core/Platform/Rendering/Vulkan/Objects/VKView.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Time/Chrono/ChronoGameTimer.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Window/SDL/SDLWindowContext.cpp
     ${VOXAGINE_SOURCE_DIR}/Core/Platform/Window/WindowContext.cpp
