@@ -218,7 +218,28 @@ if(VOXAGINE_BUILD_ENGINE)
     add_executable(BitBuster ${VOXAGINE_GAME_SOURCES})
 
     target_include_directories(BitBuster PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Game/Source)
-    target_link_libraries(BitBuster PRIVATE voxagine voxagine_warnings)
+    # WHOLE_ARCHIVE, and it is load-bearing rather than tidiness.
+    #
+    # RTTR registrations are static initializers in an anonymous namespace, so
+    # a translation unit whose only job is reflection exports nothing anyone
+    # calls - and a linker pulls an object out of a static archive only when
+    # something references a symbol in it. Core/Settings.cpp is exactly that
+    # shape: 51 lines, one RTTR_REGISTRATION block and one out-of-line setter
+    # nothing calls. It was silently dropped from every build, so the type had
+    # zero registered properties and JsonSerializer applied none of them.
+    #
+    # Nothing reported it. FromJsonFile returns true once the file *opens*,
+    # FromJson logs only when "Data"/"Type" are missing, and get_properties()
+    # on an unregistered type is empty rather than invalid - so Settings.vgs
+    # parsed, matched, iterated zero properties and left every value at its
+    # compiled-in default. FrameLimit, EnableVSync, Fullscreen, FXAA, shadows,
+    # ResolutionScale and the window size were all inert for the whole port.
+    #
+    # Any future reflection-only TU has the same shape, which is why this is
+    # fixed at the link rather than by giving Settings.cpp an anchor symbol.
+    target_link_libraries(BitBuster PRIVATE
+        "$<LINK_LIBRARY:WHOLE_ARCHIVE,voxagine>"
+        voxagine_warnings)
 
     # EDITOR itself is defined on the voxagine library above, PUBLIC, so both
     # the library and this executable see it.

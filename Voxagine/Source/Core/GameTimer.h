@@ -8,8 +8,13 @@ class GameTimer
 public:
 	GameTimer()
 	{
-		m_uiTargetElapsedTicks = GetTicksPerSecond() * 60;
-		m_uiFrameLimitTicks = GetTicksPerSecond() * 200;
+		/* Periods, not rates - ticks *per frame*, so the rate divides. These
+		   read as 60 and 200 seconds a frame before, which went unnoticed
+		   because Platform::Initialize overwrites both from Settings before
+		   the first Update. It would not have stayed unnoticed for a timer
+		   that was ever used as constructed. */
+		m_uiTargetElapsedTicks = GetTicksPerSecond() / 60;
+		m_uiFrameLimitTicks = GetTicksPerSecond() / 200;
 	}
 	virtual ~GameTimer() {}
 

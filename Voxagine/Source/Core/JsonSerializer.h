@@ -118,6 +118,22 @@ void JsonSerializer::FromJson(T& instance, Document& doc)
 			return;
 		}
 
+		/* A type with no registered properties is not an empty class, it is a
+		   class whose RTTR_REGISTRATION never ran - and the loop below would
+		   then iterate nothing, apply nothing and report nothing, leaving
+		   every value at its compiled-in default while the file looked fine.
+		   Core/Settings.cpp did exactly that for the whole port: its object
+		   was dropped from the static archive because nothing referenced a
+		   symbol in it. Cheap to check, and the failure is otherwise invisible
+		   until someone wonders why a setting does nothing. */
+		if (classType.get_properties().empty())
+		{
+			m_Logger.Log(LOGLEVEL_ERROR, "JsonSerializer",
+				"'" + className + "' has no reflected properties - its RTTR registration did not run, "
+				"so nothing in this file was applied");
+			return;
+		}
+
 		for (rttr::property prop : classType.get_properties())
 		{
 			if (classVal.HasMember(prop.get_name().to_string()))
@@ -128,6 +144,9 @@ void JsonSerializer::FromJson(T& instance, Document& doc)
 
 		return;
 	}
+
+	m_Logger.Log(LOGLEVEL_ERROR, "JsonSerializer",
+		"document is not a JSON object; nothing was deserialized");
 }
 
 template<typename T>
@@ -147,9 +166,24 @@ bool JsonSerializer::FromJsonFile(T& instance, const std::string& filePath)
 	Document doc;
 	doc.Parse(std::string(std::begin(readBuffer), std::end(readBuffer)));
 
+	m_pFileSystem->CloseFile(handle);
+
+	/* Opening the file is not loading it. This used to return true here
+	   regardless, so a parse error and a type whose reflection never ran both
+	   read as success to the caller - and Application::LoadSettings only
+	   rewrites the file with defaults when told it failed. */
+	if (doc.HasParseError())
+	{
+		m_Logger.Log(LOGLEVEL_ERROR, "JsonSerializer",
+			"failed to parse " + filePath + " (rapidjson error " +
+			std::to_string(static_cast<int>(doc.GetParseError())) + " at offset " +
+			std::to_string(doc.GetErrorOffset()) + ")");
+
+		return false;
+	}
+
 	FromJson<T>(instance, doc);
 
-	m_pFileSystem->CloseFile(handle);
 	return true;
 }
 

@@ -312,6 +312,18 @@ public:
 	bool IsFarFieldEnabled() const { return m_bFarFieldEnabled; }
 	void SetFarFieldEnabled(bool bEnabled) { m_bFarFieldEnabled = bEnabled; ForceCameraDataUpdate(); }
 
+	/* Present pacing, serialized as Settings::EnableVSync.
+	 *
+	 * On when the displayed frames should each carry an equal slice of world
+	 * time, off for the lowest latency. Neither is free: mailbox at 200 fps on
+	 * a 60 Hz display advances the world 15 ms, then 20, then 15 between shown
+	 * frames, which reads as skipping even though every frame is on time.
+	 * Runtime-toggleable for the same reason the far field is - which of the
+	 * two is worse is a judgement, and judging it means switching without
+	 * anything else changing. */
+	virtual bool IsVSyncEnabled() const { return false; }
+	virtual void SetVSyncEnabled(bool bEnabled) { (void)bEnabled; }
+
 	/* Clear the screen */
 	virtual void Clear();
 	virtual void FixedClear();
