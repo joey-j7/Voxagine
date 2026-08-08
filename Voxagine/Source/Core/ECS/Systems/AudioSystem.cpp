@@ -121,7 +121,7 @@ void AudioSystem::PostTick(float fDeltaTime)
 	m_v3LastCameraPosition = pCamTransform->GetPosition();
 
 	/* Update BGM playback */
-	if (m_pAudioContext->GetBGMChannel())
+	if (m_pAudioContext->GetBGMChannel() && m_pAudioContext->GetBGMReference())
 	{
 		if (m_pAudioContext->GetBGMReference()->GetRefPath().find("_BGM") == std::string::npos)
 		{
