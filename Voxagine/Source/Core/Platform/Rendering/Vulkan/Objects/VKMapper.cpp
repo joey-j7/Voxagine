@@ -4,6 +4,7 @@
 
 #include "Core/Platform/Rendering/Objects/View.h"
 #include "Core/Platform/Rendering/RenderPass.h"
+#include "Core/Platform/Rendering/Vulkan/VKAllocator.h"
 #include "Core/Platform/Rendering/Vulkan/VKRenderContext.h"
 
 #include <cstring>
@@ -80,13 +81,34 @@ bool Mapper::Resize(uint32_t uiElementCount, uint32_t uiElementSize)
 
 	const uint32_t uiCount = m_Info.m_bHasBackBuffer ? 2u : 1u;
 
+	/* Prefer memory the GPU reads at full speed and the CPU can still write
+	   through - the resizable-BAR heap. Without it these buffers live in
+	   system memory and every marcher fetch is a PCIe read; the voxel window
+	   alone is 288 MiB per buffer and is read tens of times per pixel.
+	   The heap is small or absent on older hardware, and even where it exists
+	   it may not have room, so both the existence test and the allocation
+	   itself fall back. CPU *reads* stay slow either way: both are uncached. */
+	const VkMemoryPropertyFlags hostVisible =
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+	const bool bHasDeviceLocalHostVisible =
+		m_pContext->GetAllocator()->FindMemoryType(
+			UINT32_MAX, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | hostVisible) != UINT32_MAX;
+
 	for (uint32_t i = 0; i < uiCount; ++i)
 	{
 		m_pMapper[i] = std::make_shared<VKResource>();
 
-		if (!m_pMapper[i]->CreateBuffer(
+		const bool bCreated =
+			(bHasDeviceLocalHostVisible &&
+			 m_pMapper[i]->CreateBuffer(
 				m_pContext->GetDevice(), m_pContext->GetAllocator(), uiBytes, usage,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | hostVisible)) ||
+			m_pMapper[i]->CreateBuffer(
+				m_pContext->GetDevice(), m_pContext->GetAllocator(), uiBytes, usage,
+				hostVisible);
+
+		if (!bCreated)
 		{
 			m_pMapper[i].reset();
 			return false;

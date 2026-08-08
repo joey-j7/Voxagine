@@ -36,7 +36,11 @@ protected:
 	void UpdateGroup(ChunkUpdateGroup& group);
 	std::vector<ChunkUpdateGroup>::iterator RemoveUpdateGroup(const std::vector<ChunkUpdateGroup>::iterator& iter);
 
-	void RenderChunk(ChunkUpdateGroup::Item& updateItem, uint32_t* viewPortData);
+	/* bBackBuffer says which of the voxel mapper's two buffers viewPortData
+	   points at. The occupancy bricks are per-buffer, so writing voxels into
+	   one while updating the other's counts silently loses geometry a swap
+	   later; a pointer alone does not carry that. */
+	void RenderChunk(ChunkUpdateGroup::Item& updateItem, uint32_t* viewPortData, bool bBackBuffer);
 	void ClearChunk(UVector2 gridTargetIndex);
 
 	void OnChunkLoaded(ChunkUpdateGroup::Item* pUpdateItem);

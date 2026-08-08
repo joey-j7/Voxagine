@@ -3,10 +3,30 @@
 #define OPTIMIZED 1
 // #define DIRECT_LIGHTING 2
 
-/* Shadow ray distance-to-fade scale. Retuned for MarchLight's 64-step,
-   double-stride walk (Phase 1 of RENDERING_PLAN.md) - the original 0.0125
-   assumed 128 full-stride steps. Tune by eye. */
-#define SHADOW_FADE_K 0.0125
+/* Shadow ray distance-to-fade scale.
+   `shadowMultiplier = min(Distance * K * difference + AMBIENT_VALUE, 1.0)`, so
+   the fade saturates at `(1 - AMBIENT_VALUE) / (K * difference)` - 200 world
+   units at K = 0.0025, difference = 1.
+   Phase 1 left this at Splody's 0.0125, which saturates at 40 units; combined
+   with phase 2 removing the shadow ray's 64-step cap, everything past a short
+   distance from its occluder rendered at full brightness and read as AO being
+   "excluded" near shadow edges. Tune by eye. */
+#define SHADOW_FADE_K 0.0025
+
+/* Occupancy bricks (RENDERING_PLAN.md phase 2). One count of occupied voxels
+   per BRICK_SIZE^3 block of the resident window, maintained CPU-side by
+   VoxelBrickGrid; the marcher walks bricks and only descends into ones that
+   hold something. BRICK_SHIFT is the C++ side's k_uiBrickShift - change both
+   or neither. */
+#define BRICK_SHIFT 3
+#define BRICK_SIZE 8
+#define BRICK_SIZE_F 8.0
+#define BRICK_INV_SIZE 0.125
+
+/* Voxel crossings a ray can make inside one brick before it has to leave:
+   3 axes x BRICK_SIZE cells. The inner walk also breaks the moment the ray
+   leaves the brick, so this only bounds the pathological case. */
+#define BRICK_MAX_VOXEL_STEPS 24
 
 /* Sky colour for rays that leave the world without hitting anything or the
    ground plane. Becomes fog input in RENDERING_PLAN.md phase 6.1. */
@@ -21,6 +41,7 @@
 #define FORCE_DEPTH_TEST [FORCE_EARLY_DEPTH_STENCIL]
 
 #define STRUCTURED_BUFFER(x) RegularBuffer<x>
+#define RW_STRUCTURED_BUFFER(x) RW_RegularBuffer<x>
 #define BUFFER(x) RegularBuffer<x>
 #define RW_BUFFER(x) RW_RegularBuffer<x>
 
@@ -54,6 +75,7 @@
 #define FORCE_DEPTH_TEST [earlydepthstencil]
 
 #define STRUCTURED_BUFFER(x) StructuredBuffer<x>
+#define RW_STRUCTURED_BUFFER(x) RWStructuredBuffer<x>
 #define BUFFER(x) Buffer<x>
 #define RW_BUFFER(x) RWBuffer<x>
 
