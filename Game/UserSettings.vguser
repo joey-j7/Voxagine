@@ -2,6 +2,7 @@
     "Type": "UserSettings",
     "Data": {
         "Auto-Save Enabled": true,
-        "Auto-Save Time(in seconds)": 5
+        "Auto-Save Time(in seconds)": 5,
+        "Startup World": "Content/Worlds/Fishing_Village/Fishing_Village_Beat1.wld"
     }
 }

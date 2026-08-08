@@ -859,7 +859,15 @@ void Editor::CreateTemplateWorld(bool bCreateProjectDefault, UVector2 chunkGridS
 
 	if (bCreateProjectDefault)
 	{
-		const std::string outPath = m_ProjectSettings.GetDefaultMap();
+		/* Lets the editor open a different world on launch than the shipped
+		   game boots into. Deliberately a separate UserSettings field rather
+		   than reusing ProjectSettings::DefaultMap, which VoxApp::OnCreate
+		   also reads under !EDITOR - changing that would change what the
+		   game boots into, not just the editor. */
+		std::string outPath = m_UserSettings.GetStartupWorld();
+		if (outPath.empty())
+			outPath = m_ProjectSettings.GetDefaultMap();
+
 		if (!outPath.empty())
 		{
 			Document EditorWorldDocument;

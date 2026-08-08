@@ -11,7 +11,8 @@ RTTR_REGISTRATION
 	rttr::registration::class_<UserSettings>("UserSettings")
 		.constructor<>()(rttr::policy::ctor::as_object)
 		.property("Auto-Save Enabled", &UserSettings::IsAutoSaveEnabled, &UserSettings::EnableAutoSave) (RTTR_PUBLIC)
-		.property("Auto-Save Time(in seconds)", &UserSettings::GetAutoSaveTime, &UserSettings::SetAutoSaveTime) (RTTR_PUBLIC);
+		.property("Auto-Save Time(in seconds)", &UserSettings::GetAutoSaveTime, &UserSettings::SetAutoSaveTime) (RTTR_PUBLIC)
+		.property("Startup World", &UserSettings::GetStartupWorld, &UserSettings::SetStartupWorld) (RTTR_PUBLIC);
 }
 
 UserSettings::UserSettings()
@@ -52,8 +53,20 @@ unsigned int UserSettings::GetAutoSaveTime() const
 	return m_uiAutoSaveTime;
 }
 
+void UserSettings::SetStartupWorld(std::string sStartupWorld)
+{
+	m_sStartupWorld = sStartupWorld;
+	SetDirty();
+}
+
+std::string UserSettings::GetStartupWorld() const
+{
+	return m_sStartupWorld;
+}
+
 void UserSettings::InitializeDefaultSettings()
 {
 	m_bAutoSaveEnabled = true;
 	m_uiAutoSaveTime = 5;
+	m_sStartupWorld = "";
 }
